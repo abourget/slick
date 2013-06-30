@@ -3,6 +3,8 @@ package main
 import (
 	"flag"
 	"github.com/tkawachi/hipchat"
+	"github.com/tkawachi/hipbot/plugin"
+	"github.com/tkawachi/hipbot/inout"
 	"log"
 	"os"
 	"strings"
@@ -14,22 +16,15 @@ const (
 	ConfDomain = "conf.hipchat.com"
 )
 
-type HandleReply struct {
-	To      string
-	Message string
-}
 
-type Plugin interface {
-	Handle(*hipchat.Message) *HandleReply
-}
-
-var plugins = make([]Plugin, 0)
-
-func registerPlugins() {
+func registerPlugins() []plugin.Plugin {
+	plugins := make([]plugin.Plugin, 0)
 	plugins = append(plugins, new(Wikipedia))
+	plugins = append(plugins, inout.New())
+	return plugins
 }
 
-func replyHandler(client *hipchat.Client, nickname string, respCh chan *HandleReply) {
+func replyHandler(client *hipchat.Client, nickname string, respCh chan *plugin.HandleReply) {
 	for {
 		reply := <-respCh
 		if reply != nil {
@@ -38,12 +33,12 @@ func replyHandler(client *hipchat.Client, nickname string, respCh chan *HandleRe
 	}
 }
 
-func messageHandler(client *hipchat.Client, plugins []Plugin, respCh chan *HandleReply) {
+func messageHandler(client *hipchat.Client, plugins []plugin.Plugin, respCh chan *plugin.HandleReply) {
 	msgs := client.Messages()
 	for {
 		msg := <-msgs
-		for _, plugin := range plugins {
-			go func() { respCh <- plugin.Handle(msg) }()
+		for _, p := range plugins {
+			go func(p plugin.Plugin) { respCh <- p.Handle(msg) }(p)
 		}
 	}
 }
@@ -51,7 +46,7 @@ func messageHandler(client *hipchat.Client, plugins []Plugin, respCh chan *Handl
 func main() {
 	flag.Parse()
 	config := loadConfig(*configFile)
-	registerPlugins()
+	plugins := registerPlugins()
 	chatConfig := config.Hipchat
 	client, err := hipchat.NewClient(
 		chatConfig.Username, chatConfig.Password, chatConfig.Resource)
@@ -64,7 +59,7 @@ func main() {
 		}
 		client.Join(room, chatConfig.Nickname)
 	}
-	respCh := make(chan *HandleReply)
+	respCh := make(chan *plugin.HandleReply)
 	go client.KeepAlive()
 	go replyHandler(client, chatConfig.Nickname, respCh)
 	go messageHandler(client, plugins, respCh)

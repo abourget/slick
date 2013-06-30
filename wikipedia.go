@@ -2,24 +2,21 @@ package main
 
 import (
 	"github.com/tkawachi/hipchat"
+	"github.com/tkawachi/hipbot/plugin"
 	"math/rand"
 	"strings"
 	"time"
-	"regexp"
 )
 
 type Wikipedia struct{}
 
-const regs = [
-	regexp.Compile(`wikipedia\s+(.+)`) ]
-
 var r = rand.New(rand.NewSource(99))
 
-func (wikipedia *Wikipedia) Handle(msg *hipchat.Message) *HandleReply {
+func (wikipedia *Wikipedia) Handle(msg *hipchat.Message) *plugin.HandleReply {
 	if strings.HasPrefix(msg.Body, "wikipedia ") {
 		// TODO Access wikipedia to get contents
 		time.Sleep(time.Duration(r.Intn(10)) * time.Second)
-		return &HandleReply{
+		return &plugin.HandleReply{
 			To:      msg.From,
 			Message: "http://jp.wikipedia.org Searching wikipedia..." + msg.Body,
 		}
