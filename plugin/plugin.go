@@ -1,4 +1,5 @@
 package plugin
+
 import (
 	"github.com/tkawachi/hipchat"
 )

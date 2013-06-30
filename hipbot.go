@@ -2,9 +2,9 @@ package main
 
 import (
 	"flag"
-	"github.com/tkawachi/hipchat"
-	"github.com/tkawachi/hipbot/plugin"
 	"github.com/tkawachi/hipbot/inout"
+	"github.com/tkawachi/hipbot/plugin"
+	"github.com/tkawachi/hipchat"
 	"log"
 	"os"
 	"strings"
@@ -15,7 +15,6 @@ var configFile = flag.String("config", os.Getenv("HOME")+"/.hipbot", "config fil
 const (
 	ConfDomain = "conf.hipchat.com"
 )
-
 
 func registerPlugins() []plugin.Plugin {
 	plugins := make([]plugin.Plugin, 0)

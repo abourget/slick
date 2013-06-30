@@ -1,12 +1,12 @@
 package inout
 
 import (
-	"github.com/tkawachi/hipchat"
 	"github.com/tkawachi/hipbot/plugin"
+	"github.com/tkawachi/hipchat"
 	"strings"
 )
 
-type InOut struct{
+type InOut struct {
 	IsIn map[string]bool
 }
 
@@ -23,7 +23,9 @@ func (inout *InOut) Who() string {
 			ins = append(ins, k)
 		}
 	}
-	if len(ins) > 0 {
+	if len(ins) == 1 {
+		return "Only you are working"
+	} else if len(ins) > 1 {
 		return strings.Join(ins, ", ") + " are working!"
 	} else {
 		return "No one is working"
@@ -39,11 +41,10 @@ func (inout *InOut) Handle(msg *hipchat.Message) *plugin.HandleReply {
 	}
 	switch msg.Body {
 	case "in", "out", "who":
-		return &plugin.HandleReply {
-			To: msg.From,
+		return &plugin.HandleReply{
+			To:      msg.From,
 			Message: inout.Who(),
 		}
 	}
 	return nil
 }
-

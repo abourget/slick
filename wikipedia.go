@@ -1,8 +1,8 @@
 package main
 
 import (
-	"github.com/tkawachi/hipchat"
 	"github.com/tkawachi/hipbot/plugin"
+	"github.com/tkawachi/hipchat"
 	"math/rand"
 	"strings"
 	"time"
