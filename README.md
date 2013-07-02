@@ -1,5 +1,7 @@
 # hipbot -- HipChat 用 bot
 
+[![Build Status](https://drone.io/github.com/tkawachi/hipbot/status.png)](https://drone.io/github.com/tkawachi/hipbot/latest)
+
 ## 設定ファイル
 
 `$HOME/.hipbot` を読み込む。
