@@ -2,19 +2,21 @@ package main
 
 import (
 	"code.google.com/p/gcfg"
+	"errors"
 	"log"
 	"os"
-	"errors"
 )
 
+type Hipchat struct {
+	Username string
+	Password string
+	Nickname string
+	Resource string
+	Rooms    []string
+}
+
 type Config struct {
-	Hipchat struct {
-		Server string
-		Port uint
-		Id string
-		Password string
-		Rooms []string
-	}
+	Hipchat Hipchat
 }
 
 func checkPermission(file string) error {
@@ -22,7 +24,7 @@ func checkPermission(file string) error {
 	if err != nil {
 		return err
 	}
-	if fi.Mode() & 0077 != 0 {
+	if fi.Mode()&0077 != 0 {
 		return errors.New("Config file is permitted to group/other. Do chmod 600 " + file)
 	}
 	return nil
