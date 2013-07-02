@@ -24,7 +24,7 @@ func (inout *InOut) Who() string {
 		}
 	}
 	if len(ins) == 1 {
-		return "Only you are working"
+		return "Only " + ins[0] + " is working"
 	} else if len(ins) > 1 {
 		return strings.Join(ins, ", ") + " are working!"
 	} else {
