@@ -2,6 +2,7 @@ package main
 
 import (
 	"flag"
+	"github.com/tkawachi/hipbot/hateb"
 	"github.com/tkawachi/hipbot/inout"
 	"github.com/tkawachi/hipbot/plugin"
 	"github.com/tkawachi/hipchat"
@@ -20,6 +21,7 @@ func registerPlugins() []plugin.Plugin {
 	plugins := make([]plugin.Plugin, 0)
 	plugins = append(plugins, new(Wikipedia))
 	plugins = append(plugins, inout.New())
+	plugins = append(plugins, hateb.New())
 	return plugins
 }
 
