@@ -15,8 +15,13 @@ type Hipchat struct {
 	Rooms    []string
 }
 
+type HealthCheck struct {
+	Url []string
+}
+
 type Config struct {
-	Hipchat Hipchat
+	Hipchat     Hipchat
+	HealthCheck HealthCheck
 }
 
 func checkPermission(file string) error {
