@@ -1,7 +1,11 @@
-[hipchat]
+[Hipchat]
 username=0000_00000
 password="PASSWORD"
 nickname="First Last"
 rooms=00001_room1
 rooms=00002_room2
 resource=bot
+
+[HealthCheck]
+url=http://example.com/1
+url=http://example.com/2
