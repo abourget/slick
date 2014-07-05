@@ -1,9 +1,18 @@
-# hipbot -- HipChat 用 bot
+# ahipbot -- A simple bot written in Go
 
-[![Build Status](https://drone.io/github.com/tkawachi/hipbot/status.png)](https://drone.io/github.com/tkawachi/hipbot/latest)
+[![Build Status](https://drone.io/github.com/abourget/ahipbot/status.png)](https://drone.io/github.com/abourget/ahipbot/latest)
 
-## 設定ファイル
 
-`$HOME/.hipbot` を読み込む。
-Owner 以外は設定ファイルを読み書き実行出来ないこと。
+## Configuration
 
+* Copy the `dot.hipbot` file to `$HOME/.hipbot` and tweak until you're pleased.
+
+* Build and run with: `./hipbot`
+
+* Enjoy!
+
+
+## Writing your own plugin
+
+Take inspiration by looking at `funny.go`.  Write your own, and don't forget to
+add your plugin to `Hipbot.registerPlugins()` in `hipbot.go`.
