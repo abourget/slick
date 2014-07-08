@@ -2,6 +2,7 @@ package main
 
 import (
 	"flag"
+	"log"
 )
 
 func main() {
@@ -9,7 +10,14 @@ func main() {
 	bot := NewHipbot(*configFile)
 	bot.loadBaseConfig()
 	bot.registerPlugins()
-	bot.connectClient()
-	bot.setupHandlers()
-	select {}
+	for {
+		log.Println("Connecting client...")
+		bot.connectClient()
+		disconnect := bot.setupHandlers()
+		select {
+		case <-disconnect:
+			log.Println("Disconnected...")
+			continue
+		}
+	}
 }

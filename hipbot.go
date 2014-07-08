@@ -51,12 +51,15 @@ func (bot *Hipbot) connectClient() {
 	}
 }
 
-func (bot *Hipbot) setupHandlers() {
+func (bot *Hipbot) setupHandlers() chan bool {
 	bot.client.Status("chat")
+	disconnect := make(chan bool)
 	go bot.client.KeepAlive()
 	go bot.replyHandler()
 	go bot.messageHandler()
+	go bot.disconnectHandler(disconnect)
 	log.Println("hipbot started")
+	return disconnect
 }
 
 func (bot *Hipbot) loadBaseConfig() {
@@ -104,6 +107,7 @@ func (bot *Hipbot) messageHandler() {
 	for {
 		msg := <-msgs
 		botMsg := &BotMessage{Message: msg}
+		log.Println("MESSAGE", msg)
 
 		atMention := "@" + bot.config.Mention
 		if strings.Contains(msg.Body, atMention) || strings.HasPrefix(msg.Body, bot.config.Mention) {
@@ -118,11 +122,17 @@ func (bot *Hipbot) messageHandler() {
 			if !pluginConf.EchoMessages && fromMyself {
 				continue
 			}
-			if !pluginConf.OnlyMentions && !botMsg.BotMentioned {
+			if pluginConf.OnlyMentions && !botMsg.BotMentioned {
 				continue
 			}
 
 			go func(p Plugin) { p.Handle(bot, botMsg) }(p)
 		}
 	}
+}
+
+
+func (bot *Hipbot) disconnectHandler(disconnect chan bool) {
+	select {}
+	disconnect <- true
 }
