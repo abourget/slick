@@ -8,6 +8,7 @@ import (
 	"log"
 	"os"
 	"strings"
+	"time"
 )
 
 var configFile = flag.String("config", os.Getenv("HOME")+"/.hipbot", "config file")
@@ -36,27 +37,29 @@ func (bot *Hipbot) Reply(msg *BotMessage, reply string) {
 	bot.replySink <- msg.Reply(reply)
 }
 
-func (bot *Hipbot) connectClient() {
-	var err error
+func (bot *Hipbot) connectClient() (err error) {
 	bot.client, err = hipchat.NewClient(
 		bot.config.Username, bot.config.Password, "bot")
 	if err != nil {
-		log.Fatal(err)
+		return
 	}
+
 	for _, room := range bot.config.Rooms {
 		if !strings.Contains(room, "@") {
 			room = room + "@" + ConfDomain
 		}
 		bot.client.Join(room, bot.config.Nickname)
 	}
+
+	return
 }
 
 func (bot *Hipbot) setupHandlers() chan bool {
 	bot.client.Status("chat")
 	disconnect := make(chan bool)
 	go bot.client.KeepAlive()
-	go bot.replyHandler()
-	go bot.messageHandler()
+	go bot.replyHandler(disconnect)
+	go bot.messageHandler(disconnect)
 	go bot.disconnectHandler(disconnect)
 	log.Println("hipbot started")
 	return disconnect
@@ -90,19 +93,21 @@ func (bot *Hipbot) registerPlugins() {
 	plugins := make([]Plugin, 0)
 	plugins = append(plugins, NewHealthy(bot))
 	plugins = append(plugins, NewFunny(bot))
+	plugins = append(plugins, NewDeployer(bot))
 	bot.plugins = plugins
 }
 
-func (bot *Hipbot) replyHandler() {
+func (bot *Hipbot) replyHandler(disconnect chan bool) {
 	for {
 		reply := <-bot.replySink
 		if reply != nil {
 			bot.client.Say(reply.To, bot.config.Nickname, reply.Message)
+			time.Sleep(50 * time.Millisecond)
 		}
 	}
 }
 
-func (bot *Hipbot) messageHandler() {
+func (bot *Hipbot) messageHandler(disconnect chan bool) {
 	msgs := bot.client.Messages()
 	for {
 		msg := <-msgs
@@ -110,9 +115,10 @@ func (bot *Hipbot) messageHandler() {
 		log.Println("MESSAGE", msg)
 
 		atMention := "@" + bot.config.Mention
-		if strings.Contains(msg.Body, atMention) || strings.HasPrefix(msg.Body, bot.config.Mention) {
+		toMyself := strings.HasPrefix(msg.To, bot.config.Username)
+		if strings.Contains(msg.Body, atMention) || strings.HasPrefix(msg.Body, bot.config.Mention) || toMyself {
 			botMsg.BotMentioned = true
-			log.Printf("Mentioned by %s: %s\n", msg.From, msg.Body)
+			log.Printf("Message to me from %s: %s\n", msg.From, msg.Body)
 		}
 
 		for _, p := range bot.plugins {
@@ -131,8 +137,10 @@ func (bot *Hipbot) messageHandler() {
 	}
 }
 
-
 func (bot *Hipbot) disconnectHandler(disconnect chan bool) {
-	select {}
-	disconnect <- true
+	select {
+	case <-disconnect:
+		return
+	}
+	close(disconnect)
 }
