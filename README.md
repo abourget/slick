@@ -9,11 +9,22 @@
 
     http://blog.labix.org/2013/06/15/in-flight-deb-packages-of-go
 
-* Copy the `dot.hipbot` file to `$HOME/.hipbot` and tweak until you're pleased.
+* Pull the bot and its dependencies:
 
-* Build and run with: `./hipbot`
+    go get github.com/abourget/ahipbot
 
-* Enjoy!
+* Copy the `dot.hipbot` file to `$HOME/.hipbot` and tweak at will.
+
+* Build with:
+
+    cd src/github.com/abourget/ahipbot
+    go build && ./ahipbot
+
+* Inject static stuff in the binary with:
+
+    rice append --exec=ahipbot
+
+* Enjoy! You can deploy the binary and it has all the assets in itself now.
 
 
 ## Writing your own plugin

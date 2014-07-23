@@ -4,11 +4,12 @@ import (
 	"github.com/golang/oauth2"
 	"github.com/gorilla/context"
 	"github.com/gorilla/sessions"
-	"html/template"
 	"log"
 	"net/http"
 	"github.com/abourget/go.rice"
 	"github.com/codegangsta/negroni"
+	"html/template"
+	"fmt"
 )
 
 type Webapp struct {
@@ -82,6 +83,31 @@ func launchWebapp() {
 
 func handleRoot(w http.ResponseWriter, r *http.Request) {
 	profile, _ := checkAuth(r)
-	webappCode.Execute(w, profile)
-	//notAuthenticatedTemplate.Execute(w, nil)
+
+	tpl, err := getRootTemplate()
+	if err != nil {
+		w.Write([]byte(err.Error()))
+		return
+	}
+
+	tpl.Execute(w, profile)
+}
+
+func getRootTemplate() (*template.Template, error) {
+	box, err := rice.FindBox("static")
+	if err != nil {
+		return nil, fmt.Errorf("Error finding static assets: %s", err)
+	}
+
+	rawTpl, err := box.String("index.html")
+	if err != nil {
+		return nil, fmt.Errorf("Error loading index.html: %s", err)
+	}
+
+	tpl, err := template.New("index.html").Parse(rawTpl)
+	if err != nil {
+		return nil, fmt.Errorf("Cannot parse index.html: %s", err)
+	}
+
+	return tpl, nil
 }
