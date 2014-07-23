@@ -5,6 +5,10 @@
 
 ## Configuration
 
+* Install your Go environment, under Ubuntu, use this method:
+
+    http://blog.labix.org/2013/06/15/in-flight-deb-packages-of-go
+
 * Copy the `dot.hipbot` file to `$HOME/.hipbot` and tweak until you're pleased.
 
 * Build and run with: `./hipbot`
