@@ -35,7 +35,7 @@ func (mw *OAuthMiddlware) ServeHTTP(w http.ResponseWriter, r *http.Request) {
 			url := oauthCfg.AuthCodeURL("")
 			http.Redirect(w, r, url, http.StatusFound)
 		} else {
-			http.Error(w, "Forbidden", http.StatusForbidden)
+			w.WriteHeader(http.StatusForbidden)
 		}
 		return
 	}

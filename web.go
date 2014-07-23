@@ -6,7 +6,7 @@ import (
 	"github.com/gorilla/sessions"
 	"log"
 	"net/http"
-	"github.com/abourget/go.rice"
+	"github.com/GeertJohan/go.rice"
 	"github.com/codegangsta/negroni"
 	"html/template"
 	"fmt"
@@ -71,17 +71,21 @@ func launchWebapp() {
 	}
 
 	mux := http.NewServeMux()
-	mux.Handle("/static/", http.FileServer(rice.MustFindBox("static").HTTPBox()))
-	// Should we put the /authorize link back ??
+	mux.Handle("/static/", http.StripPrefix("/static", http.FileServer(rice.MustFindBox("static").HTTPBox())))
 	mux.HandleFunc("/", handleRoot)
 
 	n := negroni.Classic()
-	n.UseHandler(NewOAuthMiddleware(context.ClearHandler(mux)))
+	n.UseHandler(context.ClearHandler(NewOAuthMiddleware(mux)))
 
 	n.Run("localhost:8080")
 }
 
 func handleRoot(w http.ResponseWriter, r *http.Request) {
+	if r.URL.Path != "/" {
+		http.NotFound(w, r)
+		return
+	}
+
 	profile, _ := checkAuth(r)
 
 	tpl, err := getRootTemplate()
