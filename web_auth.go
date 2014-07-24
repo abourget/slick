@@ -1,12 +1,12 @@
 package main
 
 import (
+	"encoding/json"
 	"fmt"
 	"github.com/golang/oauth2"
-	"net/http"
-	"log"
 	"io/ioutil"
-	"encoding/json"
+	"log"
+	"net/http"
 	"strings"
 )
 

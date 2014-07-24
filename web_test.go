@@ -4,5 +4,7 @@ import (
 	"testing"
 )
 
-func TestCheckAuth(t *testing.T) {
+func TestConfigureWebapp(t *testing.T) {
+	conf := &WebappConfig{ClientID: "boo", ClientSecret: "mama", SessionAuthKey: "123", SessionEncryptKey: "456"}
+	configureWebapp(conf)
 }

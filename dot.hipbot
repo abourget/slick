@@ -27,6 +27,7 @@
     "client_secret": "secret_keyfromAPIproject",
     "restrict_domain": "hosted-domain.example.com",
     "session_auth_key": "12312312312312312312312312312312",
-    "session_encrypt_key": "12345678902345678901234567890123"
+    "session_encrypt_key": "12345678902345678901234567890123",
+    "hipchat_api_token": "123123123"
   }
 }

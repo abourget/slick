@@ -14,7 +14,7 @@ func main() {
 	bot = NewHipbot(*configFile)
 
 	// TODO: make this a goroutine to run the bot also
-	launchWebapp()
+	go launchWebapp()
 
 	bot.loadBaseConfig()
 	bot.registerPlugins()

@@ -23,8 +23,11 @@ angular.module('hey', ['ui.router.state', 'ui.router'])
 
 })
 
-.controller('HomeCtrl', function($scope) {
-  $scope.boo = 'thanks'
+.controller('HomeCtrl', function($scope, $http) {
+  $scope.boo = 'thanks';
+  $scope.send_notif = function() {
+    $http.post('/send_notif');
+  }
 })
 
 ;
