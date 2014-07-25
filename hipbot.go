@@ -67,13 +67,13 @@ func (bot *Hipbot) setupHandlers() chan bool {
 
 func (bot *Hipbot) loadBaseConfig() {
 	if err := checkPermission(bot.configFile); err != nil {
-		log.Fatal(err)
+		log.Fatal("ERROR Checking Permissions: ", err)
 	}
 
 	var config Config
 	err := bot.LoadConfig(&config)
 	if err != nil {
-		log.Fatal(err)
+		log.Fatal("ERROR parsing config: ", err)
 	}
 
 	bot.config = config.Hipchat
