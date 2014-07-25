@@ -6,6 +6,8 @@ import (
 	"log"
 	"net/http"
 
+	"encoding/json"
+
 	"github.com/GeertJohan/go.rice"
 	"github.com/abourget/ahipbot/hipchatv2"
 	"github.com/codegangsta/negroni"
@@ -47,6 +49,7 @@ func launchWebapp() {
 	rt := mux.NewRouter()
 	rt.HandleFunc("/", handleRoot)
 	rt.HandleFunc("/send_notif", handleNotif)
+	rt.HandleFunc("/get_users", handleGetUsers)
 
 	mux := http.NewServeMux()
 	mux.Handle("/static/", http.StripPrefix("/static", http.FileServer(rice.MustFindBox("static").HTTPBox())))
@@ -114,4 +117,31 @@ func getRootTemplate() (*template.Template, error) {
 // Send a notification through Hipchat
 func handleNotif(w http.ResponseWriter, r *http.Request) {
 	hipchatv2.SendNotification(web.config.HipchatApiToken, "DevOps", "gray", "text", "Hey that's great!", false)
+}
+
+func handleGetUsers(w http.ResponseWriter, r *http.Request) {
+	users, err := hipchatv2.GetUsers(web.config.HipchatApiToken)
+	if err != nil {
+		w.WriteHeader(http.StatusInternalServerError)
+		w.Write([]byte("Error fetching users\n"))
+		w.Write([]byte(err.Error()))
+		return
+	}
+
+	w.Header().Set("Content-Type", "application/json")
+	enc := json.NewEncoder(w)
+	out := struct {
+		Users []hipchatv2.User `json:"users"`
+	}{
+		Users: users,
+	}
+
+	err = enc.Encode(out)
+	if err != nil {
+		w.WriteHeader(http.StatusInternalServerError)
+		w.Write([]byte("Error encoding JSON\n"))
+		w.Write([]byte(err.Error()))
+		return
+	}
+	return
 }

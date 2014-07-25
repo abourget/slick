@@ -28,6 +28,13 @@ angular.module('hey', ['ui.router.state', 'ui.router'])
   $scope.send_notif = function() {
     $http.post('/send_notif');
   }
+
+  $scope.get_users = function() {
+    $http.post('/get_users').success(function(data, status) {
+      $scope.users = data.users;
+    });
+  }
+
 })
 
 ;

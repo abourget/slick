@@ -8,4 +8,15 @@ again :)
 
 SWEEEEEEEEEEEEEEET!
 
-<button ng-click="send_notif()">Send a notif!</button>
+<p>
+  <button ng-click="send_notif()">Send a notif!</button>
+  <button ng-click="get_users()">Get Users</button>
+</p>
+
+<p>
+  <strong>Users:</strong>
+</p>
+
+<ul>
+  <li ng-repeat="user in users">{{ user | json }}</li>
+</ul>
