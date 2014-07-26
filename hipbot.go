@@ -125,9 +125,11 @@ func (bot *Hipbot) messageHandler(disconnect chan bool) {
 
 			fromMyself := strings.HasPrefix(botMsg.FromNick(), bot.config.Nickname)
 			if !pluginConf.EchoMessages && fromMyself {
+				log.Printf("no echo but I just messaged myself")
 				continue
 			}
 			if pluginConf.OnlyMentions && !botMsg.BotMentioned {
+				log.Printf("only mentions but not BotMentioned")
 				continue
 			}
 
