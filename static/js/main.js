@@ -36,7 +36,6 @@ angular.module('hey', ['ui.router.state', 'ui.router', 'ngResource'])
         gobot.notify();
     };
     $scope.send_storm = function() {
-        gobot.room = 'Plotly';
         gobot.storm();
     };
 
