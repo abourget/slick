@@ -37,6 +37,27 @@ func (bot *Hipbot) Reply(msg *BotMessage, reply string) {
 	bot.replySink <- msg.Reply(reply)
 }
 
+func (bot *Hipbot) Storm(room string) {
+	log.Println("STORMING!")
+	gif := "http://8tracks.imgix.net/i/002/361/684/astronaut-3818.gif"
+	// msg += "\n STORMED"
+	if !strings.Contains(room, "@") {
+		room = room + "@" + ConfDomain
+	}
+	reply := &BotReply{
+		To: room,
+		Message: gif,
+	}
+	bot.replySink <- reply
+
+	msg := "Stormed!"
+	reply = &BotReply{
+		To: room,
+		Message: msg,
+	}
+	bot.replySink <- reply
+}
+
 func (bot *Hipbot) connectClient() (err error) {
 	bot.client, err = hipchat.NewClient(
 		bot.config.Username, bot.config.Password, "bot")
@@ -101,6 +122,7 @@ func (bot *Hipbot) replyHandler(disconnect chan bool) {
 	for {
 		reply := <-bot.replySink
 		if reply != nil {
+			log.Println("REPLYING", reply.To, reply.Message)
 			bot.client.Say(reply.To, bot.config.Nickname, reply.Message)
 			time.Sleep(50 * time.Millisecond)
 		}
