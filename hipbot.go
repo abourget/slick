@@ -115,8 +115,7 @@ func (bot *Hipbot) messageHandler(disconnect chan bool) {
 		log.Println("MESSAGE", msg)
 
 		atMention := "@" + bot.config.Mention
-		toMyself := strings.HasPrefix(msg.To, bot.config.Username)
-		if strings.Contains(msg.Body, atMention) || strings.HasPrefix(msg.Body, bot.config.Mention) || toMyself {
+		if strings.Contains(msg.Body, atMention) || strings.HasPrefix(msg.Body, bot.config.Mention) {
 			botMsg.BotMentioned = true
 			log.Printf("Message to me from %s: %s\n", msg.From, msg.Body)
 		}
