@@ -1,6 +1,6 @@
 'use strict';
 
-angular.module('hey', ['ui.router.state', 'ui.router'])
+angular.module('hey', ['ui.router.state', 'ui.router', 'ngResource'])
 
 .run(function($rootScope, $state, $stateParams) {
   $rootScope.hello = 'world';
@@ -23,11 +23,21 @@ angular.module('hey', ['ui.router.state', 'ui.router'])
 
 })
 
-.controller('HomeCtrl', function($scope, $http) {
-  $scope.boo = 'thanks';
-  $scope.send_notif = function() {
-    $http.post('/send_notif');
-  };
+.service( 'gobot', function ($resource) {
+    return $resource('/', {}, {
+        'notify': { method: 'post', url: '/send_notif'},
+        'storm': { method: 'post', url: '/send_storm'}
+    });
 })
 
-;
+.controller('HomeCtrl', function($scope, $http, gobot) {
+    $scope.boo = 'thanks';
+    $scope.send_notif = function() {
+        gobot.notify();
+    };
+    $scope.send_storm = function() {
+        gobot.room = 'Plotly';
+        gobot.storm();
+    };
+
+});
