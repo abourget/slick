@@ -1,13 +1,13 @@
-"use strict";
+'use strict';
 
 angular.module('hey', ['ui.router.state', 'ui.router'])
 
 .run(function($rootScope, $state, $stateParams) {
-  $rootScope.hello = "world"
+  $rootScope.hello = 'world';
 })
 
 .config(function($stateProvider, $urlRouterProvider) {
-  $urlRouterProvider.otherwise('/')
+  $urlRouterProvider.otherwise('/');
 })
 
 .config(function($locationProvider) {
@@ -27,7 +27,7 @@ angular.module('hey', ['ui.router.state', 'ui.router'])
   $scope.boo = 'thanks';
   $scope.send_notif = function() {
     $http.post('/send_notif');
-  }
+  };
 })
 
 ;
