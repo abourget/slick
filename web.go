@@ -5,7 +5,6 @@ import (
 	"html/template"
 	"log"
 	"net/http"
-
 	"github.com/GeertJohan/go.rice"
 	"github.com/abourget/ahipbot/hipchatv2"
 	"github.com/codegangsta/negroni"
@@ -121,5 +120,5 @@ func handleNotif(w http.ResponseWriter, r *http.Request) {
 
 // Send a notification through Hipchat
 func handleStorm(w http.ResponseWriter, r *http.Request) {
-	log.Println("STORM")
+	bot.Storm("123823_devops")
 }
