@@ -47,6 +47,7 @@ func launchWebapp() {
 	rt := mux.NewRouter()
 	rt.HandleFunc("/", handleRoot)
 	rt.HandleFunc("/send_notif", handleNotif)
+	rt.HandleFunc("/send_storm", handleStorm)
 
 	mux := http.NewServeMux()
 	mux.Handle("/static/", http.StripPrefix("/static", http.FileServer(rice.MustFindBox("static").HTTPBox())))
@@ -71,7 +72,7 @@ func configureWebapp(conf *WebappConfig) {
 		"https://accounts.google.com/o/oauth2/token",
 	)
 	if err != nil {
-		log.Fatal(err)
+		log.Fatal("oauth error: ", err)
 	}
 }
 
@@ -113,5 +114,12 @@ func getRootTemplate() (*template.Template, error) {
 
 // Send a notification through Hipchat
 func handleNotif(w http.ResponseWriter, r *http.Request) {
-	hipchatv2.SendNotification(web.config.HipchatApiToken, "DevOps", "gray", "text", "Hey that's great!", false)
+	log.Println("NOTIF")
+	hipchatv2.SendNotification(web.config.HipchatApiToken, "DevOps", "gray", "text", "I AM THE EGG MAN!", false)
+}
+
+
+// Send a notification through Hipchat
+func handleStorm(w http.ResponseWriter, r *http.Request) {
+	log.Println("STORM")
 }
