@@ -8,6 +8,7 @@ import (
 
 var bot *Hipbot
 var web *Webapp
+var asana *Asana
 
 func main() {
 	flag.Parse()
@@ -16,8 +17,11 @@ func main() {
 	// TODO: make this a goroutine to run the bot also
 	go launchWebapp()
 
+	go launchAsana()
+
 	bot.loadBaseConfig()
 	bot.registerPlugins()
+
 
 	for {
 		log.Println("Connecting client...")
