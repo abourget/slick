@@ -34,7 +34,7 @@ type WebappConfig struct {
 
 func launchWebapp() {
 	var conf WebappConfigSection
-	bot.LoadConfig(&conf) // I don't understand this, bot is lowercase and is in scope, and we reconfigure it here?
+	bot.LoadConfig(&conf)
 
 	web = &Webapp{
 		config: &conf.Webapp,
