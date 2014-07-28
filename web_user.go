@@ -1,4 +1,4 @@
-package main
+package ahipbot
 
 import (
 	"encoding/gob"
@@ -7,7 +7,7 @@ import (
 	"log"
 )
 
-type UserProfile struct {
+type GoogleUserProfile struct {
 	Name          string `json:"name"`
 	Hd            string `json:"hd"`
 	Email         string `json:"email"`
@@ -15,14 +15,18 @@ type UserProfile struct {
 	VerifiedEmail bool   `json:"verified_email"`
 }
 
-func (up *UserProfile) AsJavascript() template.JS {
+func (up *GoogleUserProfile) AsJavascript() template.JS {
 	jsonProfile, err := json.MarshalIndent(up, "", "  ")
 	if err != nil {
-		log.Fatal("Couldn't unmarshal Cookie with UserProfile in there", err)
+		log.Fatal("Couldn't unmarshal Cookie with GoogleUserProfile in there", err)
 	}
 	return template.JS(jsonProfile)
 }
 
 func init() {
+	gob.Register(&GoogleUserProfile{})
+
+	// Backwards compatibility
+	type UserProfile GoogleUserProfile
 	gob.Register(&UserProfile{})
 }

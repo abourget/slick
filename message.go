@@ -1,7 +1,13 @@
-package main
+package ahipbot
 
 import "github.com/tkawachi/hipchat"
 import "strings"
+
+
+type BotReply struct {
+	To      string
+	Message string
+}
 
 type BotMessage struct {
 	*hipchat.Message

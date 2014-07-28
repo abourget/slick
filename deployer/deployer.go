@@ -1,4 +1,4 @@
-package main
+package deployer
 
 import (
 	"bufio"
@@ -11,34 +11,27 @@ import (
 	"regexp"
 	"strings"
 	"time"
+
+	"github.com/abourget/ahipbot"
 )
 
 type Deployer struct {
-	config     *PluginConfig
 	runningJob *DeployJob
 }
 
-type DeployJob struct {
-	process *os.Process
-	params  *DeployParams
-	quit    chan bool
-	kill    chan bool
-	killing bool
+var config = &ahipbot.PluginConfig{
+	EchoMessages: false,
+	OnlyMentions: true,
 }
 
-func NewDeployer(bot *Hipbot) *Deployer {
-	dep := new(Deployer)
-
-	dep.config = &PluginConfig{
-		EchoMessages: false,
-		OnlyMentions: true,
-	}
-
-	return dep
+func init() {
+	ahipbot.RegisterPlugin(func(bot *ahipbot.Hipbot) ahipbot.Plugin {
+		return &Deployer{}
+	})
 }
 
-func (dep *Deployer) Config() *PluginConfig {
-	return dep.config
+func (dep *Deployer) Config() *ahipbot.PluginConfig {
+	return config
 }
 
 /**
@@ -53,9 +46,17 @@ func (dep *Deployer) Config() *PluginConfig {
  *   deploy santa-claus to stage with tags: kaboom
  */
 
+type DeployJob struct {
+	process *os.Process
+	params  *DeployParams
+	quit    chan bool
+	kill    chan bool
+	killing bool
+}
+
 var deployFormat = regexp.MustCompile(`deploy( ([a-zA-Z0-9_\.-]+))? to ([a-z_-]+)((,| with)? tags?:? ?(.+))?`)
 
-func (dep *Deployer) Handle(bot *Hipbot, msg *BotMessage) {
+func (dep *Deployer) Handle(bot *ahipbot.Hipbot, msg *ahipbot.BotMessage) {
 	if match := deployFormat.FindStringSubmatch(msg.Body); match != nil {
 		if dep.runningJob != nil {
 			params := dep.runningJob.params
@@ -96,7 +97,7 @@ func (p *DeployParams) Tags() string {
 	return strings.Replace(p.tags, " ", "", -1)
 }
 
-func (dep *Deployer) handleDeploy(bot *Hipbot, msg *BotMessage, params *DeployParams) {
+func (dep *Deployer) handleDeploy(bot *ahipbot.Hipbot, msg *ahipbot.BotMessage, params *DeployParams) {
 	bot.Reply(msg, fmt.Sprintf("[process] Running deploy env=%s, branch=%s, tags=%s", params.environment, params.branch, params.Tags()))
 
 	cmdArgs := []string{"ansible-playbook", "-i", "hosts_vagrant", "playbook_vagrant.yml"}
@@ -142,7 +143,7 @@ func (dep *Deployer) manageKillProcess(pty *os.File) {
 	}
 }
 
-func manageDeployIo(bot *Hipbot, msg *BotMessage, reader io.Reader) {
+func manageDeployIo(bot *ahipbot.Hipbot, msg *ahipbot.BotMessage, reader io.Reader) {
 	scanner := bufio.NewScanner(reader)
 	for scanner.Scan() {
 		bot.Reply(msg, fmt.Sprintf("%s", scanner.Text()))

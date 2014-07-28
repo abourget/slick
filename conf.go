@@ -1,4 +1,4 @@
-package main
+package ahipbot
 
 import (
 	"errors"
@@ -6,11 +6,16 @@ import (
 )
 
 type HipchatConfig struct {
-	Username string
-	Password string
-	Nickname string
-	Mention  string
-	Rooms    []string
+	Username        string
+	Password        string
+	Nickname        string
+	Mention         string
+	Rooms           []string
+	HipchatApiToken string `json:"hipchat_api_token"`
+}
+
+type RedisConfig struct {
+	Host string
 }
 
 type Config struct {

@@ -1,4 +1,4 @@
-package main
+package ahipbot
 
 import (
 	"encoding/json"
@@ -58,7 +58,7 @@ func handleOAuth2Callback(w http.ResponseWriter, r *http.Request) {
 	}
 }
 
-func doOAuth2Roundtrip(w http.ResponseWriter, r *http.Request) (*UserProfile, error) {
+func doOAuth2Roundtrip(w http.ResponseWriter, r *http.Request) (*GoogleUserProfile, error) {
 	code := r.FormValue("code")
 
 	t, err := oauthCfg.NewTransportWithCode(code)
@@ -71,7 +71,7 @@ func doOAuth2Roundtrip(w http.ResponseWriter, r *http.Request) (*UserProfile, er
 	client := http.Client{Transport: t}
 	resp, err := client.Get(oauthProfileInfoURL)
 	if err != nil {
-		log.Fatal(err)
+		log.Fatal("Fatal error After OAuth2: ", err)
 	}
 
 	defer resp.Body.Close()
@@ -81,7 +81,7 @@ func doOAuth2Roundtrip(w http.ResponseWriter, r *http.Request) (*UserProfile, er
 		return nil, fmt.Errorf("Could not read data from Google APIs: %s", err)
 	}
 
-	var profile = UserProfile{}
+	var profile = GoogleUserProfile{}
 	err = json.Unmarshal(body, &profile)
 	if err != nil {
 		return nil, fmt.Errorf("Could not read data from Google APIs: %s", err)
@@ -103,13 +103,13 @@ func doOAuth2Roundtrip(w http.ResponseWriter, r *http.Request) (*UserProfile, er
 	return &profile, nil
 }
 
-func checkAuth(r *http.Request) (*UserProfile, error) {
+func checkAuth(r *http.Request) (*GoogleUserProfile, error) {
 	sess := getSession(r)
 	rawProfile, ok := sess.Values["profile"]
 	if ok == false {
 		return nil, fmt.Errorf("Not authenticated")
 	}
-	profile, ok := rawProfile.(*UserProfile)
+	profile, ok := rawProfile.(*GoogleUserProfile)
 	if ok == false {
 		return nil, fmt.Errorf("Profile data unreadable")
 	}

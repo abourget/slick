@@ -1,4 +1,4 @@
-package main
+package ahipbot
 
 import (
 	"github.com/gorilla/sessions"

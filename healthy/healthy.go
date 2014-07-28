@@ -1,48 +1,51 @@
-package main
+package healthy
 
 import (
 	"io/ioutil"
 	"log"
 	"net/http"
 	"strings"
+
+	"github.com/abourget/ahipbot"
 )
 
 // Config holders
 type HealthConfig struct {
-	HealthCheck HealthCheck
-}
-
-type HealthCheck struct {
 	Urls []string
 }
 
 // Hipbot Plugin
 type Healthy struct {
 	urls   []string
-	config *PluginConfig
+	config *ahipbot.PluginConfig
 }
 
-func NewHealthy(bot *Hipbot) *Healthy {
-	healthy := new(Healthy)
+func init() {
+	ahipbot.RegisterPlugin(func(bot *ahipbot.Hipbot) ahipbot.Plugin {
+		healthy := &Healthy{
+			config: &ahipbot.PluginConfig{
+				EchoMessages: false,
+				OnlyMentions: true,
+			},
+		}
 
-	var conf HealthConfig
-	bot.LoadConfig(&conf)
-	healthy.urls = conf.HealthCheck.Urls
+		var conf struct {
+			HealthCheck HealthConfig
+		}
+		bot.LoadConfig(&conf)
 
-	healthy.config = &PluginConfig{
-		EchoMessages: false,
-		OnlyMentions: true,
-	}
-	return healthy
+		healthy.urls = conf.HealthCheck.Urls
+		return healthy
+	})
 }
 
 // Configuration
-func (healthy *Healthy) Config() *PluginConfig {
+func (healthy *Healthy) Config() *ahipbot.PluginConfig {
 	return healthy.config
 }
 
 // Handler
-func (healthy *Healthy) Handle(bot *Hipbot, msg *BotMessage) {
+func (healthy *Healthy) Handle(bot *ahipbot.Hipbot, msg *ahipbot.BotMessage) {
 	if msg.ContainsAny([]string{"health", "healthy?", "health_check"}) {
 		log.Println("Health check. Requested by", msg.From)
 		bot.Reply(msg, healthy.CheckAll())

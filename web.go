@@ -1,4 +1,4 @@
-package main
+package ahipbot
 
 import (
 	"fmt"
@@ -17,13 +17,11 @@ import (
 	"github.com/gorilla/sessions"
 )
 
+var web *Webapp
+
 type Webapp struct {
 	config *WebappConfig
 	store  *sessions.CookieStore
-}
-
-type WebappConfigSection struct {
-	Webapp WebappConfig
 }
 
 type WebappConfig struct {
@@ -32,11 +30,15 @@ type WebappConfig struct {
 	RestrictDomain    string `json:"restrict_domain"`
 	SessionAuthKey    string `json:"session_auth_key"`
 	SessionEncryptKey string `json:"session_encrypt_key"`
-	HipchatApiToken   string `json:"hipchat_api_token"`
 }
 
-func launchWebapp() {
-	var conf WebappConfigSection
+var bot *Hipbot
+
+func LaunchWebapp(b *Hipbot) {
+	bot = b
+	var conf struct {
+		Webapp WebappConfig
+	}
 	bot.LoadConfig(&conf)
 
 	web = &Webapp{
@@ -116,11 +118,11 @@ func getRootTemplate() (*template.Template, error) {
 
 // Send a notification through Hipchat
 func handleNotif(w http.ResponseWriter, r *http.Request) {
-	hipchatv2.SendNotification(web.config.HipchatApiToken, "DevOps", "gray", "text", "Hey that's great!", false)
+	hipchatv2.SendNotification(bot.config.HipchatApiToken, "DevOps", "gray", "text", "Hey that's great!", false)
 }
 
 func handleGetUsers(w http.ResponseWriter, r *http.Request) {
-	users, err := hipchatv2.GetUsers(web.config.HipchatApiToken)
+	users, err := hipchatv2.GetUsers(bot.config.HipchatApiToken)
 	if err != nil {
 		w.WriteHeader(http.StatusInternalServerError)
 		w.Write([]byte("Error fetching users\n"))
