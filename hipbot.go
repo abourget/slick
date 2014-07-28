@@ -23,12 +23,14 @@ type Hipbot struct {
 	client     *hipchat.Client
 	plugins    []Plugin
 	replySink  chan *BotReply
+	stormMode  bool
 }
 
 func NewHipbot(configFile string) *Hipbot {
 	bot := &Hipbot{}
 	bot.replySink = make(chan *BotReply)
 	bot.configFile = configFile
+	bot.stormMode = false
 	return bot
 }
 
