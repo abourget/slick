@@ -117,6 +117,7 @@ func (bot *Hipbot) registerPlugins() {
 	plugins = append(plugins, NewHealthy(bot))
 	plugins = append(plugins, NewFunny(bot))
 	plugins = append(plugins, NewDeployer(bot))
+	plugins = append(plugins, NewStorm(bot))
 	bot.plugins = plugins
 }
 
