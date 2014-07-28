@@ -4,11 +4,11 @@ import (
 	"flag"
 	"log"
 	"time"
+	"github.com/bpostlethwaite/ahipbot/asana"
 )
 
 var bot *Hipbot
 var web *Webapp
-var asana *Asana
 
 func main() {
 	flag.Parse()
@@ -17,11 +17,17 @@ func main() {
 	// TODO: make this a goroutine to run the bot also
 	go launchWebapp()
 
-	go launchAsana()
 
 	bot.loadBaseConfig()
 	bot.registerPlugins()
 
+	asanaClient, err := asana.NewClient(
+		"", "")
+	if err != nil {
+		log.Println("ASANA - Failed: ", err)
+	}
+
+	go StormWatch(asanaClient)
 
 	for {
 		log.Println("Connecting client...")
