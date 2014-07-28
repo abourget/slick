@@ -6,7 +6,7 @@ import (
 	"log"
 	"net/http"
 	"github.com/GeertJohan/go.rice"
-	"github.com/abourget/ahipbot/hipchatv2"
+	"github.com/BRONSOLO/ahipbot/hipchatv2"
 	"github.com/codegangsta/negroni"
 	"github.com/golang/oauth2"
 	"github.com/gorilla/context"
@@ -114,11 +114,12 @@ func getRootTemplate() (*template.Template, error) {
 // Send a notification through Hipchat
 func handleNotif(w http.ResponseWriter, r *http.Request) {
 	log.Println("NOTIF")
-	hipchatv2.SendNotification(web.config.HipchatApiToken, "DevOps", "gray", "text", "I AM THE EGG MAN!", false)
+	log.Println(web.config.HipchatApiToken)
+	hipchatv2.SendNotification(web.config.HipchatApiToken, "DJSess", "green", "text", "BOOM!", true)
 }
 
 
 // Send a notification through Hipchat
 func handleStorm(w http.ResponseWriter, r *http.Request) {
-	bot.Storm("123823_devops")
+	bot.Storm("123823_djsess")
 }

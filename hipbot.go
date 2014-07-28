@@ -1,14 +1,14 @@
 package main
 
 import (
-	"encoding/json"
-	"flag"
-	"github.com/tkawachi/hipchat"
-	"io/ioutil"
-	"log"
-	"os"
-	"strings"
-	"time"
+"encoding/json"
+"flag"
+"github.com/tkawachi/hipchat"
+"io/ioutil"
+"log"
+"os"
+"strings"
+"time"
 )
 
 var configFile = flag.String("config", os.Getenv("HOME")+"/.hipbot", "config file")
@@ -23,12 +23,15 @@ type Hipbot struct {
 	client     *hipchat.Client
 	plugins    []Plugin
 	replySink  chan *BotReply
+	stormMode   bool 
 }
 
 func NewHipbot(configFile string) *Hipbot {
 	bot := &Hipbot{}
 	bot.replySink = make(chan *BotReply)
 	bot.configFile = configFile
+	bot.isStorm = false
+	bot.hasStormed = false 
 	return bot
 }
 
@@ -37,26 +40,7 @@ func (bot *Hipbot) Reply(msg *BotMessage, reply string) {
 	bot.replySink <- msg.Reply(reply)
 }
 
-func (bot *Hipbot) Storm(room string) {
-	log.Println("STORMING!")
-	gif := "http://8tracks.imgix.net/i/002/361/684/astronaut-3818.gif"
-	// msg += "\n STORMED"
-	if !strings.Contains(room, "@") {
-		room = room + "@" + ConfDomain
-	}
-	reply := &BotReply{
-		To: room,
-		Message: gif,
-	}
-	bot.replySink <- reply
 
-	msg := "Stormed!"
-	reply = &BotReply{
-		To: room,
-		Message: msg,
-	}
-	bot.replySink <- reply
-}
 
 func (bot *Hipbot) connectClient() (err error) {
 	bot.client, err = hipchat.NewClient(
@@ -74,6 +58,7 @@ func (bot *Hipbot) connectClient() (err error) {
 
 	return
 }
+
 
 func (bot *Hipbot) setupHandlers() chan bool {
 	bot.client.Status("chat")
@@ -115,8 +100,10 @@ func (bot *Hipbot) registerPlugins() {
 	plugins = append(plugins, NewHealthy(bot))
 	plugins = append(plugins, NewFunny(bot))
 	plugins = append(plugins, NewDeployer(bot))
+	plugins = append(plugins, NewStorm(bot))
 	bot.plugins = plugins
 }
+
 
 func (bot *Hipbot) replyHandler(disconnect chan bool) {
 	for {
@@ -137,6 +124,7 @@ func (bot *Hipbot) messageHandler(disconnect chan bool) {
 		log.Println("MESSAGE", msg)
 
 		atMention := "@" + bot.config.Mention
+		log.Printf(atMention)
 		if strings.Contains(msg.Body, atMention) || strings.HasPrefix(msg.Body, bot.config.Mention) {
 			botMsg.BotMentioned = true
 			log.Printf("Message to me from %s: %s\n", msg.From, msg.Body)
@@ -155,6 +143,7 @@ func (bot *Hipbot) messageHandler(disconnect chan bool) {
 				continue
 			}
 
+			if botMsg.BotMentioned{log.Printf("bot mentioned")}
 			go func(p Plugin) { p.Handle(bot, botMsg) }(p)
 		}
 	}

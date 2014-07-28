@@ -40,12 +40,16 @@ var forcePushes = []string{
 
 // Handler
 func (funny *Funny) Handle(bot *Hipbot, msg *BotMessage) {
+
 	if msg.BotMentioned {
+
 		if msg.ContainsAny([]string{"excitement", "exciting"}) {
 			bot.Reply(msg, "http://static.fjcdn.com/gifs/Japanese+kids+spongebob+toys_0ad21b_3186721.gif")
 		}
 		return
 	}
+
+	//bot.Reply(msg,"hello")
 
 	// Anywhere
 	if msg.ContainsAny([]string{"what is your problem", "what's your problem"}) {
