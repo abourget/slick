@@ -184,13 +184,9 @@ func (storm *Storm) startStorm(task asana.Task) {
 	bot.SendToRoom(room, "/me sees a storm getting near")
 	go func() {
 		time.Sleep(5 * time.Second)
-		bot.SendToRoom(room, "Ahh here it is!")
+		bot.SendToRoom(room, "A storm is upon us! Who will step up and take it on ?")
 		bot.SendToRoom(room, ahipbot.RandomString("storm"))
 		bot.SendToRoom(room, fmt.Sprintf("Take it at this address: %s", storm.stormLink))
-	}()
-	go func() {
-		time.Sleep(10 * time.Second)
-		bot.SendToRoom(room, "A storm is upon us! Who will step up and become the storm taker?!")
 	}()
 
 	writeTask(taskId)
