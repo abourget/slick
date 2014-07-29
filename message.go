@@ -11,7 +11,6 @@ type BotReply struct {
 
 type BotMessage struct {
 	*hipchat.Message
-
 	BotMentioned bool
 }
 

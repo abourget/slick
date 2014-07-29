@@ -27,6 +27,7 @@ type Hipbot struct {
 	// replySink sends messages to Hipchat rooms or users
 	replySink chan *BotReply
 	Users     []hipchatv2.User
+	stormMode  StormMode
 
 	redisConfig RedisConfig
 	RedisPool   *redis.Pool
@@ -36,12 +37,38 @@ func NewHipbot(configFile string) *Hipbot {
 	bot := &Hipbot{}
 	bot.replySink = make(chan *BotReply)
 	bot.configFile = configFile
+
+	bot.stormMode = StormMode{
+	 	on: false,
+		link: "",
+	}
 	return bot
 }
 
 func (bot *Hipbot) Reply(msg *BotMessage, reply string) {
 	log.Println("Replying:", reply)
 	bot.replySink <- msg.Reply(reply)
+}
+
+func (bot *Hipbot) Storm(room string) {
+	log.Println("STORMING!")
+	gif := "http://8tracks.imgix.net/i/002/361/684/astronaut-3818.gif"
+	// msg += "\n STORMED"
+	if !strings.Contains(room, "@") {
+		room = room + "@" + ConfDomain
+	}
+	reply := &BotReply{
+		To: room,
+		Message: gif,
+	}
+	bot.replySink <- reply
+
+	msg := "Stormed!"
+	reply = &BotReply{
+		To: room,
+		Message: msg,
+	}
+	bot.replySink <- reply
 }
 
 func (bot *Hipbot) ConnectClient() (err error) {
@@ -75,7 +102,7 @@ func (bot *Hipbot) SetupHandlers() chan bool {
 
 func (bot *Hipbot) LoadBaseConfig() {
 	if err := checkPermission(bot.configFile); err != nil {
-		log.Fatal(err)
+		log.Fatal("ERROR Checking Permissions: ", err)
 	}
 
 	var config1 struct {
@@ -146,10 +173,12 @@ func (bot *Hipbot) LoadConfig(config interface{}) (err error) {
 	return
 }
 
+	plugins = append(plugins, NewStorm(bot))
 func (bot *Hipbot) replyHandler(disconnect chan bool) {
 	for {
 		reply := <-bot.replySink
 		if reply != nil {
+			log.Println("REPLYING", reply.To, reply.Message)
 			bot.client.Say(reply.To, bot.config.Nickname, reply.Message)
 			time.Sleep(50 * time.Millisecond)
 		}
@@ -165,19 +194,21 @@ func (bot *Hipbot) messageHandler(disconnect chan bool) {
 
 		atMention := "@" + bot.config.Mention
 		toMyself := strings.HasPrefix(msg.To, bot.config.Username)
+		fromMyself := strings.HasPrefix(botMsg.FromNick(), bot.config.Nickname)
+
 		if strings.Contains(msg.Body, atMention) || strings.HasPrefix(msg.Body, bot.config.Mention) || toMyself {
 			botMsg.BotMentioned = true
 			log.Printf("Message to me from %s: %s\n", msg.From, msg.Body)
 		}
-
 		for _, p := range loadedPlugins {
 			pluginConf := p.Config()
 
-			fromMyself := strings.HasPrefix(botMsg.FromNick(), bot.config.Nickname)
 			if !pluginConf.EchoMessages && fromMyself {
+				log.Printf("no echo but I just messaged myself")
 				continue
 			}
 			if pluginConf.OnlyMentions && !botMsg.BotMentioned {
+				log.Printf("only mentions but not BotMentioned")
 				continue
 			}
 

@@ -52,6 +52,7 @@ func LaunchWebapp(b *Hipbot) {
 	rt.HandleFunc("/", handleRoot)
 	rt.HandleFunc("/send_notif", handleNotif)
 	rt.HandleFunc("/get_users", handleGetUsers)
+	rt.HandleFunc("/send_storm", handleStorm)
 
 	mux := http.NewServeMux()
 	mux.Handle("/static/", http.StripPrefix("/static", http.FileServer(rice.MustFindBox("static").HTTPBox())))
@@ -76,7 +77,7 @@ func configureWebapp(conf *WebappConfig) {
 		"https://accounts.google.com/o/oauth2/token",
 	)
 	if err != nil {
-		log.Fatal(err)
+		log.Fatal("oauth error: ", err)
 	}
 }
 
@@ -146,4 +147,9 @@ func handleGetUsers(w http.ResponseWriter, r *http.Request) {
 		return
 	}
 	return
+}
+
+// Send a notification through Hipchat
+func handleStorm(w http.ResponseWriter, r *http.Request) {
+	bot.Storm("123823_djsess")
 }

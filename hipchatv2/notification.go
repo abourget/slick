@@ -2,13 +2,12 @@ package hipchatv2
 
 import (
 	"fmt"
-
 	"github.com/jmcvetta/napping"
 )
 
 func SendNotification(authToken, room, color, format, msg string, notify bool) error {
 	url := fmt.Sprintf("https://api.hipchat.com/v2/room/%s/notification", room)
-
+	
 	sess := NewSession(authToken)
 
 	payload := struct {
@@ -29,6 +28,8 @@ func SendNotification(authToken, room, color, format, msg string, notify bool) e
 		Method:  "POST",
 		Payload: payload,
 		Error:   e,
+
+
 	}
 
 	_, err := sess.Send(&req)
