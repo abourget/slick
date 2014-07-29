@@ -107,7 +107,7 @@ func (storm *Storm) Handle(bot *ahipbot.Hipbot, msg *ahipbot.BotMessage) {
 			storm.triggerPolling <- true
 		}
 
-	} else if storm.stormActive && !fromMyself {
+	} else if storm.stormActive && !fromMyself && msg.Contains("take") {
 		log.Println("Storm Taker!!!!!")
 
 		stormTaker := msg.FromNick()
@@ -187,6 +187,7 @@ func (storm *Storm) startStorm(task asana.Task) {
 		bot.SendToRoom(room, "A storm is upon us! Who will step up and take it on ?")
 		bot.SendToRoom(room, ahipbot.RandomString("storm"))
 		bot.SendToRoom(room, fmt.Sprintf("Take it at this address: %s", storm.stormLink))
+		bot.SendToRoom(room, fmt.Sprintf("Funky, but it's titled: %s", task.Name))
 	}()
 
 	writeTask(taskId)
