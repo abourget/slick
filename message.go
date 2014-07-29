@@ -5,7 +5,6 @@ import "strings"
 
 type BotMessage struct {
 	*hipchat.Message
-
 	BotMentioned bool
 }
 

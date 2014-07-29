@@ -2,7 +2,6 @@ package asana
 
 import (
 	"encoding/json"
-	"log"
 	"net/http"
 	"io/ioutil"
 	"fmt"
@@ -42,14 +41,10 @@ func (asana *AsanaClient) SetWorkspace (workspace string) {
 
 func (asana *AsanaClient) request(method string, uri string) ([]byte, error) {
 
-	log.Println("ASANA REQ", uri)
-
 	req, err := http.NewRequest(method, uri, nil)
 	if err != nil {
 		return nil, fmt.Errorf("Cannot create request %s %s", method, uri, err)
 	}
-	log.Println(asana.key)
-
 	req.SetBasicAuth(asana.key, "")
 
 	res, err := asana.client.Do(req)

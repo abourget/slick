@@ -1,23 +1,34 @@
 package main
 
 import (
-"math/rand"
-"time"
+	"time"
+	"log"
+	"strings"
 )
 
 type Storm struct {
-	reminderCycle time.Duration 
-	config *PluginConfig
+	reminderCycle time.Duration
+	config        *PluginConfig
 }
 
-var lastStorm =  time.Now().UTC(); 
+type StormMode struct {
+	on    bool
+	link  string
+}
+
+var lastStorm = time.Now().UTC()
+var stormTakerMsg = "IS THE STORM TAKER! \n" +
+	"Go forth and summon the engineering powers of the team and transform " +
+	"these requirements into tasks. If the requirements are incomplete or " +
+	"confusing, it is your duty Storm Taker, yours alone, to remedy this. Good luck"
+var stormMsg = "A storm is upon us! Who will step up and become the storm taker?!"
 
 func NewStorm(bot *Hipbot) *Storm {
 	storm := new(Storm)
-	storm.reminderCycle = 5*time.Minute//time (s) between storms 
+	storm.reminderCycle = time.Second   //time (s) between storms
 	storm.config = &PluginConfig{
-		EchoMessages: false,
-		OnlyMentions: true,
+		EchoMessages: true,
+		OnlyMentions: false,
 	}
 	return storm
 }
@@ -29,73 +40,57 @@ func (storm *Storm) Config() *PluginConfig {
 
 // Handler
 func (storm *Storm) Handle(bot *Hipbot, msg *BotMessage) {
-	
-	//check for stormmode 
-	if bot.stormMode{
 
-		// check to see if someone killed the storm 
-		killed := (msg.BotMentioned && msg.ContainsAny([]string{"got it", "ENOUGH!"})
+	//check for stormmode
 
-		if (killed){		
+	fromMyself := strings.HasPrefix(msg.FromNick(), bot.config.Nickname)
+	room := "123823_devops"
 
-			log.Println("STORM KILLED!")
-			gif := "http://38.media.tumblr.com/6aa84eb94b29716d630162a4f737a73d/tumblr_mxnrmbwf7c1s7jx17o1_400.gif"
+	if msg.Contains("preparing storm") && fromMyself {
+		// send first storms!
+		bot.stormMode.on = true
 
-			if !strings.Contains(room, "@") {
-				room = room + "@" + ConfDomain
-			}
+		log.Println(bot.stormMode)
 
-			reply := &BotReply{
-				To: room,
-				Message: gif,
-			}
+		sendStorm(room, RandomGIF("storm"))
+		sendStorm(room, bot.stormMode.link)
+		sendStorm(room, stormMsg)
 
-			bot.replySink <- reply
+	} else if bot.stormMode.on && !fromMyself {
+		// storm taker!
+		log.Println("Storm Taker!!!!!")
 
-			msg := "STORM KILLED!"
+		stormTaker := msg.FromNick()
+		stormTakerMsg = stormTaker + " " + stormTakerMsg
+		bot.stormMode.on = false
 
-			reply = &BotReply{
-				To: room,
-				Message: msg,
-			}
-
-			bot.replySink <- reply	
-
-		}else{
-
-					//check to see if enough time has passed since the last storm 
-		if time.Since(lastStorm) > storm.reminderCycle
-		{
-
-			log.Println("STORMING!")
-			gif := "http://8tracks.imgix.net/i/002/361/684/astronaut-3818.gif"
-
-			if !strings.Contains(room, "@") {
-				room = room + "@" + ConfDomain
-			}
-
-			reply := &BotReply{
-				To: room,
-				Message: gif,
-			}
-
-			bot.replySink <- reply
-
-			msg := "Stormed!"
-			reply = &BotReply{
-				To: room,
-				Message: msg,
-			}
-
-			bot.replySink <- reply
-		}
-
-		//update laststorm 
-		lastStorm = time.Now().UTC(); 
-
-		}
+		sendStorm(room, RandomGIF("herpderp"))
+		sendStorm(room, stormTakerMsg)
 
 	}
+	// else if time.Since(lastStorm) > storm.reminderCycle {
+
+
+	// 	//update laststorm
+	// 	lastStorm = time.Now().UTC();
+	// }
+
+	return
 }
 
 
+func sendStorm(room string, message string) {
+
+	if !strings.Contains(room, "@") {
+		room = room + "@" + ConfDomain
+	}
+
+	reply := &BotReply{
+		To: room,
+		Message: message,
+	}
+
+	bot.replySink <- reply
+
+	return
+}

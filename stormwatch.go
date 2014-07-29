@@ -2,7 +2,6 @@ package main
 
 import (
 	"time"
-	"fmt"
 	"log"
 	"github.com/bpostlethwaite/ahipbot/asana"
 	"io/ioutil"
@@ -13,9 +12,10 @@ import (
 
 
 var stormTaskFile = "seenStormTasks.txt"
+var asanaLink = "https://app.asana.com/0/7221799638526/"
 
 func StormWatch(asanaClient *asana.AsanaClient) {
-
+	room := "123823_devops@conf.hipchat.com"
 	stormId := "15014460778242"
 	var stormedTasks []string
 	var tasks []asana.Task
@@ -24,11 +24,12 @@ func StormWatch(asanaClient *asana.AsanaClient) {
 	var taskId string
 	for {
 
-		if bot.stormMode {
-			return
+		if bot.stormMode.on {
+			time.Sleep(5 * time.Second)
+			continue
 		}
-		stormedTasks, err = readTasks()
 
+		stormedTasks, err = readTasks()
 
 		tasks, err = asanaClient.GetTasksByTag(stormId)
 		if err != nil {
@@ -40,14 +41,16 @@ func StormWatch(asanaClient *asana.AsanaClient) {
 			taskAlreadyStormed = stringInSlice(taskId, stormedTasks)
 
 			if !taskAlreadyStormed {
-				bot.stormMode = true
+				log.Println("STORM TAG DETECTED")
+				bot.stormMode.link = asanaLink + taskId
+				bot.stormMode.on = true
+				bot.client.Say(room, bot.config.Nickname, "preparing storm")
 				writeTask(taskId)
 				break
 			}
 
 		}
 
-		time.Sleep(5 * time.Second)
 	}
 
 }
@@ -65,8 +68,6 @@ func readTasks() (stormedTasks []string, err error) {
 		stormedTasks[idx] = strings.TrimSpace(task)
 	}
 
-
-	fmt.Println(stormedTasks)
 	return stormedTasks, nil
 }
 
@@ -89,7 +90,6 @@ func writeTask(taskId string) error {
 
 func stringInSlice(a string, list []string) bool {
 	for _, b := range list {
-		fmt.Println(a, b)
 		if b == a {
 			return true
 		}

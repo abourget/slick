@@ -25,8 +25,7 @@ angular.module('hey', ['ui.router.state', 'ui.router', 'ngResource'])
 
 .service( 'gobot', function ($resource) {
     return $resource('/', {}, {
-        'notify': { method: 'post', url: '/send_notif'},
-        'storm': { method: 'post', url: '/send_storm'}
+        'notify': { method: 'post', url: '/send_notif'}
     });
 })
 

@@ -6,7 +6,7 @@ import (
 	"log"
 	"net/http"
 	"github.com/GeertJohan/go.rice"
-	"github.com/BRONSOLO/ahipbot/hipchatv2"
+	"github.com/bpostlethwaite/ahipbot/hipchatv2"
 	"github.com/codegangsta/negroni"
 	"github.com/golang/oauth2"
 	"github.com/gorilla/context"

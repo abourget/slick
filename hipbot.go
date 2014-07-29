@@ -23,14 +23,18 @@ type Hipbot struct {
 	client     *hipchat.Client
 	plugins    []Plugin
 	replySink  chan *BotReply
-	stormMode  bool
+	stormMode  StormMode
 }
 
 func NewHipbot(configFile string) *Hipbot {
 	bot := &Hipbot{}
 	bot.replySink = make(chan *BotReply)
 	bot.configFile = configFile
-	bot.stormMode = false
+
+	bot.stormMode = StormMode{
+	 	on: false,
+		link: "",
+	}
 	return bot
 }
 
@@ -137,18 +141,20 @@ func (bot *Hipbot) messageHandler(disconnect chan bool) {
 	for {
 		msg := <-msgs
 		botMsg := &BotMessage{Message: msg}
+
 		log.Println("MESSAGE", msg)
 
 		atMention := "@" + bot.config.Mention
+
+		fromMyself := strings.HasPrefix(botMsg.FromNick(), bot.config.Nickname)
+
 		if strings.Contains(msg.Body, atMention) || strings.HasPrefix(msg.Body, bot.config.Mention) {
 			botMsg.BotMentioned = true
 			log.Printf("Message to me from %s: %s\n", msg.From, msg.Body)
 		}
-
 		for _, p := range bot.plugins {
 			pluginConf := p.Config()
 
-			fromMyself := strings.HasPrefix(botMsg.FromNick(), bot.config.Nickname)
 			if !pluginConf.EchoMessages && fromMyself {
 				log.Printf("no echo but I just messaged myself")
 				continue
