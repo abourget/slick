@@ -1,6 +1,7 @@
 package storm
 
 import (
+	"fmt"
 	"log"
 	"strconv"
 	"strings"
@@ -56,7 +57,7 @@ func init() {
 			"http://i.imgur.com/SNLbnO8.gif?1",
 		})
 
-		go storm.StormWatch()
+		go storm.launchWatcher()
 
 		return storm
 	})
@@ -72,7 +73,6 @@ var stormTakerMsg = "IS THE STORM TAKER! \n" +
 	"Go forth and summon the engineering powers of the team and transform " +
 	"these requirements into tasks. If the requirements are incomplete or " +
 	"confusing, it is your duty Storm Taker, yours alone, to remedy this. Good luck"
-var stormMsg = "A storm is upon us! Who will step up and become the storm taker?!"
 
 // Configuration
 var config = &ahipbot.PluginConfig{
@@ -98,17 +98,16 @@ func (storm *Storm) Handle(bot *ahipbot.Hipbot, msg *ahipbot.BotMessage) {
 
 		log.Println(storm.stormActive)
 
-		bot.SendToRoom(room, ahipbot.RandomString("storm"))
-		bot.SendToRoom(room, storm.stormLink)
-		bot.SendToRoom(room, stormMsg)
-
 	} else if msg.BotMentioned && msg.Contains("stormy day") {
 
-		bot.Reply(msg, "You'll know it soon enough")
-		storm.triggerPolling <- true
+		if storm.stormActive {
+			bot.Reply(msg, "We're in the middle of a storm, can't you feel it ?")
+		} else {
+			bot.Reply(msg, "You'll know it soon enough")
+			storm.triggerPolling <- true
+		}
 
 	} else if storm.stormActive && !fromMyself {
-		// storm taker!
 		log.Println("Storm Taker!!!!!")
 
 		stormTaker := msg.FromNick()
@@ -118,6 +117,9 @@ func (storm *Storm) Handle(bot *ahipbot.Hipbot, msg *ahipbot.BotMessage) {
 		bot.SendToRoom(room, ahipbot.RandomString("forcePush"))
 		bot.SendToRoom(room, stormTakerMsg)
 
+	} else if storm.stormActive && msg.Contains("ENOUGH") {
+		storm.stormActive = false
+		bot.Reply(msg, "ok, ok !")
 	}
 	// else if time.Since(lastStorm) > storm.timeBetweenStorms {
 
@@ -128,53 +130,68 @@ func (storm *Storm) Handle(bot *ahipbot.Hipbot, msg *ahipbot.BotMessage) {
 	return
 }
 
-func (storm *Storm) Storm() {
+func (storm *Storm) StormNotifWhatever() {
 	log.Println("STORMING!")
 	storm.bot.SendToRoom(storm.config.HipchatRoom, "http://8tracks.imgix.net/i/002/361/684/astronaut-3818.gif")
 }
 
-func (storm *Storm) launchWathcer() {
+func (storm *Storm) launchWatcher() {
 	for {
-		timeout := time.After(15 * time.Second)
+		timeout := time.After(60 * time.Second)
 		select {
 		case <-timeout:
 		case <-storm.triggerPolling:
 		}
+
+		storm.pollAsana()
 	}
 }
 
-func (storm *Storm) StormWatch() {
-	room := storm.config.HipchatRoom
+func (storm *Storm) pollAsana() {
 	stormTagId := storm.config.StormTagId
 
-	for {
-		if storm.stormActive {
-			time.Sleep(5 * time.Second)
-			continue
-		}
-
-		stormedTasks := readTasks()
-
-		tasks, err := storm.asanaClient.GetTasksByTag(stormTagId)
-		if err != nil {
-			log.Println("Storm: Error fetching tasks by tag: ", err)
-		}
-
-		for _, task := range tasks {
-			taskId := strconv.FormatInt(task.Id, 10)
-			taskAlreadyStormed := stringInSlice(taskId, stormedTasks)
-
-			if !taskAlreadyStormed {
-				log.Println("NEW STORM TAG DETECTED")
-				storm.stormLink = asanaLink + taskId
-				storm.stormActive = true
-				storm.bot.SendToRoom(room, "prepraing storm..")
-				writeTask(taskId)
-				break
-			}
-
-		}
-
+	if storm.stormActive {
+		time.Sleep(5 * time.Second)
+		return
 	}
 
+	stormedTasks := readTasks()
+
+	tasks, err := storm.asanaClient.GetTasksByTag(stormTagId)
+	if err != nil {
+		log.Println("Storm: Error fetching tasks by tag: ", err)
+	}
+
+	for _, task := range tasks {
+		taskId := strconv.FormatInt(task.Id, 10)
+		taskAlreadyStormed := stringInSlice(taskId, stormedTasks)
+
+		if !taskAlreadyStormed {
+			log.Println("NEW STORM TAG DETECTED")
+			storm.startStorm(task)
+			return
+		}
+	}
+}
+
+func (storm *Storm) startStorm(task asana.Task) {
+	room := storm.config.HipchatRoom
+	taskId := strconv.FormatInt(task.Id, 10)
+
+	storm.stormLink = asanaLink + taskId
+	storm.stormActive = true
+	bot := storm.bot
+	bot.SendToRoom(room, "/me sees a storm getting near")
+	go func() {
+		time.Sleep(5 * time.Second)
+		bot.SendToRoom(room, "Ahh here it is!")
+		bot.SendToRoom(room, ahipbot.RandomString("storm"))
+		bot.SendToRoom(room, fmt.Sprintf("Take it at this address: %s", storm.stormLink))
+	}()
+	go func() {
+		time.Sleep(10 * time.Second)
+		bot.SendToRoom(room, "A storm is upon us! Who will step up and become the storm taker?!")
+	}()
+
+	writeTask(taskId)
 }
