@@ -2,17 +2,16 @@ package asana
 
 import (
 	"encoding/json"
-	"net/http"
-	"io/ioutil"
 	"fmt"
+	"io/ioutil"
+	"net/http"
 )
 
-type AsanaClient struct {
-	client *http.Client
-	workspace string
-	key       string
+type Client struct {
+	httpClient *http.Client
+	workspace  string
+	key        string
 }
-
 
 type Task struct {
 	Id   int64
@@ -23,23 +22,19 @@ type taskData struct {
 	Data []Task
 }
 
-
-func NewClient(key, workspace string) (*AsanaClient, error) {
-
-	asana := &AsanaClient{
-		workspace: workspace,
-		key: key,
-		client: &http.Client{},
+func NewClient(key, workspace string) *Client {
+	return &Client{
+		workspace:  workspace,
+		key:        key,
+		httpClient: &http.Client{},
 	}
-
-	return asana, nil
 }
 
-func (asana *AsanaClient) SetWorkspace (workspace string) {
+func (asana *Client) SetWorkspace(workspace string) {
 	asana.workspace = workspace
 }
 
-func (asana *AsanaClient) request(method string, uri string) ([]byte, error) {
+func (asana *Client) request(method string, uri string) ([]byte, error) {
 
 	req, err := http.NewRequest(method, uri, nil)
 	if err != nil {
@@ -47,7 +42,7 @@ func (asana *AsanaClient) request(method string, uri string) ([]byte, error) {
 	}
 	req.SetBasicAuth(asana.key, "")
 
-	res, err := asana.client.Do(req)
+	res, err := asana.httpClient.Do(req)
 	if err != nil {
 		return nil, fmt.Errorf("Asana request error %s %s %s", method, uri, err)
 	}
@@ -60,8 +55,7 @@ func (asana *AsanaClient) request(method string, uri string) ([]byte, error) {
 	return body, nil
 }
 
-
-func (asana *AsanaClient) GetTasksByAssignee(userId string) ([]Task, error) {
+func (asana *Client) GetTasksByAssignee(userId string) ([]Task, error) {
 	td := taskData{}
 	workspace := asana.workspace
 
@@ -79,8 +73,7 @@ func (asana *AsanaClient) GetTasksByAssignee(userId string) ([]Task, error) {
 	return td.Data, err
 }
 
-
-func (asana *AsanaClient) GetTasksByTag(tagId string) ([]Task, error) {
+func (asana *Client) GetTasksByTag(tagId string) ([]Task, error) {
 	td := taskData{}
 
 	url := fmt.Sprintf("https://app.asana.com/api/1.0/tags/%s/tasks",

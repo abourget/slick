@@ -7,13 +7,11 @@
     "rooms": [
       "000000_devops"
     ],
-    "hipchat_api_token": "123123123",
-    "_commented_rooms": [
-      "000000_engineering",
-    ]
+    "hipchat_api_token": "123123123"
   },
 
-  "other_section": {
+  "Redis": {
+    "host": "localhost:6379"
   },
 
   "HealthCheck": {
@@ -29,5 +27,12 @@
     "restrict_domain": "hosted-domain.example.com",
     "session_auth_key": "12312312312312312312312312312312",
     "session_encrypt_key": "12345678902345678901234567890123"
+  },
+
+  "Storm": {
+    "asana_api_key": "12387218........................",
+    "asana_workspace": "629237.......",
+    "hipchat_room": "000000_devops",
+    "storm_tag_id": "15014........."
   }
 }

@@ -12,6 +12,7 @@ import (
 	_ "github.com/abourget/ahipbot/funny"
 	_ "github.com/abourget/ahipbot/healthy"
 	_ "github.com/abourget/ahipbot/standup"
+	_ "github.com/abourget/ahipbot/storm"
 )
 
 var configFile = flag.String("config", os.Getenv("HOME")+"/.hipbot", "config file")

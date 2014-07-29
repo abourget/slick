@@ -51,8 +51,8 @@ func LaunchWebapp(b *Hipbot) {
 	rt := mux.NewRouter()
 	rt.HandleFunc("/", handleRoot)
 	rt.HandleFunc("/send_notif", handleNotif)
-	rt.HandleFunc("/get_users", handleGetUsers)
-	rt.HandleFunc("/send_storm", handleStorm)
+	rt.HandleFunc("/hipchat/users", handleGetUsers)
+	rt.HandleFunc("/hipchat/rooms", handleGetRooms)
 
 	mux := http.NewServeMux()
 	mux.Handle("/static/", http.StripPrefix("/static", http.FileServer(rice.MustFindBox("static").HTTPBox())))
@@ -119,15 +119,13 @@ func getRootTemplate() (*template.Template, error) {
 
 // Send a notification through Hipchat
 func handleNotif(w http.ResponseWriter, r *http.Request) {
-	hipchatv2.SendNotification(bot.config.HipchatApiToken, "DevOps", "gray", "text", "Hey that's great!", false)
+	hipchatv2.SendNotification(bot.Config.HipchatApiToken, "DevOps", "gray", "text", "Hey that's great!", false)
 }
 
 func handleGetUsers(w http.ResponseWriter, r *http.Request) {
-	users, err := hipchatv2.GetUsers(bot.config.HipchatApiToken)
+	users, err := hipchatv2.GetUsers(bot.Config.HipchatApiToken)
 	if err != nil {
-		w.WriteHeader(http.StatusInternalServerError)
-		w.Write([]byte("Error fetching users\n"))
-		w.Write([]byte(err.Error()))
+		webReportError(w, "Error fetching users", err)
 		return
 	}
 
@@ -141,15 +139,36 @@ func handleGetUsers(w http.ResponseWriter, r *http.Request) {
 
 	err = enc.Encode(out)
 	if err != nil {
-		w.WriteHeader(http.StatusInternalServerError)
-		w.Write([]byte("Error encoding JSON\n"))
-		w.Write([]byte(err.Error()))
+		webReportError(w, "Error encoding JSON", err)
 		return
 	}
 	return
 }
 
-// Send a notification through Hipchat
-func handleStorm(w http.ResponseWriter, r *http.Request) {
-	bot.Storm("123823_djsess")
+func handleGetRooms(w http.ResponseWriter, r *http.Request) {
+	rooms, err := hipchatv2.GetRooms(bot.Config.HipchatApiToken)
+	if err != nil {
+		webReportError(w, "Error fetching rooms", err)
+		return
+	}
+
+	w.Header().Set("Content-Type", "application/json")
+	enc := json.NewEncoder(w)
+	out := struct {
+		Rooms []hipchatv2.Room `json:"rooms"`
+	}{
+		Rooms: rooms,
+	}
+
+	err = enc.Encode(out)
+	if err != nil {
+		webReportError(w, "Error encoding JSON", err)
+		return
+	}
+	return
+}
+
+func webReportError(w http.ResponseWriter, msg string, err error) {
+	w.WriteHeader(http.StatusInternalServerError)
+	w.Write([]byte(fmt.Sprintf("%s\n\n%s\n", msg, err)))
 }

@@ -19,7 +19,7 @@ const (
 
 type Hipbot struct {
 	configFile string
-	config     HipchatConfig
+	Config     HipchatConfig
 
 	// Hipchat XMPP client
 	client *hipchat.Client
@@ -27,7 +27,6 @@ type Hipbot struct {
 	// replySink sends messages to Hipchat rooms or users
 	replySink chan *BotReply
 	Users     []hipchatv2.User
-	stormMode  StormMode
 
 	redisConfig RedisConfig
 	RedisPool   *redis.Pool
@@ -37,11 +36,6 @@ func NewHipbot(configFile string) *Hipbot {
 	bot := &Hipbot{}
 	bot.replySink = make(chan *BotReply)
 	bot.configFile = configFile
-
-	bot.stormMode = StormMode{
-	 	on: false,
-		link: "",
-	}
 	return bot
 }
 
@@ -50,39 +44,34 @@ func (bot *Hipbot) Reply(msg *BotMessage, reply string) {
 	bot.replySink <- msg.Reply(reply)
 }
 
-func (bot *Hipbot) Storm(room string) {
-	log.Println("STORMING!")
-	gif := "http://8tracks.imgix.net/i/002/361/684/astronaut-3818.gif"
-	// msg += "\n STORMED"
-	if !strings.Contains(room, "@") {
-		room = room + "@" + ConfDomain
-	}
-	reply := &BotReply{
-		To: room,
-		Message: gif,
-	}
-	bot.replySink <- reply
+func (bot *Hipbot) SendToRoom(room string, message string) {
+	log.Println("Sending to room ", room, ": ", message)
 
-	msg := "Stormed!"
-	reply = &BotReply{
-		To: room,
-		Message: msg,
+	if !strings.Contains(room, "@") {
+		room += "@conf.hipchat.com"
+	}
+
+	reply := &BotReply{
+		To:      room,
+		Message: message,
 	}
 	bot.replySink <- reply
+	return
 }
 
 func (bot *Hipbot) ConnectClient() (err error) {
 	bot.client, err = hipchat.NewClient(
-		bot.config.Username, bot.config.Password, "bot")
+		bot.Config.Username, bot.Config.Password, "bot")
 	if err != nil {
+		log.Println("Error in ConnectClient()")
 		return
 	}
 
-	for _, room := range bot.config.Rooms {
+	for _, room := range bot.Config.Rooms {
 		if !strings.Contains(room, "@") {
 			room = room + "@" + ConfDomain
 		}
-		bot.client.Join(room, bot.config.Nickname)
+		bot.client.Join(room, bot.Config.Nickname)
 	}
 
 	return
@@ -112,7 +101,7 @@ func (bot *Hipbot) LoadBaseConfig() {
 	if err != nil {
 		log.Fatalln("Error loading Hipchat config section: ", err)
 	} else {
-		bot.config = config1.Hipchat
+		bot.Config = config1.Hipchat
 	}
 
 	var config2 struct {
@@ -173,13 +162,12 @@ func (bot *Hipbot) LoadConfig(config interface{}) (err error) {
 	return
 }
 
-	plugins = append(plugins, NewStorm(bot))
 func (bot *Hipbot) replyHandler(disconnect chan bool) {
 	for {
 		reply := <-bot.replySink
 		if reply != nil {
 			log.Println("REPLYING", reply.To, reply.Message)
-			bot.client.Say(reply.To, bot.config.Nickname, reply.Message)
+			bot.client.Say(reply.To, bot.Config.Nickname, reply.Message)
 			time.Sleep(50 * time.Millisecond)
 		}
 	}
@@ -190,13 +178,13 @@ func (bot *Hipbot) messageHandler(disconnect chan bool) {
 	for {
 		msg := <-msgs
 		botMsg := &BotMessage{Message: msg}
-		log.Println("MESSAGE", msg, bot.config.Username, msg.To)
+		log.Println("MESSAGE", msg, bot.Config.Username, msg.To)
 
-		atMention := "@" + bot.config.Mention
-		toMyself := strings.HasPrefix(msg.To, bot.config.Username)
-		fromMyself := strings.HasPrefix(botMsg.FromNick(), bot.config.Nickname)
+		atMention := "@" + bot.Config.Mention
+		toMyself := strings.HasPrefix(msg.To, bot.Config.Username)
+		fromMyself := strings.HasPrefix(botMsg.FromNick(), bot.Config.Nickname)
 
-		if strings.Contains(msg.Body, atMention) || strings.HasPrefix(msg.Body, bot.config.Mention) || toMyself {
+		if strings.Contains(msg.Body, atMention) || strings.HasPrefix(msg.Body, bot.Config.Mention) || toMyself {
 			botMsg.BotMentioned = true
 			log.Printf("Message to me from %s: %s\n", msg.From, msg.Body)
 		}
@@ -232,14 +220,14 @@ func (bot *Hipbot) usersPolling(disconnect chan bool) {
 		case <-disconnect:
 			return
 		case <-timeout:
-			users, err := hipchatv2.GetUsers(bot.config.HipchatApiToken)
+			// FIXME: Disregard error?! wwoooaah!
+			users, _ := hipchatv2.GetUsers(bot.Config.HipchatApiToken)
 			bot.Users = users
-			log.Println("Boo, ", users, err)
 		}
 		timeout = time.After(3 * time.Minute)
 		reply := <-bot.replySink
 		if reply != nil {
-			bot.client.Say(reply.To, bot.config.Nickname, reply.Message)
+			bot.client.Say(reply.To, bot.Config.Nickname, reply.Message)
 			time.Sleep(50 * time.Millisecond)
 		}
 	}
