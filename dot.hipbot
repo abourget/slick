@@ -33,6 +33,7 @@
     "asana_api_key": "12387218........................",
     "asana_workspace": "629237.......",
     "hipchat_room": "000000_devops",
-    "storm_tag_id": "15014........."
+    "storm_tag_id": "15014.........",
+    "calmed_tag_id": "15014........."
   }
 }

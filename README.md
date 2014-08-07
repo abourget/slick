@@ -1,4 +1,4 @@
-# ahipbot -- A simple bot written in Go
+# The Plotly Bot -- A simple bot written in Go
 
 [![Build Status](https://drone.io/github.com/abourget/ahipbot/status.png)](https://drone.io/github.com/abourget/ahipbot/latest)
 
@@ -17,12 +17,13 @@
 
 * Build with:
 
-    cd src/github.com/abourget/ahipbot
-    go build && ./ahipbot
+    cd $GOPATH/src/github.com/abourget/ahipbot/plotbot
+    go build && ./plotbot
 
 * Inject static stuff in the binary with:
 
-    rice append --exec=ahipbot
+    cd $GOPATH/src/github.com/abourget/ahipbot/web
+    rice append --exec=../plotbot/plotbot
 
 * Enjoy! You can deploy the binary and it has all the assets in itself now.
 
