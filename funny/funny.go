@@ -6,7 +6,7 @@ type Funny struct {
 }
 
 func init() {
-	ahipbot.RegisterPlugin(func(bot *ahipbot.Hipbot) ahipbot.Plugin {
+	ahipbot.RegisterPlugin(func(bot *ahipbot.Bot) ahipbot.Plugin {
 		return &Funny{}
 	})
 
@@ -38,7 +38,7 @@ func (funny *Funny) Config() *ahipbot.PluginConfig {
 	return config
 }
 
-func (funny *Funny) Handle(bot *ahipbot.Hipbot, msg *ahipbot.BotMessage) {
+func (funny *Funny) Handle(bot *ahipbot.Bot, msg *ahipbot.BotMessage) {
 	if msg.BotMentioned {
 		if msg.ContainsAny([]string{"excitement", "exciting"}) {
 			bot.Reply(msg, "http://static.fjcdn.com/gifs/Japanese+kids+spongebob+toys_0ad21b_3186721.gif")

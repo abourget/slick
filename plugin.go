@@ -11,21 +11,21 @@ type PluginConfig struct {
 type Plugin interface {
 	// Handle handles incoming messages matching the constraints
 	// from PluginConfig.
-	Handle(*Hipbot, *BotMessage)
+	Handle(*Bot, *BotMessage)
 	Config() *PluginConfig
 }
 
-var registeredPlugins = make([]func(*Hipbot) Plugin, 0)
+var registeredPlugins = make([]func(*Bot) Plugin, 0)
 
 // RegisterPlugin defers loading of plugins until main() is called with
 // config file, storage and environment ready.
-func RegisterPlugin(newFunc func(*Hipbot) Plugin) {
+func RegisterPlugin(newFunc func(*Bot) Plugin) {
 	registeredPlugins = append(registeredPlugins, newFunc)
 }
 
 var loadedPlugins = make([]Plugin, 0)
 
-func LoadPlugins(bot *Hipbot) {
+func LoadPlugins(bot *Bot) {
 	for _, newFunc := range registeredPlugins {
 		loadedPlugins = append(loadedPlugins, newFunc(bot))
 	}

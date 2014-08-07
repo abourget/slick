@@ -21,7 +21,7 @@ type Healthy struct {
 }
 
 func init() {
-	ahipbot.RegisterPlugin(func(bot *ahipbot.Hipbot) ahipbot.Plugin {
+	ahipbot.RegisterPlugin(func(bot *ahipbot.Bot) ahipbot.Plugin {
 		healthy := &Healthy{
 			config: &ahipbot.PluginConfig{
 				EchoMessages: false,
@@ -45,7 +45,7 @@ func (healthy *Healthy) Config() *ahipbot.PluginConfig {
 }
 
 // Handler
-func (healthy *Healthy) Handle(bot *ahipbot.Hipbot, msg *ahipbot.BotMessage) {
+func (healthy *Healthy) Handle(bot *ahipbot.Bot, msg *ahipbot.BotMessage) {
 	if msg.ContainsAny([]string{"health", "healthy?", "health_check"}) {
 		log.Println("Health check. Requested by", msg.From)
 		bot.Reply(msg, healthy.CheckAll())

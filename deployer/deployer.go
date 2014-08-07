@@ -25,7 +25,7 @@ var config = &ahipbot.PluginConfig{
 }
 
 func init() {
-	ahipbot.RegisterPlugin(func(bot *ahipbot.Hipbot) ahipbot.Plugin {
+	ahipbot.RegisterPlugin(func(bot *ahipbot.Bot) ahipbot.Plugin {
 		return &Deployer{}
 	})
 }
@@ -56,7 +56,7 @@ type DeployJob struct {
 
 var deployFormat = regexp.MustCompile(`deploy( ([a-zA-Z0-9_\.-]+))? to ([a-z_-]+)((,| with)? tags?:? ?(.+))?`)
 
-func (dep *Deployer) Handle(bot *ahipbot.Hipbot, msg *ahipbot.BotMessage) {
+func (dep *Deployer) Handle(bot *ahipbot.Bot, msg *ahipbot.BotMessage) {
 	if match := deployFormat.FindStringSubmatch(msg.Body); match != nil {
 		if dep.runningJob != nil {
 			params := dep.runningJob.params
@@ -97,7 +97,7 @@ func (p *DeployParams) Tags() string {
 	return strings.Replace(p.tags, " ", "", -1)
 }
 
-func (dep *Deployer) handleDeploy(bot *ahipbot.Hipbot, msg *ahipbot.BotMessage, params *DeployParams) {
+func (dep *Deployer) handleDeploy(bot *ahipbot.Bot, msg *ahipbot.BotMessage, params *DeployParams) {
 	bot.Reply(msg, fmt.Sprintf("[process] Running deploy env=%s, branch=%s, tags=%s", params.environment, params.branch, params.Tags()))
 
 	cmdArgs := []string{"ansible-playbook", "-i", "hosts_vagrant", "playbook_vagrant.yml"}
@@ -143,7 +143,7 @@ func (dep *Deployer) manageKillProcess(pty *os.File) {
 	}
 }
 
-func manageDeployIo(bot *ahipbot.Hipbot, msg *ahipbot.BotMessage, reader io.Reader) {
+func manageDeployIo(bot *ahipbot.Bot, msg *ahipbot.BotMessage, reader io.Reader) {
 	scanner := bufio.NewScanner(reader)
 	for scanner.Scan() {
 		bot.Reply(msg, fmt.Sprintf("%s", scanner.Text()))

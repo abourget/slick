@@ -12,7 +12,7 @@ import (
 )
 
 type Storm struct {
-	bot               *ahipbot.Hipbot
+	bot               *ahipbot.Bot
 	config            *StormConfig
 	timeBetweenStorms time.Duration
 	stormActive       bool
@@ -30,7 +30,7 @@ type StormConfig struct {
 }
 
 func init() {
-	ahipbot.RegisterPlugin(func(bot *ahipbot.Hipbot) ahipbot.Plugin {
+	ahipbot.RegisterPlugin(func(bot *ahipbot.Bot) ahipbot.Plugin {
 		var conf struct {
 			Storm StormConfig
 		}
@@ -85,7 +85,7 @@ func (storm *Storm) Config() *ahipbot.PluginConfig {
 }
 
 // Handler
-func (storm *Storm) Handle(bot *ahipbot.Hipbot, msg *ahipbot.BotMessage) {
+func (storm *Storm) Handle(bot *ahipbot.Bot, msg *ahipbot.BotMessage) {
 	if msg.BotMentioned && msg.Contains("stormy day") {
 
 		if storm.stormActive {
@@ -161,7 +161,7 @@ var stormTpl = template.Must(template.New("stormTpl").Parse(`
 <p>
   <img class="image" src="{{.Image}}">
 </p>
-<p><b>Take it here</b>: <a href="{{.StormLink}}">{{.Task.Name}}</a> by <i>{{.Task.CreatedBy.Name}}</i></p>
+<p><b>Take it here</b>: <a href="{{.StormLink}}">{{.Task.Name}}</a></p>
 `))
 
 func (storm *Storm) startStorm(task *asana.Task) {

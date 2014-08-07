@@ -32,9 +32,9 @@ type WebappConfig struct {
 	SessionEncryptKey string `json:"session_encrypt_key"`
 }
 
-var bot *Hipbot
+var bot *Bot
 
-func LaunchWebapp(b *Hipbot) {
+func LaunchWebapp(b *Bot) {
 	bot = b
 	var conf struct {
 		Webapp WebappConfig

@@ -11,7 +11,7 @@ import "github.com/abourget/ahipbot"
 import "time"
 
 type Standup struct {
-	bot *ahipbot.Hipbot
+	bot *ahipbot.Bot
 
 	// Map's Hipchat ID to UserData
 	data *DataMap
@@ -48,7 +48,7 @@ func (standup *Standup) Config() *ahipbot.PluginConfig {
 func init() {
 	gob.Register(&UserData{})
 	gob.Register(&Triplet{})
-	ahipbot.RegisterPlugin(func(bot *ahipbot.Hipbot) ahipbot.Plugin {
+	ahipbot.RegisterPlugin(func(bot *ahipbot.Bot) ahipbot.Plugin {
 		dataMap := make(DataMap)
 		standup := &Standup{bot: bot, data: &dataMap}
 		standup.LoadData()
@@ -56,7 +56,7 @@ func init() {
 	})
 }
 
-func (standup *Standup) Handle(bot *ahipbot.Hipbot, msg *ahipbot.BotMessage) {
+func (standup *Standup) Handle(bot *ahipbot.Bot, msg *ahipbot.BotMessage) {
 	if strings.HasPrefix(msg.Body, "!yesterday") {
 		standup.StoreLine(bot, msg, TYPE_YESTERDAY, msg.Body)
 
@@ -85,7 +85,7 @@ const (
 	TYPE_BLOCKING
 )
 
-func (standup *Standup) StoreLine(bot *ahipbot.Hipbot, msg *ahipbot.BotMessage, lineType LineType, line string) {
+func (standup *Standup) StoreLine(bot *ahipbot.Bot, msg *ahipbot.BotMessage, lineType LineType, line string) {
 	user := bot.GetUser(msg.From)
 	if user == nil {
 		bot.Reply(msg, "Couldn't find your user profile.. have you just logged in? Wait a sec and try again.")
@@ -117,7 +117,7 @@ func (standup *Standup) StoreLine(bot *ahipbot.Hipbot, msg *ahipbot.BotMessage, 
 	}
 }
 
-func (standup *Standup) ShowWhatsDone(bot *ahipbot.Hipbot, msg *ahipbot.BotMessage) {
+func (standup *Standup) ShowWhatsDone(bot *ahipbot.Bot, msg *ahipbot.BotMessage) {
 	user := bot.GetUser(msg.From)
 	if user == nil {
 		bot.Reply(msg, "Couldn't find your user profile.. have you just logged in? Wait a sec and try again.")

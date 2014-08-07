@@ -19,7 +19,7 @@ const (
 	ConfDomain = "conf.hipchat.com"
 )
 
-type Hipbot struct {
+type Bot struct {
 	configFile string
 	Config     HipchatConfig
 
@@ -36,14 +36,14 @@ type Hipbot struct {
 	RedisPool *redis.Pool
 }
 
-func NewHipbot(configFile string) *Hipbot {
-	bot := &Hipbot{}
+func NewHipbot(configFile string) *Bot {
+	bot := &Bot{}
 	bot.replySink = make(chan *BotReply)
 	bot.configFile = configFile
 	return bot
 }
 
-func (bot *Hipbot) Run() {
+func (bot *Bot) Run() {
 	bot.LoadBaseConfig()
 	bot.SetupStorage()
 
@@ -72,17 +72,17 @@ func (bot *Hipbot) Run() {
 	}
 }
 
-func (bot *Hipbot) Reply(msg *BotMessage, reply string) {
+func (bot *Bot) Reply(msg *BotMessage, reply string) {
 	log.Println("Replying:", reply)
 	bot.replySink <- msg.Reply(reply)
 }
 
-func (bot *Hipbot) Notify(room, color, format, msg string, notify bool) (*napping.Request, error) {
+func (bot *Bot) Notify(room, color, format, msg string, notify bool) (*napping.Request, error) {
 	log.Println("Notifying room ", room, ": ", msg)
 	return hipchatv2.SendNotification(bot.Config.HipchatApiToken, bot.GetRoomId(room), color, format, msg, notify)
 }
 
-func (bot *Hipbot) SendToRoom(room string, message string) {
+func (bot *Bot) SendToRoom(room string, message string) {
 	log.Println("Sending to room ", room, ": ", message)
 
 	room = canonicalRoom(room)
@@ -96,7 +96,7 @@ func (bot *Hipbot) SendToRoom(room string, message string) {
 }
 
 // GetRoomdId returns the numeric room ID as string for a given XMPP room JID
-func (bot *Hipbot) GetRoomId(room string) string {
+func (bot *Bot) GetRoomId(room string) string {
 	roomName := canonicalRoom(room)
 	for _, room := range bot.Rooms {
 		if roomName == room.JID {
@@ -120,7 +120,7 @@ func baseRoom(room string) string {
 	return room
 }
 
-func (bot *Hipbot) ConnectClient() (err error) {
+func (bot *Bot) ConnectClient() (err error) {
 	bot.client, err = hipchat.NewClient(
 		bot.Config.Username, bot.Config.Password, "bot")
 	if err != nil {
@@ -138,7 +138,7 @@ func (bot *Hipbot) ConnectClient() (err error) {
 	return
 }
 
-func (bot *Hipbot) SetupHandlers() chan bool {
+func (bot *Bot) SetupHandlers() chan bool {
 	bot.client.Status("chat")
 	disconnect := make(chan bool)
 	go bot.client.KeepAlive()
@@ -151,7 +151,7 @@ func (bot *Hipbot) SetupHandlers() chan bool {
 	return disconnect
 }
 
-func (bot *Hipbot) LoadBaseConfig() {
+func (bot *Bot) LoadBaseConfig() {
 	if err := checkPermission(bot.configFile); err != nil {
 		log.Fatal("ERROR Checking Permissions: ", err)
 	}
@@ -177,7 +177,7 @@ func (bot *Hipbot) LoadBaseConfig() {
 	}
 }
 
-func (bot *Hipbot) SetupStorage() error {
+func (bot *Bot) SetupStorage() error {
 	server := bot.redisConfig.Host
 	if server == "" {
 		server = "127.0.0.1:6379"
@@ -218,7 +218,7 @@ func (bot *Hipbot) SetupStorage() error {
 	return err
 }
 
-func (bot *Hipbot) LoadConfig(config interface{}) (err error) {
+func (bot *Bot) LoadConfig(config interface{}) (err error) {
 	content, err := ioutil.ReadFile(bot.configFile)
 	if err != nil {
 		log.Fatalln("ERROR reading config:", err)
@@ -228,7 +228,7 @@ func (bot *Hipbot) LoadConfig(config interface{}) (err error) {
 	return
 }
 
-func (bot *Hipbot) replyHandler(disconnect chan bool) {
+func (bot *Bot) replyHandler(disconnect chan bool) {
 	for {
 		reply := <-bot.replySink
 		if reply != nil {
@@ -239,7 +239,7 @@ func (bot *Hipbot) replyHandler(disconnect chan bool) {
 	}
 }
 
-func (bot *Hipbot) messageHandler(disconnect chan bool) {
+func (bot *Bot) messageHandler(disconnect chan bool) {
 	msgs := bot.client.Messages()
 	for {
 		msg := <-msgs
@@ -271,7 +271,7 @@ func (bot *Hipbot) messageHandler(disconnect chan bool) {
 	}
 }
 
-func (bot *Hipbot) disconnectHandler(disconnect chan bool) {
+func (bot *Bot) disconnectHandler(disconnect chan bool) {
 	select {
 	case <-disconnect:
 		return
@@ -279,7 +279,7 @@ func (bot *Hipbot) disconnectHandler(disconnect chan bool) {
 	close(disconnect)
 }
 
-func (bot *Hipbot) usersPolling(disconnect chan bool) {
+func (bot *Bot) usersPolling(disconnect chan bool) {
 	timeout := time.After(0)
 	for {
 		select {
@@ -299,7 +299,7 @@ func (bot *Hipbot) usersPolling(disconnect chan bool) {
 	}
 }
 
-func (bot *Hipbot) roomsPolling(disconnect chan bool) {
+func (bot *Bot) roomsPolling(disconnect chan bool) {
 	timeout := time.After(0)
 	for {
 		select {
@@ -320,7 +320,7 @@ func (bot *Hipbot) roomsPolling(disconnect chan bool) {
 }
 
 // GetUser returns a hipchatv2.User by JID, ID, Name or Email
-func (bot *Hipbot) GetUser(find string) *hipchatv2.User {
+func (bot *Bot) GetUser(find string) *hipchatv2.User {
 	if strings.Contains(find, "/") {
 		find = strings.Split(find, "/")[0]
 	}
