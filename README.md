@@ -13,7 +13,7 @@
 
     go get github.com/abourget/ahipbot
 
-* Copy the `dot.hipbot` file to `$HOME/.hipbot` and tweak at will.
+* Copy the `plotbot.sample.conf` file to `$HOME/.plotbot` and tweak at will.
 
 * Build with:
 
