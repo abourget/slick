@@ -1,25 +1,28 @@
 <!doctype html>
-<!--[if lt IE 7]>      <html class="no-js lt-ie9 lt-ie8 lt-ie7"> <![endif]-->
-<!--[if IE 7]>         <html class="no-js lt-ie9 lt-ie8"> <![endif]-->
-<!--[if IE 8]>         <html class="no-js lt-ie9"> <![endif]-->
-<!--[if gt IE 8]><!--> <html class="no-js"> <!--<![endif]-->
+<html>
   <head>
     <meta charset="utf-8">
     <meta http-equiv="X-UA-Compatible" content="IE=edge">
-    <title></title>
-    <meta name="description" content="" />
+    <title>Plotbot</title>
+    <meta name="description" content="The Plotbot Web UI" />
     <meta name="viewport" content="width=device-width" />
     <meta name="mobile-web-app-capable" content="yes" />
-    <link rel="icon" sizes="128x128" href="/apple-touch-icon.png" />
-    <link rel="apple-touch-icon" sizes="128x128" href="/apple-touch-icon.png" />
+    <link rel="icon" sizes="128x128" href="/static/apple-touch-icon.png" />
+    <link rel="apple-touch-icon" sizes="128x128" href="/static/apple-touch-icon.png" />
     <link rel="stylesheet" href="/static/css/main.css" />
     <script>USER = {{.AsJavascript}}</script>
   </head>
   <body ng-app="hey" class="ng-cloak">
     <div class="container" ui-view></div>
 
+    <!-- inject:vendor:js -->
     <script src="//ajax.googleapis.com/ajax/libs/angularjs/1.2.19/angular.min.js"></script>
     <script src="//cdnjs.cloudflare.com/ajax/libs/angular-ui-router/0.2.10/angular-ui-router.min.js"></script>
+    <script src="//ajax.googleapis.com/ajax/libs/angularjs/1.2.19/angular-resource.min.js"></script>
+    <!-- endinject -->
+    <!-- inject:vendor:js -->
     <script src="/static/js/main.js"></script>
+    <!-- endinject -->
+
 </body>
 </html>

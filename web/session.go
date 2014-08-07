@@ -1,4 +1,4 @@
-package session
+package web
 
 import (
 	"log"
@@ -10,9 +10,9 @@ import (
 var store *sessions.CookieStore
 
 func GetSession(r *http.Request) *sessions.Session {
-	sess, err := web.store.Get(r, "hipbot")
+	sess, err := web.store.Get(r, "plotbot")
 	if err != nil {
-		log.Fatal(err)
+		log.Println("web/session: warn: unable to decode Session cookie: ", err)
 	}
 
 	return sess

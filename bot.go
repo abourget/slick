@@ -48,9 +48,9 @@ func (bot *Bot) Run() {
 	bot.SetupStorage()
 
 	// Web related
-	go LaunchWebapp(bot)
-
 	LoadPlugins(bot)
+	LoadWebHandler(bot)
+
 	// Bot related
 	for {
 		log.Println("Connecting client...")
@@ -244,7 +244,7 @@ func (bot *Bot) messageHandler(disconnect chan bool) {
 	for {
 		msg := <-msgs
 		botMsg := &BotMessage{Message: msg}
-		log.Println("MESSAGE", msg, bot.Config.Username, msg.To)
+		//log.Println("MESSAGE", msg, bot.Config.Username, msg.To)
 
 		atMention := "@" + bot.Config.Mention
 		toMyself := strings.HasPrefix(msg.To, bot.Config.Username)
@@ -252,10 +252,14 @@ func (bot *Bot) messageHandler(disconnect chan bool) {
 
 		if strings.Contains(msg.Body, atMention) || strings.HasPrefix(msg.Body, bot.Config.Mention) || toMyself {
 			botMsg.BotMentioned = true
-			log.Printf("Message to me from %s: %s\n", msg.From, msg.Body)
+			//log.Printf("Message to me from %s: %s\n", msg.From, msg.Body)
 		}
 		for _, p := range loadedPlugins {
 			pluginConf := p.Config()
+
+			if pluginConf == nil {
+				continue
+			}
 
 			if !pluginConf.EchoMessages && fromMyself {
 				//log.Printf("no echo but I just messaged myself")

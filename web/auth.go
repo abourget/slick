@@ -1,13 +1,14 @@
-package ahipbot
+package web
 
 import (
 	"encoding/json"
 	"fmt"
-	"github.com/golang/oauth2"
 	"io/ioutil"
 	"log"
 	"net/http"
 	"strings"
+
+	"github.com/golang/oauth2"
 )
 
 const oauthProfileInfoURL = "https://www.googleapis.com/oauth2/v1/userinfo?alt=json"
@@ -50,7 +51,7 @@ func handleOAuth2Callback(w http.ResponseWriter, r *http.Request) {
 		w.Write([]byte(err.Error()))
 	} else {
 		// Mark logged in
-		sess := getSession(r)
+		sess := GetSession(r)
 		sess.Values["profile"] = profile
 		sess.Save(r, w)
 
@@ -104,7 +105,7 @@ func doOAuth2Roundtrip(w http.ResponseWriter, r *http.Request) (*GoogleUserProfi
 }
 
 func checkAuth(r *http.Request) (*GoogleUserProfile, error) {
-	sess := getSession(r)
+	sess := GetSession(r)
 	rawProfile, ok := sess.Values["profile"]
 	if ok == false {
 		return nil, fmt.Errorf("Not authenticated")

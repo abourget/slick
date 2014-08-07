@@ -1,7 +1,5 @@
-ahipbot
 *~
 *.sw*
-/hipbot
 /plotbot/plotbot
 
 *.orig

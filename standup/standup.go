@@ -1,14 +1,17 @@
 package standup
 
 import (
+	"bytes"
+	"encoding/gob"
 	"fmt"
+	"log"
+	"net/http"
 	"strings"
+	"time"
+
+	"github.com/abourget/ahipbot"
+	"github.com/gorilla/mux"
 )
-import "log"
-import "encoding/gob"
-import "bytes"
-import "github.com/abourget/ahipbot"
-import "time"
 
 type Standup struct {
 	bot *ahipbot.Bot
@@ -54,6 +57,14 @@ func init() {
 		standup.LoadData()
 		return standup
 	})
+}
+
+func (standup *Standup) WebPluginSetup(router *mux.Router) {
+	router.HandleFunc("/plugin/standup.json", func(w http.ResponseWriter, r *http.Request) {
+		// Fetch from standup.Data
+		// Send as JSON
+	})
+	// Do any hooks
 }
 
 func (standup *Standup) Handle(bot *ahipbot.Bot, msg *ahipbot.BotMessage) {
@@ -115,6 +126,8 @@ func (standup *Standup) StoreLine(bot *ahipbot.Bot, msg *ahipbot.BotMessage, lin
 	} else if lineType == TYPE_BLOCKING {
 		t.Blocking = line
 	}
+
+	standup.FlushData()
 }
 
 func (standup *Standup) ShowWhatsDone(bot *ahipbot.Bot, msg *ahipbot.BotMessage) {
@@ -155,7 +168,7 @@ func (standup *Standup) LoadData() {
 
 	res, err := redis.Do("GET", "plotbot:standup")
 	if err != nil {
-		log.Println("ERROR: standup: Couldn't load data from redis")
+		log.Println("Standup: Couldn't load data from redis. Using fresh data.")
 		fixup()
 	}
 
@@ -163,7 +176,7 @@ func (standup *Standup) LoadData() {
 	dec := gob.NewDecoder(bytes.NewBuffer(asBytes))
 	err = dec.Decode(standup.data)
 	if err != nil {
-		log.Println("ERROR: standup: Unable to decode LoadData() data from redis")
+		log.Println("Standup: Unable to decode data from redis. Using fresh data.")
 		fixup()
 	}
 }

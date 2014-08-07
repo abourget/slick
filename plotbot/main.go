@@ -6,11 +6,14 @@ import (
 
 	"github.com/abourget/ahipbot"
 
+	_ "github.com/abourget/ahipbot/web"
+
 	_ "github.com/abourget/ahipbot/deployer"
 	_ "github.com/abourget/ahipbot/funny"
 	_ "github.com/abourget/ahipbot/healthy"
 	_ "github.com/abourget/ahipbot/standup"
 	_ "github.com/abourget/ahipbot/storm"
+	_ "github.com/abourget/ahipbot/webutils"
 )
 
 var configFile = flag.String("config", os.Getenv("HOME")+"/.plotbot", "config file")
