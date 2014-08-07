@@ -1,6 +1,9 @@
 package session
 
 import (
+	"log"
+	"net/http"
+
 	"github.com/gorilla/sessions"
 )
 
