@@ -15,3 +15,8 @@
     <li ng-repeat="room in rooms">{{ room | json }}</li>
   </ul>
 </div>
+
+<div>
+  <button ng-click="get_standup()">Get standup</button>
+  <pre ng-show="standup">{{ standup | json }}</pre>
+</div>

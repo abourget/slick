@@ -28,6 +28,12 @@ angular.module('hey', ['ui.router.state', 'ui.router'])
         $http.post('/send_notif');
     };
 
+    $scope.get_standup = function() {
+        $http.get('/plugins/standup.json').success(function(data, status) {
+          $scope.standup = data;
+        });
+    };
+
     $scope.load_users = function() {
         $http.get('/hipchat/users').success(function(data, status) {
             $scope.users = data.users;

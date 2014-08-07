@@ -5,12 +5,10 @@ import (
 	"encoding/gob"
 	"fmt"
 	"log"
-	"net/http"
 	"strings"
 	"time"
 
 	"github.com/abourget/ahipbot"
-	"github.com/gorilla/mux"
 )
 
 type Standup struct {
@@ -25,18 +23,15 @@ type DataMap map[int64]*UserData
 type UserData struct {
 	Name     string
 	Email    string
-	Triplets []*Triplet
+	PhotoURL string
+	Yesterday  string
+	Today      string
+	Blocking   string
+	LastUpdate time.Time
 }
 
 func (ud *UserData) FirstName() string {
 	return strings.Split(ud.Name, " ")[0]
-}
-
-type Triplet struct {
-	Yesterday string
-	Today     string
-	Blocking  string
-	Created   time.Time
 }
 
 var config = &ahipbot.PluginConfig{
@@ -50,21 +45,12 @@ func (standup *Standup) Config() *ahipbot.PluginConfig {
 
 func init() {
 	gob.Register(&UserData{})
-	gob.Register(&Triplet{})
 	ahipbot.RegisterPlugin(func(bot *ahipbot.Bot) ahipbot.Plugin {
 		dataMap := make(DataMap)
 		standup := &Standup{bot: bot, data: &dataMap}
 		standup.LoadData()
 		return standup
 	})
-}
-
-func (standup *Standup) WebPluginSetup(router *mux.Router) {
-	router.HandleFunc("/plugin/standup.json", func(w http.ResponseWriter, r *http.Request) {
-		// Fetch from standup.Data
-		// Send as JSON
-	})
-	// Do any hooks
 }
 
 func (standup *Standup) Handle(bot *ahipbot.Bot, msg *ahipbot.BotMessage) {
@@ -106,26 +92,19 @@ func (standup *Standup) StoreLine(bot *ahipbot.Bot, msg *ahipbot.BotMessage, lin
 	dataMap := *standup.data
 	userData, ok := dataMap[user.ID]
 	if !ok {
-		userData = &UserData{Email: user.Email, Name: user.Name}
+		userData = &UserData{Email: user.Email, Name: user.Name, PhotoURL: user.PhotoURL}
 		dataMap[user.ID] = userData
 	}
 
-	// Is the latest Triplet good enough ?
-	var t *Triplet
-	if len(userData.Triplets) == 0 {
-		t = &Triplet{Created: time.Now().UTC()}
-		userData.Triplets = append(userData.Triplets, t)
-	} else {
-		t = userData.Triplets[len(userData.Triplets)-1]
+	if lineType == TYPE_YESTERDAY {
+		userData.Yesterday = line
+	} else if lineType == TYPE_TODAY {
+		userData.Today = line
+	} else if lineType == TYPE_BLOCKING {
+		userData.Blocking = line
 	}
 
-	if lineType == TYPE_YESTERDAY {
-		t.Yesterday = line
-	} else if lineType == TYPE_TODAY {
-		t.Today = line
-	} else if lineType == TYPE_BLOCKING {
-		t.Blocking = line
-	}
+	userData.LastUpdate = time.Now().UTC()
 
 	standup.FlushData()
 }
@@ -144,16 +123,7 @@ func (standup *Standup) ShowWhatsDone(bot *ahipbot.Bot, msg *ahipbot.BotMessage)
 		return
 	}
 
-	if len(userData.Triplets) == 0 {
-		// Normally would always have one triplet if userData exists for this user!
-		log.Println("ERRROR: No Triplets in UserData structure!")
-		bot.Reply(msg, "Hmm. you hit some unreachable code. You're lucky.")
-		return
-	}
-
-	lastTriplet := userData.Triplets[len(userData.Triplets)-1]
-
-	bot.Reply(msg, fmt.Sprintf("Here's your stuff %s\n%s\n%s\n%s", userData.FirstName(), lastTriplet.Yesterday, lastTriplet.Today, lastTriplet.Blocking))
+	bot.Reply(msg, fmt.Sprintf("Here's your stuff %s\n%s\n%s\n%s", userData.FirstName(), userData.Yesterday, userData.Today, userData.Blocking))
 }
 
 func (standup *Standup) LoadData() {

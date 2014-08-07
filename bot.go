@@ -310,7 +310,6 @@ func (bot *Bot) roomsPolling(disconnect chan bool) {
 		case <-disconnect:
 			return
 		case <-timeout:
-			// FIXME: Disregard error?! wwoooaah!
 			rooms, _ := hipchatv2.GetRooms(bot.Config.HipchatApiToken)
 			bot.Rooms = rooms
 		}
@@ -326,10 +325,17 @@ func (bot *Bot) roomsPolling(disconnect chan bool) {
 // GetUser returns a hipchatv2.User by JID, ID, Name or Email
 func (bot *Bot) GetUser(find string) *hipchatv2.User {
 	if strings.Contains(find, "/") {
-		find = strings.Split(find, "/")[0]
+		parts := strings.Split(find, "/")
+		jid := parts[0]
+		resource := parts[1]
+		if strings.Contains(jid, "@chat.hipchat.com") {
+			find = jid
+		} else {
+			find = resource
+		}
 	}
 	for _, user := range bot.Users {
-		log.Printf("Hmmmm, %#v\n", user)
+		//log.Printf("Hmmmm, %#v\n", user)
 		if user.Email == find || user.JID == find || strconv.FormatInt(user.ID, 10) == find || user.Name == find {
 			return &user
 		}
