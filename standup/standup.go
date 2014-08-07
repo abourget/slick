@@ -66,11 +66,6 @@ func (standup *Standup) Handle(bot *ahipbot.Bot, msg *ahipbot.BotMessage) {
 	} else if strings.HasPrefix(msg.Body, "!done?") {
 		standup.ShowWhatsDone(bot, msg)
 
-	} else if strings.HasPrefix(msg.Body, "!flush") {
-		standup.FlushData()
-
-	} else if strings.HasPrefix(msg.Body, "!load") {
-		standup.LoadData()
 	}
 }
 
