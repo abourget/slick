@@ -1,10 +1,10 @@
 package storm
 
 import (
-	"fmt"
+	"bytes"
+	"html/template"
 	"log"
 	"strconv"
-	"strings"
 	"time"
 
 	"github.com/abourget/ahipbot"
@@ -26,6 +26,7 @@ type StormConfig struct {
 	AsanaWorkspace string `json:"asana_workspace"`
 	HipchatRoom    string `json:"hipchat_room"`
 	StormTagId     string `json:"storm_tag_id"`
+	CalmedTagId    string `json:"calmed_tag_id"`
 }
 
 func init() {
@@ -52,7 +53,6 @@ func init() {
 			"http://cdn.mdjunction.com/components/com_joomlaboard/uploaded/images/storm.gif",
 			"http://www.churchhousecollection.com/resources/animated-jesus-calms-storm.gif",
 			"http://i251.photobucket.com/albums/gg307/angellovernumberone/HEATHERS%20%20MIXED%20WATER%20ANIMATIONS/LightningStorm02.gif",
-			"http://i.imgur.com/IF1QM.gif",
 			"http://wac.450f.edgecastcdn.net/80450F/screencrush.com/files/2013/04/x-men-storm.gif",
 			"http://i.imgur.com/SNLbnO8.gif?1",
 		})
@@ -86,19 +86,7 @@ func (storm *Storm) Config() *ahipbot.PluginConfig {
 
 // Handler
 func (storm *Storm) Handle(bot *ahipbot.Hipbot, msg *ahipbot.BotMessage) {
-
-	//check for stormmode
-
-	fromMyself := strings.HasPrefix(msg.FromNick(), bot.Config.Nickname)
-	room := storm.config.HipchatRoom
-
-	if msg.Contains("preparing storm") && fromMyself {
-		// send first storms!
-		storm.stormActive = true
-
-		log.Println(storm.stormActive)
-
-	} else if msg.BotMentioned && msg.Contains("stormy day") {
+	if msg.BotMentioned && msg.Contains("stormy day") {
 
 		if storm.stormActive {
 			bot.Reply(msg, "We're in the middle of a storm, can't you feel it ?")
@@ -107,25 +95,10 @@ func (storm *Storm) Handle(bot *ahipbot.Hipbot, msg *ahipbot.BotMessage) {
 			storm.triggerPolling <- true
 		}
 
-	} else if storm.stormActive && !fromMyself && msg.Contains("take") {
-		log.Println("Storm Taker!!!!!")
-
-		stormTaker := msg.FromNick()
-		stormTakerMsg = stormTaker + " " + stormTakerMsg
-		storm.stormActive = false
-
-		bot.SendToRoom(room, ahipbot.RandomString("forcePush"))
-		bot.SendToRoom(room, stormTakerMsg)
-
 	} else if storm.stormActive && msg.Contains("ENOUGH") {
 		storm.stormActive = false
 		bot.Reply(msg, "ok, ok !")
 	}
-	// else if time.Since(lastStorm) > storm.timeBetweenStorms {
-
-	// 	//update laststorm
-	// 	lastStorm = time.Now().UTC();
-	// }
 
 	return
 }
@@ -148,47 +121,152 @@ func (storm *Storm) launchWatcher() {
 }
 
 func (storm *Storm) pollAsana() {
-	stormTagId := storm.config.StormTagId
-
 	if storm.stormActive {
 		time.Sleep(5 * time.Second)
 		return
 	}
 
-	stormedTasks := readTasks()
-
-	tasks, err := storm.asanaClient.GetTasksByTag(stormTagId)
+	stormTasks, err := storm.asanaClient.GetTasksByTag(storm.config.StormTagId)
 	if err != nil {
 		log.Println("Storm: Error fetching tasks by tag: ", err)
+		return
+	}
+	calmedTasks, err := storm.asanaClient.GetTasksByTag(storm.config.CalmedTagId)
+	if err != nil {
+		log.Println("Storm: Error fetching tasks by tag: ", err)
+		return
 	}
 
-	for _, task := range tasks {
-		taskId := strconv.FormatInt(task.Id, 10)
-		taskAlreadyStormed := stringInSlice(taskId, stormedTasks)
+	newStorms := tasksDifference(stormTasks, calmedTasks)
 
-		if !taskAlreadyStormed {
-			log.Println("NEW STORM TAG DETECTED")
-			storm.startStorm(task)
+	if len(newStorms) > 0 {
+		log.Println("Storm: New Storm!")
+		fullTask, err := storm.asanaClient.GetTaskById(newStorms[0].Id)
+		if err != nil {
+			log.Println("Storm: Error fetching the Task by ID", err)
 			return
 		}
+		storm.startStorm(fullTask)
 	}
 }
 
-func (storm *Storm) startStorm(task asana.Task) {
+// TODO: what's that anyway ? move to config ?
+var asanaLink = "https://app.asana.com/0/7221799638526/"
+
+const DEBUG = true
+
+type tplData map[string]interface{}
+
+var stormTpl = template.Must(template.New("stormTpl").Parse(`
+<p>
+  <img class="image" src="{{.Image}}">
+</p>
+<p><b>Take it here</b>: <a href="{{.StormLink}}">{{.Task.Name}}</a> by <i>{{.Task.CreatedBy.Name}}</i></p>
+`))
+
+func (storm *Storm) startStorm(task *asana.Task) {
 	room := storm.config.HipchatRoom
 	taskId := strconv.FormatInt(task.Id, 10)
 
 	storm.stormLink = asanaLink + taskId
 	storm.stormActive = true
 	bot := storm.bot
-	bot.SendToRoom(room, "/me sees a storm getting near")
+	bot.SendToRoom(room, "/me sees a storm approaching")
 	go func() {
-		time.Sleep(5 * time.Second)
-		bot.SendToRoom(room, "A storm is upon us! Who will step up and take it on ?")
-		bot.SendToRoom(room, ahipbot.RandomString("storm"))
-		bot.SendToRoom(room, fmt.Sprintf("Take it at this address: %s", storm.stormLink))
-		bot.SendToRoom(room, fmt.Sprintf("Funky, but it's titled: %s", task.Name))
-	}()
+		wait := time.Duration(5)
+		if DEBUG {
+			wait = 0
+		}
+		time.Sleep(wait * time.Second)
 
-	writeTask(taskId)
+		bot.SendToRoom(room, "@all Who will step up and take it on ?")
+		img := ahipbot.RandomString("storm")
+		data := tplData{
+			"StormLink": storm.stormLink,
+			"Task": task,
+			"Image": img,
+		}
+		buf := bytes.NewBuffer([]byte(""))
+		stormTpl.Execute(buf, data)
+		res, err := bot.Notify(room, "gray", "html", buf.String(), true)
+		if err != nil {
+			log.Printf("ERROR: Storm: Notifying about the Storm failed: %s %#v %#v\n", err, res.Error, res.Result)
+		}
+	}()
+	go storm.watchForTaker(task)
+}
+
+
+
+var takerTpl = template.Must(template.New("takerTpl").Parse(`
+<p><img src="{{.ForcePush}}"></p>
+<p>We have a Taker ! It's:</p>
+{{if .User.Photo.Image128}}
+  <p><img src="{{.User.Photo.Image128}}"></p>
+{{end}}
+<p>{{.User.Name}}</p>
+`))
+
+func (storm *Storm) watchForTaker(task *asana.Task) {
+	firstRun := true
+	seenStories := make(map[int64]bool)
+	for {
+		if storm.stormActive == false {
+			log.Println("Storm: Stopping Taker watch, apparently the storm has stopped!")
+			return
+		}
+
+		stories, err := storm.asanaClient.GetTaskStories(task.Id)
+		if err != nil {
+			log.Println("ERROR: Storm: couldn't fetch stories: ", err)
+			return
+		}
+
+		for _, story := range stories {
+			if firstRun {
+				seenStories[story.Id] = true
+				continue
+			}
+
+			_, ok := seenStories[story.Id]
+			if !ok {
+				// New entry! Who's that ?!
+				user, err := storm.asanaClient.GetUser(story.CreatedBy.Id)
+				if err != nil {
+					log.Println("ERROR: Storm: couldn't get the User that was reported by Asana: ", err)
+					return
+				}
+
+				buf := bytes.NewBuffer([]byte(""))
+				data := tplData{
+					"User": user,
+					"ForcePush": ahipbot.RandomString("forcePush"),
+				}
+				takerTpl.Execute(buf, data)
+				storm.bot.Notify(storm.config.HipchatRoom, "green", "html", buf.String(), false)
+				storm.stormActive = false
+
+			}
+		}
+
+		firstRun = false
+		time.Sleep(5 * time.Second)
+	}
+}
+
+// taskDifference returns Storm-tagged tasks without the Calmed-tagged tasks
+func tasksDifference(storm []asana.Task, calmed []asana.Task) (out []asana.Task) {
+	seen := make(map[int64]bool)
+	for _, task := range calmed {
+		seen[task.Id] = true
+	}
+
+	for _, task := range storm {
+		_, ok := seen[task.Id]
+		if !ok {
+			out = append(out, task)
+		}
+	}
+
+	return out
 }

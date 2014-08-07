@@ -2,6 +2,7 @@ package ahipbot
 
 import (
 	"encoding/json"
+	"fmt"
 	"io/ioutil"
 	"log"
 	"strconv"
@@ -10,6 +11,7 @@ import (
 
 	"github.com/abourget/ahipbot/hipchatv2"
 	"github.com/garyburd/redigo/redis"
+	"github.com/jmcvetta/napping"
 	"github.com/tkawachi/hipchat"
 )
 
@@ -27,9 +29,11 @@ type Hipbot struct {
 	// replySink sends messages to Hipchat rooms or users
 	replySink chan *BotReply
 	Users     []hipchatv2.User
+	Rooms     []hipchatv2.Room
 
 	redisConfig RedisConfig
-	RedisPool   *redis.Pool
+	// RedisPool holds a connection to Redis.  NOTE: Prefix all your keys with "plotbot:" please.
+	RedisPool *redis.Pool
 }
 
 func NewHipbot(configFile string) *Hipbot {
@@ -39,17 +43,49 @@ func NewHipbot(configFile string) *Hipbot {
 	return bot
 }
 
+func (bot *Hipbot) Run() {
+	bot.LoadBaseConfig()
+	bot.SetupStorage()
+
+	// Web related
+	go LaunchWebapp(bot)
+
+	LoadPlugins(bot)
+	// Bot related
+	for {
+		log.Println("Connecting client...")
+		err := bot.ConnectClient()
+		if err != nil {
+			log.Println("  `- Failed: ", err)
+			time.Sleep(3 * time.Second)
+			continue
+		}
+
+		disconnect := bot.SetupHandlers()
+
+		select {
+		case <-disconnect:
+			log.Println("Disconnected...")
+			time.Sleep(1 * time.Second)
+			continue
+		}
+	}
+}
+
 func (bot *Hipbot) Reply(msg *BotMessage, reply string) {
 	log.Println("Replying:", reply)
 	bot.replySink <- msg.Reply(reply)
 }
 
+func (bot *Hipbot) Notify(room, color, format, msg string, notify bool) (*napping.Request, error) {
+	log.Println("Notifying room ", room, ": ", msg)
+	return hipchatv2.SendNotification(bot.Config.HipchatApiToken, bot.GetRoomId(room), color, format, msg, notify)
+}
+
 func (bot *Hipbot) SendToRoom(room string, message string) {
 	log.Println("Sending to room ", room, ": ", message)
 
-	if !strings.Contains(room, "@") {
-		room += "@conf.hipchat.com"
-	}
+	room = canonicalRoom(room)
 
 	reply := &BotReply{
 		To:      room,
@@ -57,6 +93,31 @@ func (bot *Hipbot) SendToRoom(room string, message string) {
 	}
 	bot.replySink <- reply
 	return
+}
+
+// GetRoomdId returns the numeric room ID as string for a given XMPP room JID
+func (bot *Hipbot) GetRoomId(room string) string {
+	roomName := canonicalRoom(room)
+	for _, room := range bot.Rooms {
+		if roomName == room.JID {
+			return fmt.Sprintf("%v", room.ID)
+		}
+	}
+	return room
+}
+
+func canonicalRoom(room string) string {
+	if !strings.Contains(room, "@") {
+		room += "@conf.hipchat.com"
+	}
+	return room
+}
+
+func baseRoom(room string) string {
+	if strings.Contains(room, "@") {
+		return strings.Split(room, "@")[0]
+	}
+	return room
 }
 
 func (bot *Hipbot) ConnectClient() (err error) {
@@ -85,6 +146,7 @@ func (bot *Hipbot) SetupHandlers() chan bool {
 	go bot.messageHandler(disconnect)
 	go bot.disconnectHandler(disconnect)
 	go bot.usersPolling(disconnect)
+	go bot.roomsPolling(disconnect)
 	log.Println("Bot ready")
 	return disconnect
 }
@@ -128,8 +190,12 @@ func (bot *Hipbot) SetupStorage() error {
 			if err != nil {
 				return nil, err
 			}
+			if _, err := c.Do("SELECT", "3"); err != nil {
+				c.Close()
+				return nil, err
+			}
 			// if _, err := c.Do("AUTH", password); err != nil {
-			// 	c.Close()
+			//  c.Close()
 			// 	return nil, err
 			// }
 			return c, err
@@ -192,11 +258,11 @@ func (bot *Hipbot) messageHandler(disconnect chan bool) {
 			pluginConf := p.Config()
 
 			if !pluginConf.EchoMessages && fromMyself {
-				log.Printf("no echo but I just messaged myself")
+				//log.Printf("no echo but I just messaged myself")
 				continue
 			}
 			if pluginConf.OnlyMentions && !botMsg.BotMentioned {
-				log.Printf("only mentions but not BotMentioned")
+				//log.Printf("only mentions but not BotMentioned")
 				continue
 			}
 
@@ -223,6 +289,26 @@ func (bot *Hipbot) usersPolling(disconnect chan bool) {
 			// FIXME: Disregard error?! wwoooaah!
 			users, _ := hipchatv2.GetUsers(bot.Config.HipchatApiToken)
 			bot.Users = users
+		}
+		timeout = time.After(3 * time.Minute)
+		reply := <-bot.replySink
+		if reply != nil {
+			bot.client.Say(reply.To, bot.Config.Nickname, reply.Message)
+			time.Sleep(50 * time.Millisecond)
+		}
+	}
+}
+
+func (bot *Hipbot) roomsPolling(disconnect chan bool) {
+	timeout := time.After(0)
+	for {
+		select {
+		case <-disconnect:
+			return
+		case <-timeout:
+			// FIXME: Disregard error?! wwoooaah!
+			rooms, _ := hipchatv2.GetRooms(bot.Config.HipchatApiToken)
+			bot.Rooms = rooms
 		}
 		timeout = time.After(3 * time.Minute)
 		reply := <-bot.replySink

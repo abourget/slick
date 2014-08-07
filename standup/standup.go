@@ -153,9 +153,9 @@ func (standup *Standup) LoadData() {
 		standup.data = &dataMap
 	}
 
-	res, err := redis.Do("GET", "bot-standup")
+	res, err := redis.Do("GET", "plotbot:standup")
 	if err != nil {
-		log.Println("ERROR: Couldn't redis LoadData()")
+		log.Println("ERROR: standup: Couldn't load data from redis")
 		fixup()
 	}
 
@@ -163,7 +163,7 @@ func (standup *Standup) LoadData() {
 	dec := gob.NewDecoder(bytes.NewBuffer(asBytes))
 	err = dec.Decode(standup.data)
 	if err != nil {
-		log.Println("ERROR: Unable to decode LoadData() data")
+		log.Println("ERROR: standup: Unable to decode LoadData() data from redis")
 		fixup()
 	}
 }
@@ -177,7 +177,7 @@ func (standup *Standup) FlushData() {
 	enc := gob.NewEncoder(buf)
 	enc.Encode(standup.data)
 
-	_, err := redis.Do("SET", "bot-standup", buf.String())
+	_, err := redis.Do("SET", "plotbot:standup", buf.String())
 	if err != nil {
 		log.Println("ERROR: Couldn't redis FlushData()")
 	}
