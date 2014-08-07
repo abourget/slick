@@ -14,13 +14,17 @@ type Client struct {
 }
 
 type Task struct {
-	Id   int64
-	Name string
-	Assignee User
+	Id        int64
+	Name      string
+	Assignee  User
 	Completed bool
 	Followers []User
-	Notes string
-	Projects []Project
+	Notes     string
+	Projects  []Project
+	Hearted   bool
+	Hearts    []User
+	NumHearts int `json:"num_hearts"`
+	Tags      []Tag
 	Workspace Workspace
 }
 
@@ -46,16 +50,25 @@ type Workspace struct {
 }
 
 type Project struct {
-	Id int64
+	Id   int64
 	Name string
 }
 
 type Photo struct {
-	Image21 string `json:"image_21x21"`
-	Image27 string `json:"image_27x27"`
-	Image36 string `json:"image_36x36"`
-	Image60 string `json:"image_60x60"`
+	Image21  string `json:"image_21x21"`
+	Image27  string `json:"image_27x27"`
+	Image36  string `json:"image_36x36"`
+	Image60  string `json:"image_60x60"`
 	Image128 string `json:"image_128x128"`
+}
+
+type Tag struct {
+	Id   int64
+	Name string
+}
+
+func (t *Tag) StringId() string {
+	return fmt.Sprintf("%v", t.Id)
 }
 
 func NewClient(key, workspace string) *Client {
@@ -142,8 +155,6 @@ func (asana *Client) GetTaskStories(taskId int64) ([]Story, error) {
 		return nil, err
 	}
 
-	fmt.Println("Content of the STORIES", body)
-
 	err = json.Unmarshal(body, &data)
 
 	return data.Data, err
@@ -180,5 +191,26 @@ func (asana *Client) GetTaskById(taskId int64) (*Task, error) {
 
 	err = json.Unmarshal(body, &data)
 
+	fmt.Println("The tasks content: ", string(body))
+
 	return &data.Data, err
+}
+
+func (asana *Client) GetTagsOnTask(tagId int64) ([]Tag, error) {
+	var data struct {
+		Data []Tag
+	}
+
+	url := fmt.Sprintf("https://app.asana.com/api/1.0/tasks/%v/tags",
+		tagId)
+
+	body, err := asana.request("GET", url)
+
+	if err != nil {
+		return nil, err
+	}
+
+	err = json.Unmarshal(body, &data)
+
+	return data.Data, err
 }

@@ -194,6 +194,7 @@ func (storm *Storm) startStorm(task *asana.Task) {
 		}
 	}()
 	go storm.watchForTaker(task)
+	go storm.watchForCalm(task)
 }
 
 
@@ -244,13 +245,34 @@ func (storm *Storm) watchForTaker(task *asana.Task) {
 				}
 				takerTpl.Execute(buf, data)
 				storm.bot.Notify(storm.config.HipchatRoom, "green", "html", buf.String(), false)
-				storm.stormActive = false
-
+				return
 			}
 		}
 
 		firstRun = false
 		time.Sleep(5 * time.Second)
+	}
+}
+
+func (storm *Storm) watchForCalm(originalTask *asana.Task) {
+	room := storm.config.HipchatRoom
+	for {
+		time.Sleep(15 * time.Second)
+		tags, err := storm.asanaClient.GetTagsOnTask(originalTask.Id)
+		if err != nil {
+			log.Println("ERROR: Storm: watchForCalm(): Couldn't get tags for task")
+			storm.bot.SendToRoom(room, "folks, the Storm is over, Asana is freaking out")
+			storm.stormActive = false
+			return
+		}
+
+		for _, tag := range tags {
+			if storm.config.CalmedTagId == tag.StringId() {
+				storm.bot.SendToRoom(room, "ok, folks, the Storm has been Calmed!")
+				storm.stormActive = false
+			}
+		}
+
 	}
 }
 
