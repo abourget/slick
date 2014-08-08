@@ -4,3 +4,5 @@
 
 *.orig
 \#*\#
+
+node_modules
