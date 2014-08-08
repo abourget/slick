@@ -1,0 +1,8 @@
+/**
+ * <%= pkg.name %> - <%= pkg.description %>
+ * Version: v<%= pkg.version %>
+ * Source code: https://github.com/abourget/ahipbot
+ * License: MIT or whatever
+ *
+ * By Plotly @ https://plot.ly
+ */

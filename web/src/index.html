@@ -9,20 +9,17 @@
     <meta name="mobile-web-app-capable" content="yes" />
     <link rel="icon" sizes="128x128" href="/static/apple-touch-icon.png" />
     <link rel="apple-touch-icon" sizes="128x128" href="/static/apple-touch-icon.png" />
-    <link rel="stylesheet" href="/static/css/main.css" />
+    <!-- inject:css -->
+    <!-- endinject -->
     <script>USER = {{.AsJavascript}}</script>
   </head>
-  <body ng-app="hey" class="ng-cloak">
+  <body ng-app="plotbot" class="ng-cloak">
     <div class="container" ui-view></div>
 
     <!-- inject:vendor:js -->
-    <script src="//ajax.googleapis.com/ajax/libs/angularjs/1.2.19/angular.min.js"></script>
-    <script src="//cdnjs.cloudflare.com/ajax/libs/angular-ui-router/0.2.10/angular-ui-router.min.js"></script>
-    <script src="//ajax.googleapis.com/ajax/libs/angularjs/1.2.19/angular-resource.min.js"></script>
-    <!-- endinject -->
-    <!-- inject:vendor:js -->
-    <script src="/static/js/main.js"></script>
     <!-- endinject -->
 
+    <!-- inject:app:js -->
+    <!-- endinject -->
 </body>
 </html>

@@ -1,6 +1,6 @@
 'use strict';
 
-angular.module('hey', ['ui.router.state', 'ui.router'])
+angular.module('plotbot', ['ui.router.state', 'ui.router'])
 
 .run(function($rootScope, $state, $stateParams) {
     $rootScope.hello = 'world';
@@ -18,7 +18,7 @@ angular.module('hey', ['ui.router.state', 'ui.router'])
     $stateProvider.state('home', {
         url: '/',
         controller: 'HomeCtrl',
-        templateUrl: '/static/tpl/home.html'
+        templateUrl: 'home.html'
     });
 
 })
@@ -45,6 +45,5 @@ angular.module('hey', ['ui.router.state', 'ui.router'])
             $scope.rooms = data.rooms;
         });
     };
-
 
 });
