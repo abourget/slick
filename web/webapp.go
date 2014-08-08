@@ -25,6 +25,8 @@ type Webapp struct {
 }
 
 type WebappConfig struct {
+	Listen            string `json:"listen"`
+	OAuthBaseURL      string `json:"oauth_base_url"`
 	ClientID          string `json:"client_id"`
 	ClientSecret      string `json:"client_secret"`
 	RestrictDomain    string `json:"restrict_domain"`
@@ -71,7 +73,7 @@ func init() {
 }
 
 func (webapp *Webapp) Run() {
-	webapp.handler.Run("localhost:8080")
+	webapp.handler.Run(webapp.config.Listen)
 }
 
 // func LaunchWebapp(b *ahipbot.Bot) {
@@ -89,7 +91,7 @@ func configureWebapp(conf *WebappConfig) {
 		&oauth2.Options{
 			ClientID:     conf.ClientID,
 			ClientSecret: conf.ClientSecret,
-			RedirectURL:  "http://localhost:8080/oauth2callback",
+			RedirectURL:  conf.OAuthBaseURL + "/oauth2callback",
 			Scopes:       []string{"openid", "profile", "email", "https://www.googleapis.com/auth/userinfo.profile"},
 		},
 		"https://accounts.google.com/o/oauth2/auth",

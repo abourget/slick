@@ -135,6 +135,7 @@ func (standup *Standup) LoadData() {
 	if err != nil {
 		log.Println("Standup: Couldn't load data from redis. Using fresh data.")
 		fixup()
+		return
 	}
 
 	asBytes, _ := res.([]byte)

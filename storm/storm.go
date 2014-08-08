@@ -153,7 +153,7 @@ func (storm *Storm) pollAsana() {
 // TODO: what's that anyway ? move to config ?
 var asanaLink = "https://app.asana.com/0/7221799638526/"
 
-const DEBUG = true
+const DEBUG = false
 
 type tplData map[string]interface{}
 
@@ -270,6 +270,7 @@ func (storm *Storm) watchForCalm(originalTask *asana.Task) {
 			if storm.config.CalmedTagId == tag.StringId() {
 				storm.bot.SendToRoom(room, "ok, folks, the Storm has been Calmed!")
 				storm.stormActive = false
+				return
 			}
 		}
 
