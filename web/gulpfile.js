@@ -5,6 +5,7 @@ var fs = require('fs');
 var path = require('path');
 
 var rimraf       = require('rimraf');
+var git          = require('git-rev')
 
 //var browserSync  = require('browser-sync');
 //var browserify   = require('browserify');
@@ -69,9 +70,10 @@ var headerFileContent = fs.readFileSync('src/header.txt', 'utf-8')
 
 // JS & Angular
 
-gulp.task('app', ['clean:app', 'template_cache'], function() {
+gulp.task('app', ['git-rev', 'clean:app', 'template_cache'], function() {
     return gulp.src('src/js/*.js')
         .pipe(ngAnnotate())
+        .pipe(headerPipe())
         .pipe(gulp.dest('static/js'))
 });
 
@@ -79,9 +81,10 @@ gulp.task('clean:app', function(cb) {
     rimraf("static/js", cb);
 });
 
-gulp.task('template_cache', function() {
+gulp.task('template_cache', ['git-rev'], function() {
     return gulp.src('src/tpl/**/*.html')
         .pipe(templateCache({module: "plotbot"}))
+        .pipe(headerPipe())
         .pipe(gulp.dest('static/js'))
 });
 
@@ -110,11 +113,11 @@ gulp.task('clean:vendor', function(cb) {
 
 // CSS
 
-gulp.task('sass', function() {
+gulp.task('sass', ['git-rev'], function() {
     return gulp.src('src/scss/*.scss')
         .pipe(sass())
         .pipe(prefix('last 2 versions'))
-        .pipe(header(headerFileContent, {pkg: pkg}))
+        .pipe(headerPipe())
         .pipe(gulp.dest('static/css'))
         .on('error', handleErrors);
 });
@@ -126,6 +129,19 @@ gulp.task('compile', ['build'], function() {
     // Rev the vendors
     // Rev the main app
     // CSS minification
+});
+
+
+// Git
+
+var headerPipe;
+gulp.task('git-rev', function(cb) {
+    git.short(function(str) {
+        headerPipe = function() {
+            return header(headerFileContent, {pkg: pkg, gitRev: str, date: new Date()});
+        };
+        cb();
+    });
 });
 
 

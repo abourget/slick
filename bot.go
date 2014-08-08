@@ -51,6 +51,9 @@ func (bot *Bot) Run() {
 	LoadPlugins(bot)
 	LoadWebHandler(bot)
 
+	//time.Sleep(500 * time.Second)
+	//return
+
 	// Bot related
 	for {
 		log.Println("Connecting client...")
