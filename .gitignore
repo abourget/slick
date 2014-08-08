@@ -8,3 +8,5 @@
 node_modules
 
 web/dist/static
+web/static
+.sass-cache

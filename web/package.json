@@ -2,36 +2,31 @@
   "name": "plotbot",
   "version": "0.1.0",
   "description": "Web interface to Plotbot",
-  "browserify": {
-    "transform": [
-      "browserify-shim"
-    ]
-  },
-  "browserify-shim": {
-    "plugin": {
-      "exports": "plugin",
-      "depends": [
-        "jquery:$"
-      ]
-    }
-  },
+  "license": "MIT",
   "devDependencies": {
     "browser-sync": "~0.8.2",
-    "browserify": "~3.36.0",
-    "browserify-shim": "~3.4.1",
     "connect": "~2.14.3",
     "gulp": "~3.6.0",
+    "gulp-angular-templatecache": "^1.3.0",
+    "gulp-autoprefixer": "0.0.8",
     "gulp-changed": "~0.3.0",
     "gulp-compass": "~1.1.8",
+    "gulp-header": "^1.0.5",
     "gulp-imagemin": "~0.1.5",
     "gulp-inject": "^1.0.1",
+    "gulp-minify-css": "^0.3.7",
     "gulp-ng-annotate": "^0.3.0",
     "gulp-notify": "~1.2.4",
     "gulp-open": "~0.2.8",
     "gulp-rev": "^1.0.0",
+    "gulp-ruby-sass": "^0.7.1",
+    "gulp-sass": "^0.7.2",
+    "gulp-uglify": "^0.3.1",
     "gulp-util": "~2.2.14",
     "gulp-webpack": "^0.2.0",
     "pretty-hrtime": "~0.2.1",
+    "rimraf": "^2.2.8",
+    "through2": "^0.5.1",
     "vinyl-source-stream": "~0.1.1",
     "watchify": "~0.10.1"
   },

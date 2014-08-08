@@ -1,18 +1,32 @@
+var pkg = require('./package.json');
+
 var gulp = require('gulp');
+var fs = require('fs');
+var path = require('path');
+
+var rimraf       = require('rimraf');
 
 //var browserSync  = require('browser-sync');
 //var browserify   = require('browserify');
 //var webpack      = require('webpack');
 //var watchify     = require('watchify');
-var source       = require('vinyl-source-stream');
-var changed      = require('gulp-changed');
-var imagemin     = require('gulp-imagemin');
-var compass      = require('gulp-compass');
-var notify       = require('gulp-notify');
+//var source       = require('vinyl-source-stream');
+//var changed      = require('gulp-changed');
+//var imagemin     = require('gulp-imagemin');
+var sass         = require('gulp-sass');
+//var sass         = require('gulp-ruby-sass');
+
+var templateCache = require('gulp-angular-templatecache');
+var ngAnnotate   = require('gulp-ng-annotate');
+var header       = require('gulp-header');
+//var notify       = require('gulp-notify');
+var prefix       = require('gulp-autoprefixer');
+var inject       = require('gulp-inject');
 var gutil        = require('gulp-util');
 var prettyHrtime = require('pretty-hrtime');
 var startTime;
 
+var headerFileContent = fs.readFileSync('src/header.txt', 'utf-8')
 
 // JS:
 //  * take all my .js files, browserify them
@@ -53,101 +67,81 @@ var startTime;
 //   * With source maps
 // * Add bundling out of the index.html file
 
-gulp.task('images', function() {
-    var dest = './build/images';
+// JS & Angular
 
-    return gulp.src('./src/images/**')
-        .pipe(changed(dest)) // Ignore unchanged files
-        .pipe(imagemin()) // Optimize
-        .pipe(gulp.dest(dest));
+gulp.task('app', ['clean:app', 'template_cache'], function() {
+    return gulp.src('src/js/*.js')
+        .pipe(ngAnnotate())
+        .pipe(gulp.dest('static/js'))
 });
 
-gulp.task('browserSync', ['build'], function() {
-    browserSync.init(['build/**'], {
-        server: {
-            baseDir: 'build'
-        }
-    });
+gulp.task('clean:app', function(cb) {
+    rimraf("static/js", cb);
 });
 
-gulp.task("webpack", function() {
-    return gulp.src('src/entry.js')
-        .pipe(webpack({ /* webpack configuration */ }))
-        .pipe(gulp.dest('dist/'));
+gulp.task('template_cache', function() {
+    return gulp.src('src/tpl/**/*.html')
+        .pipe(templateCache({module: "plotbot"}))
+        .pipe(gulp.dest('static/js'))
 });
 
-gulp.task('browserify', function() {
+// Index page
 
-    var bundleMethod = global.isWatching ? watchify : browserify;
+gulp.task('build', ['copy:vendor', 'app', 'sass'], function() {
+    var targetVendor = gulp.src('static/vendor/*.js', {read: false});
+    var targetAppJs = gulp.src('static/js/*.js', {read: false});
+    var targetCss = gulp.src('static/css/*.css', {read: false});
+    return gulp.src('src/index.html')
+        .pipe(inject(targetVendor, {starttag: '<!-- inject:vendor:{{ext}} -->'}))
+        .pipe(inject(targetAppJs, {starttag: '<!-- inject:app:{{ext}} -->'}))
+        .pipe(inject(targetCss))
+        .pipe(gulp.dest('static'));
+});
 
-    var bundler = bundleMethod({
-        // Specify the entry point of your app
-        entries: ['./src/javascript/app.coffee'],
-        // Add file extentions to make optional in your requires
-        extensions: ['.coffee', '.hbs'],
-        // Enable source maps!
-        debug: true
-    });
+gulp.task('copy:vendor', ['clean:vendor'], function() {
+    return gulp.src('src/vendor/*.js')
+        .pipe(gulp.dest('static/vendor'));
+});
 
-    var bundle = function() {
-        // Log when bundling starts
-        loggerStart();
-
-        return bundler
-            .bundle()
-        // Report compile errors
-            .on('error', handleErrors)
-        // Use vinyl-source-stream to make the
-        // stream gulp compatible. Specifiy the
-        // desired output filename here.
-            .pipe(source('app.js'))
-        // Specify the output destination
-            .pipe(gulp.dest('./build/'))
-        // Log when bundling completes!
-            .on('end', loggerEnd);
-    };
-
-    if(global.isWatching) {
-        // Rebundle with watchify on changes.
-        bundler.on('update', bundle);
-    }
-
-    return bundle();
+gulp.task('clean:vendor', function(cb) {
+    rimraf("/static/vendor", cb)
 });
 
 
-gulp.task('setWatch', function() {
-    global.isWatching = true;
+// CSS
+
+gulp.task('sass', function() {
+    return gulp.src('src/scss/*.scss')
+        .pipe(sass())
+        .pipe(prefix('last 2 versions'))
+        .pipe(header(headerFileContent, {pkg: pkg}))
+        .pipe(gulp.dest('static/css'))
+        .on('error', handleErrors);
 });
 
-gulp.task('watch', ['setWatch', 'browserSync'], function() {
-    gulp.watch('src/sass/**', ['compass']);
-    gulp.watch('src/images/**', ['images']);
-    gulp.watch('src/htdocs/**', ['copy']);
-    // Note: The browserify task handles js recompiling with watchify
+// Compile
+
+gulp.task('compile', ['build'], function() {
+    // Do the concat, header, uglification
+    // Rev the vendors
+    // Rev the main app
+    // CSS minification
 });
 
 
-gulp.task('build', ['browserify', 'compass', 'images', 'copy']);
-
-gulp.task('copy', function() {
-    return gulp.src('src/htdocs/**')
-        .pipe(gulp.dest('build'));
-});
+// Defaults
 
 gulp.task('default', ['watch']);
 
-gulp.task('compass', function() {
-    return gulp.src('./src/sass/*.sass')
-        .pipe(compass({
-            project: path.join(__dirnam, 'assets'),
-            css: 'build',
-            sass: 'src/sass'
-        }))
-        .pipe(prefix('last 2 versions'))
-        .pipe(gulp.dest('app/css'))
-        .on('error', handleErrors);
+gulp.task('watch', ['build'], function() {
+    gulp.watch(['src/index.html',
+                'src/scss/**/*.scss',
+                'src/js/*.js',
+                'src/tpl/*.html'],
+               ['build']);
 });
+
+// Helpers
 
 var loggerStart = function() {
     startTime = process.hrtime();
