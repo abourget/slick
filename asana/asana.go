@@ -124,6 +124,7 @@ func (asana *Client) GetTasksByAssignee(userId string) ([]Task, error) {
 	return data.Data, err
 }
 
+
 func (asana *Client) GetTasksByTag(tagId string) ([]Task, error) {
 	var data struct {
 		Data []Task
@@ -177,6 +178,25 @@ func (asana *Client) GetUser(userId int64) (*User, error) {
 	return &data.Data, err
 }
 
+
+func (asana *Client) GetUsers() ([]User, error) {
+	var data struct {
+		Data []User
+	}
+
+	url := "https://app.asana.com/api/1.0/users/"
+	body, err := asana.request("GET", url)
+
+	if err != nil {
+		return nil, err
+	}
+
+	err = json.Unmarshal(body, &data)
+
+	return data.Data, err
+}
+
+
 func (asana *Client) GetTaskById(taskId int64) (*Task, error) {
 	var data struct {
 		Data Task
@@ -191,7 +211,7 @@ func (asana *Client) GetTaskById(taskId int64) (*Task, error) {
 
 	err = json.Unmarshal(body, &data)
 
-	fmt.Println("The tasks content: ", string(body))
+	// fmt.Println("The tasks content: ", string(body))
 
 	return &data.Data, err
 }

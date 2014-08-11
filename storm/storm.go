@@ -22,27 +22,35 @@ type Storm struct {
 }
 
 type StormConfig struct {
-	AsanaAPIKey    string `json:"asana_api_key"`
-	AsanaWorkspace string `json:"asana_workspace"`
-	HipchatRoom    string `json:"hipchat_room"`
-	StormTagId     string `json:"storm_tag_id"`
-	CalmedTagId    string `json:"calmed_tag_id"`
+	HipchatRoom string `json:"hipchat_room"`
+	StormTagId  string `json:"storm_tag_id"`
+	CalmedTagId string `json:"calmed_tag_id"`
 }
 
 func init() {
 	ahipbot.RegisterPlugin(func(bot *ahipbot.Bot) ahipbot.Plugin {
-		var conf struct {
+
+		var stormConf struct {
 			Storm StormConfig
 		}
-		bot.LoadConfig(&conf)
 
-		asana := asana.NewClient(conf.Storm.AsanaAPIKey, conf.Storm.AsanaWorkspace)
+		var asanaConf struct {
+			Asana struct {
+				APIKey    string `json:"api_key"`
+				Workspace string `json:"workspace"`
+			}
+		}
+
+		bot.LoadConfig(&asanaConf)
+		bot.LoadConfig(&stormConf)
+
+		asanaClient := asana.NewClient(asanaConf.Asana.APIKey, asanaConf.Asana.Workspace)
 
 		storm := &Storm{
 			bot:               bot,
-			config:            &conf.Storm,
+			config:            &stormConf.Storm,
 			timeBetweenStorms: 60 * time.Second,
-			asanaClient:       asana,
+			asanaClient:       asanaClient,
 			triggerPolling:    make(chan bool, 10),
 		}
 
@@ -183,8 +191,8 @@ func (storm *Storm) startStorm(task *asana.Task) {
 		img := ahipbot.RandomString("storm")
 		data := tplData{
 			"StormLink": storm.stormLink,
-			"Task": task,
-			"Image": img,
+			"Task":      task,
+			"Image":     img,
 		}
 		buf := bytes.NewBuffer([]byte(""))
 		stormTpl.Execute(buf, data)
@@ -196,8 +204,6 @@ func (storm *Storm) startStorm(task *asana.Task) {
 	go storm.watchForTaker(task)
 	go storm.watchForCalm(task)
 }
-
-
 
 var takerTpl = template.Must(template.New("takerTpl").Parse(`
 <p><img src="{{.ForcePush}}"></p>
@@ -240,7 +246,7 @@ func (storm *Storm) watchForTaker(task *asana.Task) {
 
 				buf := bytes.NewBuffer([]byte(""))
 				data := tplData{
-					"User": user,
+					"User":      user,
 					"ForcePush": ahipbot.RandomString("forcePush"),
 				}
 				takerTpl.Execute(buf, data)
