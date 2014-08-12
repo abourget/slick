@@ -88,6 +88,10 @@ func (asana *Client) request(method string, uri string, strbody string) ([]byte,
 
 	req, err := http.NewRequest(method, uri, bytes.NewBufferString(strbody))
 
+	if method == "PUT" {
+		req.Header.Set("Content-Type", "application/x-www-form-urlencoded")
+	}
+
 	if err != nil {
 		return nil, fmt.Errorf("Cannot create request %s %s", method, uri, err)
 	}
