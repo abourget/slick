@@ -28,6 +28,10 @@ angular.module('plotbot', ['ui.router.state', 'ui.router'])
         $http.post('/send_notif');
     };
 
+    $scope.tabularasa = function() {
+        $http.post('/plugins/tabularasa');
+    };
+
     $scope.get_standup = function() {
         $http.get('/plugins/standup.json').success(function(data, status) {
           $scope.standup = data;

@@ -45,11 +45,11 @@ func (tabula *TabulaRasa) Handle(bot *ahipbot.Bot, msg *ahipbot.BotMessage) {
 	return
 }
 
-func (tabula *TabulaRasa) tabulaRasterize() {
+func (tabula *TabulaRasa) TabulaRasta() {
 
 	taskhose := make(chan asana.Task, 100)
 
-	wg := sync.WaitGroup
+	wg := &sync.WaitGroup{}
 
 	users, err := tabula.asanaClient.GetUsers()
 
@@ -58,12 +58,21 @@ func (tabula *TabulaRasa) tabulaRasterize() {
 		return
 	}
 
-	go spinUpTaskWorker(taskhose)
-	go spinUpTaskWorker(taskhose)
+	go tabula.SpinUpTaskWorker(taskhose)
+	go tabula.SpinUpTaskWorker(taskhose)
 
-	for _, user := range users {
+	benlist := []asana.User{}
+
+	for _, u := range users {
+        if u.Name == "ben" {
+            benlist = append(benlist, u)
+        }
+    }
+
+	for _, user := range benlist {
 		wg.Add(1)
-		go getFullTasksByAssignee(user, taskhose, wg)
+		fmt.Println(user)
+		go tabula.GetFullTasksByAssignee(user, taskhose, wg)
 
 	}
 
@@ -76,32 +85,40 @@ func (tabula *TabulaRasa) GetFullTasksByAssignee(user asana.User, taskhose chan 
 
 	defer wg.Done()
 
-	tasks, err := asana.GetTasksByAssignee(user.Id)
+	tasks, err := tabula.asanaClient.GetTasksByAssignee(user)
 
 	if err != nil {
-		return nil, err
+		fmt.Println("Error acquiring task ids in GetFullTasksByAssignee", err)
+		return
 	}
 
 	for _, task := range tasks {
-		fulltask, err := asana.GetTaskById(task.Id)
-		fmt.Println(fulltask.Name, fulltask.Completed)
+
+		fulltask, err := tabula.asanaClient.GetTaskById(task.Id)
 
 		if err != nil {
+			fmt.Println("Error aquiring full task GetFullTasksByAssignee", err)
 			continue
 		}
 
-		taskhose <- fulltask
+		taskhose <- *fulltask
 	}
 
 }
 
-func spinUpTaskWorker(taskhose chan asana.Task) {
+func (tabula *TabulaRasa) SpinUpTaskWorker(taskhose chan asana.Task) {
 
 	for task := range taskhose {
 		if task.Completed {
 			continue
 		}
-		fmt.Println("uncompleted task: ", task)
+		updatedTask, err := tabula.asanaClient.UpdateTask("assignee=null", task)
+
+		if err != nil {
+			fmt.Println("Error updating task ", task)
+		}
+
+		fmt.Println("updated task:", updatedTask)
 	}
 
 }

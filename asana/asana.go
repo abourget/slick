@@ -1,6 +1,7 @@
 package asana
 
 import (
+	"bytes"
 	"encoding/json"
 	"fmt"
 	"io/ioutil"
@@ -83,9 +84,10 @@ func (asana *Client) SetWorkspace(workspace string) {
 	asana.workspace = workspace
 }
 
-func (asana *Client) request(method string, uri string) ([]byte, error) {
+func (asana *Client) request(method string, uri string, strbody string) ([]byte, error) {
 
-	req, err := http.NewRequest(method, uri, nil)
+	req, err := http.NewRequest(method, uri, bytes.NewBufferString(strbody))
+
 	if err != nil {
 		return nil, fmt.Errorf("Cannot create request %s %s", method, uri, err)
 	}
@@ -104,16 +106,16 @@ func (asana *Client) request(method string, uri string) ([]byte, error) {
 	return body, nil
 }
 
-func (asana *Client) GetTasksByAssignee(userId string) ([]Task, error) {
+func (asana *Client) GetTasksByAssignee(user User) ([]Task, error) {
 	var data struct {
 		Data []Task
 	}
 	workspace := asana.workspace
 
-	url := fmt.Sprintf("https://app.asana.com/api/1.0/workspaces/%s/tasks?assignee=%s",
-		workspace, userId)
+	url := fmt.Sprintf("https://app.asana.com/api/1.0/workspaces/%s/tasks?assignee=%v",
+		workspace, user.Id)
 
-	body, err := asana.request("GET", url)
+	body, err := asana.request("GET", url, "")
 
 	if err != nil {
 		return nil, err
@@ -124,7 +126,6 @@ func (asana *Client) GetTasksByAssignee(userId string) ([]Task, error) {
 	return data.Data, err
 }
 
-
 func (asana *Client) GetTasksByTag(tagId string) ([]Task, error) {
 	var data struct {
 		Data []Task
@@ -133,7 +134,7 @@ func (asana *Client) GetTasksByTag(tagId string) ([]Task, error) {
 	url := fmt.Sprintf("https://app.asana.com/api/1.0/tags/%s/tasks",
 		tagId)
 
-	body, err := asana.request("GET", url)
+	body, err := asana.request("GET", url, "")
 
 	if err != nil {
 		return nil, err
@@ -150,7 +151,7 @@ func (asana *Client) GetTaskStories(taskId int64) ([]Story, error) {
 	}
 
 	url := fmt.Sprintf("https://app.asana.com/api/1.0/tasks/%v/stories", taskId)
-	body, err := asana.request("GET", url)
+	body, err := asana.request("GET", url, "")
 
 	if err != nil {
 		return nil, err
@@ -167,7 +168,7 @@ func (asana *Client) GetUser(userId int64) (*User, error) {
 	}
 
 	url := fmt.Sprintf("https://app.asana.com/api/1.0/users/%v", userId)
-	body, err := asana.request("GET", url)
+	body, err := asana.request("GET", url, "")
 
 	if err != nil {
 		return nil, err
@@ -178,14 +179,13 @@ func (asana *Client) GetUser(userId int64) (*User, error) {
 	return &data.Data, err
 }
 
-
 func (asana *Client) GetUsers() ([]User, error) {
 	var data struct {
 		Data []User
 	}
 
 	url := "https://app.asana.com/api/1.0/users/"
-	body, err := asana.request("GET", url)
+	body, err := asana.request("GET", url, "")
 
 	if err != nil {
 		return nil, err
@@ -196,14 +196,13 @@ func (asana *Client) GetUsers() ([]User, error) {
 	return data.Data, err
 }
 
-
 func (asana *Client) GetTaskById(taskId int64) (*Task, error) {
 	var data struct {
 		Data Task
 	}
 
 	url := fmt.Sprintf("https://app.asana.com/api/1.0/tasks/%v", taskId)
-	body, err := asana.request("GET", url)
+	body, err := asana.request("GET", url, "")
 
 	if err != nil {
 		return nil, err
@@ -224,7 +223,7 @@ func (asana *Client) GetTagsOnTask(tagId int64) ([]Tag, error) {
 	url := fmt.Sprintf("https://app.asana.com/api/1.0/tasks/%v/tags",
 		tagId)
 
-	body, err := asana.request("GET", url)
+	body, err := asana.request("GET", url, "")
 
 	if err != nil {
 		return nil, err
@@ -233,4 +232,26 @@ func (asana *Client) GetTagsOnTask(tagId int64) ([]Tag, error) {
 	err = json.Unmarshal(body, &data)
 
 	return data.Data, err
+}
+
+func (asana *Client) UpdateTask(updateStr string, task Task) (*Task, error) {
+
+	var data struct {
+		Data Task
+	}
+
+	url := fmt.Sprintf("https://app.asana.com/api/1.0/tasks/%v", task.Id)
+
+	fmt.Println(url)
+
+	body, err := asana.request("PUT", url, updateStr)
+
+	if err != nil {
+		return nil, err
+	}
+
+	err = json.Unmarshal(body, &data)
+
+	return &data.Data, err
+
 }

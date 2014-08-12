@@ -13,6 +13,7 @@ import (
 	_ "github.com/abourget/ahipbot/healthy"
 	_ "github.com/abourget/ahipbot/standup"
 	_ "github.com/abourget/ahipbot/storm"
+	_ "github.com/abourget/ahipbot/tabularasa"
 	_ "github.com/abourget/ahipbot/webutils"
 )
 
