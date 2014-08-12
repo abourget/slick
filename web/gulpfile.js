@@ -91,6 +91,14 @@ gulp.task('template_cache', ['git-rev'], function() {
 // Index page
 
 gulp.task('build', ['copy:vendor', 'app', 'sass'], function() {
+    return injectIndexHtml();
+});
+
+gulp.task('index', function() {
+    return injectIndexHtml();
+})
+
+function injectIndexHtml() {
     var targetVendor = gulp.src('static/vendor/*.js', {read: false});
     var targetAppJs = gulp.src('static/js/*.js', {read: false});
     var targetCss = gulp.src('static/css/*.css', {read: false});
@@ -99,7 +107,7 @@ gulp.task('build', ['copy:vendor', 'app', 'sass'], function() {
         .pipe(inject(targetAppJs, {starttag: '<!-- inject:app:{{ext}} -->'}))
         .pipe(inject(targetCss))
         .pipe(gulp.dest('static'));
-});
+}
 
 gulp.task('copy:vendor', ['clean:vendor'], function() {
     return gulp.src('src/vendor/*.js')
@@ -125,6 +133,9 @@ gulp.task('sass', ['git-rev'], function() {
 // Compile
 
 gulp.task('compile', ['build'], function() {
+    return gulp.src(['static/vendor/**/*.js', '!**/*.min.js'])
+        .pipe(uglify());
+
     // Do the concat, header, uglification
     // Rev the vendors
     // Rev the main app
@@ -150,11 +161,10 @@ gulp.task('git-rev', function(cb) {
 gulp.task('default', ['watch']);
 
 gulp.task('watch', ['build'], function() {
-    gulp.watch(['src/index.html',
-                'src/scss/**/*.scss',
-                'src/js/*.js',
-                'src/tpl/*.html'],
-               ['build']);
+    gulp.watch(['src/index.html'], ['index'])
+    gulp.watch(['src/scss/**/*.scss'], ['sass', 'index'])
+    gulp.watch(['src/js/*.js'], ['app', 'index'])
+    gulp.watch(['src/tpl/*.html'], ['template_cache', 'index'])
 });
 
 // Helpers

@@ -103,7 +103,7 @@ func (storm *Storm) Handle(bot *ahipbot.Bot, msg *ahipbot.BotMessage) {
 			storm.triggerPolling <- true
 		}
 
-	} else if storm.stormActive && msg.Contains("ENOUGH") {
+	} else if storm.stormActive && (msg.Body == "ENOUGH" || msg.Body == "ENOUGH!") {
 		storm.stormActive = false
 		bot.Reply(msg, "ok, ok !")
 	}
@@ -260,6 +260,7 @@ func (storm *Storm) watchForTaker(task *asana.Task) {
 	}
 }
 
+// TODO: when we kill the storm with "ENOUGH", we need to kill the watching tasks also
 func (storm *Storm) watchForCalm(originalTask *asana.Task) {
 	room := storm.config.HipchatRoom
 	for {
