@@ -60,16 +60,10 @@ func (tabula *TabulaRasa) TabulaRasta() {
 
 	go tabula.SpinUpTaskWorker(taskhose)
 	go tabula.SpinUpTaskWorker(taskhose)
+	go tabula.SpinUpTaskWorker(taskhose)
+	go tabula.SpinUpTaskWorker(taskhose)
 
-	benlist := []asana.User{}
-
-	for _, u := range users {
-        if u.Name == "ben" {
-            benlist = append(benlist, u)
-        }
-    }
-
-	for _, user := range benlist {
+	for _, user := range users {
 		wg.Add(1)
 		fmt.Println(user)
 		go tabula.GetFullTasksByAssignee(user, taskhose, wg)
