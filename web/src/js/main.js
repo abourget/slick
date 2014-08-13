@@ -54,7 +54,64 @@ angular.module('plotbot', ['ui.router.state', 'ui.router'])
 
 })
 
-.directive("deployer", function() {
+.directive("deployer", function($timeout) {
+    function setupWebsocket($scope) {
+        function msg(msg) {
+            $scope.$apply(function() {
+                $scope.messages.push(msg);
+            });
+        }
+
+        var ws = new WebSocket("ws://" + window.location.host + "/plugins/deployer.ws");
+        ws.onopen = function() {
+            msg("[Websocket connected]");
+        };
+        ws.onerror = function() {
+            msg("[Websocket error]");
+            $timeout(function() {
+                msg("[Websocket reconnecting...]");
+                setupWebsocket($scope);
+            }, 3000);
+        };
+        ws.onmessage = function(event) {
+            msg(event.data);
+        }
+        $scope.deploy = function() {
+            var branch = $scope.branch;
+            if ($scope.env == 'prod') {
+                branch = '';
+            }
+
+            if ($scope.clear_on_deploy) {
+                $scope.messages = [];
+            }
+
+            if (!$scope.tag_updt) {
+                alert("Hmm.. thought we'd have 'updt_streambed' by default ?");
+                return;
+            }
+            var tags = "updt_streambed";
+            if ($scope.tag_config) {
+                tags += ",global_config,restart_streambed";
+            }
+            if ($scope.custom_tags) {
+                tags += "," + $scope.custom_tags;
+            }
+
+            if (ws.readyState == 3) {
+                msg("[Websocket cannot send, resetting...]");
+                setupWebsocket($scope);
+                return;
+            }
+            ws.send(JSON.stringify({
+                environment: $scope.env,
+                branch: branch,
+                tags: tags,
+                initiatedBy: USER.name
+            }));
+        }
+    }
+
     return {
         restrict: "E",
         templateUrl: "deployer.html",
@@ -67,52 +124,7 @@ angular.module('plotbot', ['ui.router.state', 'ui.router'])
             $scope.advanced = false;
             $scope.custom_tags = '';
 
-            var ws = new WebSocket("ws://" + window.location.host + "/plugins/deployer.ws");
-            ws.onopen = function(ev) {
-                $scope.$apply(function() {
-                    $scope.messages.push("[Websocket connected]");
-                });
-            };
-            ws.onerror = function(ev) {
-                $scope.$apply(function() {
-                    console.log(ev);
-                    $scope.messages.push("[Websocket error]");
-                });
-            };
-            ws.onmessage = function(event) {
-                $scope.$apply(function() {
-                    $scope.messages.push(event.data);
-                });
-            }
-            $scope.deploy = function() {
-                var branch = $scope.branch;
-                if ($scope.env == 'prod') {
-                    branch = '';
-                }
-
-                if ($scope.clear_on_deploy) {
-                    $scope.messages = [];
-                }
-
-                if (!$scope.tag_updt) {
-                    alert("Hmm.. thought we'd have 'updt_streambed' by default ?");
-                    return;
-                }
-                var tags = "updt_streambed";
-                if ($scope.tag_config) {
-                    tags += ",global_config,restart_streambed";
-                }
-                if ($scope.custom_tags) {
-                    tags += "," + $scope.custom_tags;
-                }
-
-                ws.send(JSON.stringify({
-                    environment: $scope.env,
-                    branch: branch,
-                    tags: tags,
-                    initiatedBy: USER.name
-                }));
-            }
+            setupWebsocket($scope);
         }
     };
 })

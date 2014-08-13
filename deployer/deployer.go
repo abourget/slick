@@ -91,6 +91,11 @@ type DeployJob struct {
 var deployFormat = regexp.MustCompile(`deploy( ([a-zA-Z0-9_\.-]+))? to ([a-z_-]+)((,| with)? tags?:? ?(.+))?`)
 
 func (dep *Deployer) Handle(bot *ahipbot.Bot, msg *ahipbot.BotMessage) {
+	// Discard non "mention_name, " prefixed messages
+	if !strings.HasPrefix(msg.Body, fmt.Sprintf("%s, ", bot.Config.Mention)) {
+		return
+	}
+
 	if match := deployFormat.FindStringSubmatch(msg.Body); match != nil {
 		if dep.runningJob != nil {
 			params := dep.runningJob.params
@@ -129,11 +134,9 @@ func (dep *Deployer) handleDeploy(params *DeployParams) {
 	}
 	hostsFile := fmt.Sprintf("hosts_%s", params.Environment)
 	playbookFile := fmt.Sprintf("playbook_%s.yml", params.Environment)
-	cmdArgs := []string{"ansible-playbook", "-i", hostsFile, playbookFile}
 	tags := params.ParsedTags()
-	if tags != "" {
-		cmdArgs = append(cmdArgs, "--tags", tags)
-	}
+	cmdArgs := []string{"ansible-playbook", "-i", hostsFile, playbookFile, "--tags", tags}
+
 	if params.Environment == "prod" {
 		if params.Branch != "" {
 			dep.pubLine(fmt.Sprintf(`[deployer] WARN: Branch specified (%s).  Ignoring while pushing to "prod"`, params.Branch))
@@ -204,7 +207,7 @@ func (dep *Deployer) manageKillProcess(pty *os.File) {
 func (dep *Deployer) pubsubForwardReply() {
 	for msg := range dep.pubsub.Sub("ansible-line") {
 		line := msg.(string)
-		dep.bot.SendToRoom("DevOps", line)
+		dep.bot.SendToRoom("123823_devops", line)
 	}
 }
 

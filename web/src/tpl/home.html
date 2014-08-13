@@ -5,20 +5,6 @@
 </p>
 
 <div>
-  <button ng-click="load_users()">Load Hipchat Users</button>
-  <ul>
-    <li ng-repeat="user in users">{{ user | json }}</li>
-  </ul>
-</div>
-
-<div>
-  <button ng-click="load_rooms()">Load Hipchat Rooms</button>
-  <ul>
-    <li ng-repeat="room in rooms">{{ room | json }}</li>
-  </ul>
-</div>
-
-<div>
   <button ng-click="get_standup()">Get standup</button>
   <pre ng-show="standup">{{ standup | json }}</pre>
 </div>

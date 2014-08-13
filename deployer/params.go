@@ -14,9 +14,17 @@ type DeployParams struct {
 }
 
 func (p *DeployParams) ParsedTags() string {
-	return strings.Replace(p.Tags, " ", "", -1)
+	tags := strings.Replace(p.Tags, " ", "", -1)
+	if tags == "" {
+		tags = "updt_streambed"
+	}
+	return tags
 }
 
 func (p *DeployParams) String() string {
+	branch := p.Branch
+	if branch == "" {
+		branch = "[default]"
+	}
 	return fmt.Sprintf("env=%s branch=%s tags=%s by=%s from=%s", p.Environment, p.Branch, p.ParsedTags(), p.InitiatedBy, p.From)
 }
