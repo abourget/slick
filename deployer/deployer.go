@@ -1,9 +1,18 @@
 package deployer
 
+/*
+  TODO:
+  * hook "git pull" on the "deploy/" repo before doing anything
+    * report any error
+  * start by having something that runs on prod
+  * report on "Plotly" that someone runs deploy
+  * report to "Devops" the full log
+    * also, to any listening Websocket
+*/
+
 import (
 	"bufio"
 	"fmt"
-	"github.com/kr/pty"
 	"io"
 	"log"
 	"os"
@@ -12,26 +21,51 @@ import (
 	"strings"
 	"time"
 
+	"github.com/kr/pty"
+	"github.com/tuxychandru/pubsub"
+
 	"github.com/abourget/ahipbot"
 )
 
 type Deployer struct {
 	runningJob *DeployJob
+	bot        *ahipbot.Bot
+	env        string
+	config     *DeployerConfig
+	pubsub     *pubsub.PubSub
 }
 
-var config = &ahipbot.PluginConfig{
-	EchoMessages: false,
-	OnlyMentions: true,
+type DeployerConfig struct {
+	RepositoryPath string `json:"repository_path"`
 }
 
 func init() {
 	ahipbot.RegisterPlugin(func(bot *ahipbot.Bot) ahipbot.Plugin {
-		return &Deployer{}
+		var conf struct {
+			Deployer DeployerConfig
+		}
+		bot.LoadConfig(&conf)
+
+		dep := &Deployer{
+			bot:    bot,
+			pubsub: pubsub.New(100),
+			config: &conf.Deployer,
+			env:    os.Getenv("PLOTLY_ENV"),
+		}
+		if dep.env == "" {
+			dep.env = "debug"
+		}
+
+		go dep.pubsubForwardReply()
+
+		return dep
 	})
 }
 
 func (dep *Deployer) Config() *ahipbot.PluginConfig {
-	return config
+	return &ahipbot.PluginConfig{
+		OnlyMentions: true,
+	}
 }
 
 /**
@@ -60,11 +94,11 @@ func (dep *Deployer) Handle(bot *ahipbot.Bot, msg *ahipbot.BotMessage) {
 	if match := deployFormat.FindStringSubmatch(msg.Body); match != nil {
 		if dep.runningJob != nil {
 			params := dep.runningJob.params
-			bot.Reply(msg, fmt.Sprintf("Deploy currently running, initated by %s: env=%s branch=%s tags=%s", params.initiatedBy, params.environment, params.branch, params.Tags()))
+			bot.Reply(msg, fmt.Sprintf("Deploy currently running: %s", params))
 			return
 		} else {
-			params := &DeployParams{environment: match[3], branch: match[2], tags: match[6], initiatedBy: msg.FromNick()}
-			dep.handleDeploy(bot, msg, params)
+			params := &DeployParams{Environment: match[3], Branch: match[2], Tags: match[6], InitiatedBy: msg.FromNick(), From: "chat"}
+			dep.handleDeploy(params)
 		}
 		return
 	}
@@ -86,27 +120,35 @@ func (dep *Deployer) Handle(bot *ahipbot.Bot, msg *ahipbot.BotMessage) {
 	}
 }
 
-type DeployParams struct {
-	environment string
-	branch      string
-	tags        string
-	initiatedBy string
-}
-
-func (p *DeployParams) Tags() string {
-	return strings.Replace(p.tags, " ", "", -1)
-}
-
-func (dep *Deployer) handleDeploy(bot *ahipbot.Bot, msg *ahipbot.BotMessage, params *DeployParams) {
-	bot.Reply(msg, fmt.Sprintf("[process] Running deploy env=%s, branch=%s, tags=%s", params.environment, params.branch, params.Tags()))
-
-	cmdArgs := []string{"ansible-playbook", "-i", "hosts_vagrant", "playbook_vagrant.yml"}
-	tags := params.Tags()
+func (dep *Deployer) handleDeploy(params *DeployParams) {
+	if err := dep.pullDeployRepo(); err != nil {
+		dep.pubLine(fmt.Sprintf("[deployer] Unable to pull from deploy/ repo: %s. Aborting.", err))
+		return
+	} else {
+		dep.pubLine(`[deployer] Using latest deploy/ revision`)
+	}
+	hostsFile := fmt.Sprintf("hosts_%s", params.Environment)
+	playbookFile := fmt.Sprintf("playbook_%s.yml", params.Environment)
+	cmdArgs := []string{"ansible-playbook", "-i", hostsFile, playbookFile}
+	tags := params.ParsedTags()
 	if tags != "" {
 		cmdArgs = append(cmdArgs, "--tags", tags)
 	}
+	if params.Environment == "prod" {
+		if params.Branch != "" {
+			dep.pubLine(fmt.Sprintf(`[deployer] WARN: Branch specified (%s).  Ignoring while pushing to "prod"`, params.Branch))
+		}
+	} else {
+		if params.Branch != "" {
+			cmdArgs = append(cmdArgs, "-e", fmt.Sprintf("streambed_pull_revision=origin/%s", params.Branch))
+		}
+	}
+
+	dep.bot.Notify("Plotly", "purple", "text", fmt.Sprintf("[deployer] Launching: %s", params), true)
+
+	dep.pubLine(fmt.Sprintf("[deployer] Running cmd: %s", strings.Join(cmdArgs, " ")))
 	cmd := exec.Command(cmdArgs[0], cmdArgs[1:]...)
-	cmd.Dir = "/home/abourget/plotly/deploy"
+	cmd.Dir = dep.config.RepositoryPath
 	cmd.Env = append(os.Environ(), "ANSIBLE_NOCOLOR=1")
 
 	pty, err := pty.Start(cmd)
@@ -114,19 +156,35 @@ func (dep *Deployer) handleDeploy(bot *ahipbot.Bot, msg *ahipbot.BotMessage, par
 		log.Fatal(err)
 	}
 
-	dep.runningJob = &DeployJob{process: cmd.Process, params: params, quit: make(chan bool, 2), kill: make(chan bool, 2)}
+	dep.runningJob = &DeployJob{
+		process: cmd.Process,
+		params:  params,
+		quit:    make(chan bool, 2),
+		kill:    make(chan bool, 2),
+	}
 
-	go manageDeployIo(bot, msg, pty)
+	go dep.manageDeployIo(pty)
 	go dep.manageKillProcess(pty)
 
 	if err := cmd.Wait(); err != nil {
-		bot.Reply(msg, fmt.Sprintf("[process] terminated: %s", err))
+		dep.pubLine(fmt.Sprintf("[deployer] terminated with error: %s", err))
 	} else {
-		bot.Reply(msg, "[process] terminated without error")
+		dep.pubLine("[deployer] terminated successfully")
 	}
 
 	dep.runningJob.quit <- true
 	dep.runningJob = nil
+}
+
+
+func (dep *Deployer) pullDeployRepo() error {
+	cmd := exec.Command("git", "pull")
+	cmd.Dir = dep.config.RepositoryPath
+	return cmd.Run()
+}
+
+func (dep *Deployer) pubLine(str string) {
+	dep.pubsub.Pub(str, "ansible-line")
 }
 
 func (dep *Deployer) manageKillProcess(pty *os.File) {
@@ -143,9 +201,19 @@ func (dep *Deployer) manageKillProcess(pty *os.File) {
 	}
 }
 
-func manageDeployIo(bot *ahipbot.Bot, msg *ahipbot.BotMessage, reader io.Reader) {
+func (dep *Deployer) pubsubForwardReply() {
+	for msg := range dep.pubsub.Sub("ansible-line") {
+		line := msg.(string)
+		dep.bot.SendToRoom("DevOps", line)
+	}
+}
+
+func (dep *Deployer) manageDeployIo(reader io.Reader) {
 	scanner := bufio.NewScanner(reader)
 	for scanner.Scan() {
-		bot.Reply(msg, fmt.Sprintf("%s", scanner.Text()))
+		if dep.runningJob == nil {
+			continue
+		}
+		dep.pubLine(scanner.Text())
 	}
 }

@@ -37,9 +37,11 @@ type Bot struct {
 }
 
 func NewHipbot(configFile string) *Bot {
-	bot := &Bot{}
-	bot.replySink = make(chan *BotReply)
-	bot.configFile = configFile
+	bot := &Bot{
+		configFile: configFile,
+		replySink:  make(chan *BotReply, 10),
+	}
+
 	return bot
 }
 
@@ -51,7 +53,7 @@ func (bot *Bot) Run() {
 	LoadPlugins(bot)
 	LoadWebHandler(bot)
 
-	//time.Sleep(500 * time.Second)
+	//time.Sleep(5000 * time.Second)
 	//return
 
 	// Bot related
@@ -105,20 +107,6 @@ func (bot *Bot) GetRoomId(room string) string {
 		if roomName == room.JID {
 			return fmt.Sprintf("%v", room.ID)
 		}
-	}
-	return room
-}
-
-func canonicalRoom(room string) string {
-	if !strings.Contains(room, "@") {
-		room += "@conf.hipchat.com"
-	}
-	return room
-}
-
-func baseRoom(room string) string {
-	if strings.Contains(room, "@") {
-		return strings.Split(room, "@")[0]
 	}
 	return room
 }
@@ -224,10 +212,14 @@ func (bot *Bot) SetupStorage() error {
 func (bot *Bot) LoadConfig(config interface{}) (err error) {
 	content, err := ioutil.ReadFile(bot.configFile)
 	if err != nil {
-		log.Fatalln("ERROR reading config:", err)
+		log.Fatalln("LoadConfig(): Error reading config:", err)
 		return
 	}
 	err = json.Unmarshal(content, &config)
+
+	if err != nil {
+		log.Println("LoadConfig(): Error unmarshaling JSON", err)
+	}
 	return
 }
 

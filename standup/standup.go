@@ -3,7 +3,6 @@ package standup
 import (
 	"bytes"
 	"encoding/gob"
-	"fmt"
 	"log"
 	"strings"
 	"time"
@@ -21,9 +20,9 @@ type Standup struct {
 type DataMap map[int64]*UserData
 
 type UserData struct {
-	Name     string
-	Email    string
-	PhotoURL string
+	Name       string
+	Email      string
+	PhotoURL   string
 	Yesterday  string
 	Today      string
 	Blocking   string
@@ -63,9 +62,6 @@ func (standup *Standup) Handle(bot *ahipbot.Bot, msg *ahipbot.BotMessage) {
 	} else if strings.HasPrefix(msg.Body, "!blocking") {
 		standup.StoreLine(bot, msg, TYPE_BLOCKING, msg.Body)
 
-	} else if strings.HasPrefix(msg.Body, "!done?") {
-		standup.ShowWhatsDone(bot, msg)
-
 	}
 }
 
@@ -102,23 +98,6 @@ func (standup *Standup) StoreLine(bot *ahipbot.Bot, msg *ahipbot.BotMessage, lin
 	userData.LastUpdate = time.Now().UTC()
 
 	standup.FlushData()
-}
-
-func (standup *Standup) ShowWhatsDone(bot *ahipbot.Bot, msg *ahipbot.BotMessage) {
-	user := bot.GetUser(msg.From)
-	if user == nil {
-		bot.Reply(msg, "Couldn't find your user profile.. have you just logged in? Wait a sec and try again.")
-		return
-	}
-
-	dataMap := *standup.data
-	userData, ok := dataMap[user.ID]
-	if !ok {
-		bot.Reply(msg, "No data for you buddy, ever!")
-		return
-	}
-
-	bot.Reply(msg, fmt.Sprintf("Here's your stuff %s\n%s\n%s\n%s", userData.FirstName(), userData.Yesterday, userData.Today, userData.Blocking))
 }
 
 func (standup *Standup) LoadData() {
