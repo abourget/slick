@@ -124,16 +124,15 @@ func (storm *Storm) launchWatcher() {
 		case <-storm.triggerPolling:
 		}
 
+		if storm.stormActive {
+			continue
+		}
+
 		storm.pollAsana()
 	}
 }
 
 func (storm *Storm) pollAsana() {
-	if storm.stormActive {
-		time.Sleep(5 * time.Second)
-		return
-	}
-
 	stormTasks, err := storm.asanaClient.GetTasksByTag(storm.config.StormTagId)
 	if err != nil {
 		log.Println("Storm: Error fetching tasks by tag: ", err)
@@ -158,7 +157,6 @@ func (storm *Storm) pollAsana() {
 	}
 }
 
-// TODO: what's that anyway ? move to config ?
 var asanaLink = "https://app.asana.com/0/7221799638526/"
 
 const DEBUG = false
@@ -260,10 +258,13 @@ func (storm *Storm) watchForTaker(task *asana.Task) {
 	}
 }
 
-// TODO: when we kill the storm with "ENOUGH", we need to kill the watching tasks also
 func (storm *Storm) watchForCalm(originalTask *asana.Task) {
 	room := storm.config.HipchatRoom
 	for {
+		if storm.stormActive == false {
+			log.Println("Storm: watchForCalm() stopping, as the storm was stopped somehow")
+			return
+		}
 		time.Sleep(15 * time.Second)
 		tags, err := storm.asanaClient.GetTagsOnTask(originalTask.Id)
 		if err != nil {
@@ -273,12 +274,19 @@ func (storm *Storm) watchForCalm(originalTask *asana.Task) {
 			return
 		}
 
+		seenTags := make(map[string]bool)
 		for _, tag := range tags {
+			seenTags[tag.StringId()] = true
 			if storm.config.CalmedTagId == tag.StringId() {
 				storm.bot.SendToRoom(room, "ok, folks, the Storm has been Calmed!")
 				storm.stormActive = false
 				return
 			}
+		}
+		if !seenTags[storm.config.StormTagId] {
+			storm.bot.SendToRoom(room, "ok, folks, the Storm was zapped into oblivion and removed")
+			storm.stormActive = false
+			return
 		}
 
 	}
