@@ -1,8 +1,11 @@
 package ahipbot
 
-import "github.com/tkawachi/hipchat"
-import "strings"
+import (
+	"fmt"
 
+	"github.com/tkawachi/hipchat"
+)
+import "strings"
 
 type BotReply struct {
 	To      string
@@ -12,6 +15,12 @@ type BotReply struct {
 type BotMessage struct {
 	*hipchat.Message
 	BotMentioned bool
+	FromUser     *User
+	FromRoom     *Room
+}
+
+func (msg *BotMessage) IsPrivate() bool {
+	return msg.FromRoom == nil
 }
 
 func (msg *BotMessage) ContainsAnyCased(strs []string) bool {
@@ -51,4 +60,23 @@ func (msg *BotMessage) Reply(s string) *BotReply {
 		To:      msg.From,
 		Message: s,
 	}
+}
+
+func (msg *BotMessage) ReplyPrivate(s string) *BotReply {
+	return &BotReply{
+		To:      msg.FromUser.JID,
+		Message: s,
+	}
+}
+
+func (msg *BotMessage) String() string {
+	fromUser := "<unknown>"
+	if msg.FromUser != nil {
+		fromUser = msg.FromUser.Name
+	}
+	fromRoom := "<none>"
+	if msg.FromRoom != nil {
+		fromRoom = msg.FromRoom.Name
+	}
+	return fmt.Sprintf(`BotMessage{"%s", from_user=%s, from_room=%s, mentioned=%v, private=%v}`, msg.Body, fromUser, fromRoom, msg.BotMentioned, msg.IsPrivate())
 }

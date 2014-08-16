@@ -27,9 +27,10 @@ type Bot struct {
 	client *hipchat.Client
 
 	// replySink sends messages to Hipchat rooms or users
-	replySink chan *BotReply
-	Users     []hipchatv2.User
-	Rooms     []hipchatv2.Room
+	disconnected chan bool
+	replySink    chan *BotReply
+	Users        []User
+	Rooms        []Room
 
 	redisConfig RedisConfig
 	// RedisPool holds a connection to Redis.  NOTE: Prefix all your keys with "plotbot:" please.
@@ -56,7 +57,6 @@ func (bot *Bot) Run() {
 	//time.Sleep(5000 * time.Second)
 	//return
 
-	// Bot related
 	for {
 		log.Println("Connecting client...")
 		err := bot.ConnectClient()
@@ -66,10 +66,10 @@ func (bot *Bot) Run() {
 			continue
 		}
 
-		disconnect := bot.SetupHandlers()
+		bot.SetupHandlers()
 
 		select {
-		case <-disconnect:
+		case <-bot.disconnected:
 			log.Println("Disconnected...")
 			time.Sleep(1 * time.Second)
 			continue
@@ -81,6 +81,21 @@ func (bot *Bot) Reply(msg *BotMessage, reply string) {
 	log.Println("Replying:", reply)
 	bot.replySink <- msg.Reply(reply)
 }
+
+func (bot *Bot) ReplyTo(jid, reply string) {
+	log.Println("Replying:", reply)
+	rep := &BotReply{
+		To:      jid,
+		Message: reply,
+	}
+	bot.replySink <- rep
+}
+
+func (bot *Bot) ReplyPrivate(msg *BotMessage, reply string) {
+	log.Println("Replying privately:", reply)
+	bot.replySink <- msg.ReplyPrivate(reply)
+}
+
 
 func (bot *Bot) Notify(room, color, format, msg string, notify bool) (*napping.Request, error) {
 	log.Println("Notifying room ", room, ": ", msg)
@@ -129,17 +144,15 @@ func (bot *Bot) ConnectClient() (err error) {
 	return
 }
 
-func (bot *Bot) SetupHandlers() chan bool {
+func (bot *Bot) SetupHandlers() {
 	bot.client.Status("chat")
-	disconnect := make(chan bool)
+	bot.disconnected = make(chan bool)
 	go bot.client.KeepAlive()
-	go bot.replyHandler(disconnect)
-	go bot.messageHandler(disconnect)
-	go bot.disconnectHandler(disconnect)
-	go bot.usersPolling(disconnect)
-	go bot.roomsPolling(disconnect)
+	go bot.replyHandler()
+	go bot.messageHandler()
+	go bot.usersPolling()
+	go bot.roomsPolling()
 	log.Println("Bot ready")
-	return disconnect
 }
 
 func (bot *Bot) LoadBaseConfig() {
@@ -223,102 +236,121 @@ func (bot *Bot) LoadConfig(config interface{}) (err error) {
 	return
 }
 
-func (bot *Bot) replyHandler(disconnect chan bool) {
+func (bot *Bot) replyHandler() {
 	for {
-		reply := <-bot.replySink
-		if reply != nil {
-			log.Println("REPLYING", reply.To, reply.Message)
-			bot.client.Say(reply.To, bot.Config.Nickname, reply.Message)
-			time.Sleep(50 * time.Millisecond)
+		select {
+		case <-bot.disconnected:
+			return
+		case reply := <-bot.replySink:
+			if reply != nil {
+				//log.Println("REPLYING", reply.To, reply.Message)
+				bot.client.Say(reply.To, bot.Config.Nickname, reply.Message)
+				time.Sleep(50 * time.Millisecond)
+			}
 		}
 	}
 }
 
-func (bot *Bot) messageHandler(disconnect chan bool) {
+func (bot *Bot) messageHandler() {
 	msgs := bot.client.Messages()
 	for {
-		msg := <-msgs
-		botMsg := &BotMessage{Message: msg}
-		//log.Println("MESSAGE", msg, bot.Config.Username, msg.To)
-
-		atMention := "@" + bot.Config.Mention
-		toMyself := strings.HasPrefix(msg.To, bot.Config.Username)
-		fromMyself := strings.HasPrefix(botMsg.FromNick(), bot.Config.Nickname)
-
-		if strings.Contains(msg.Body, atMention) || strings.HasPrefix(msg.Body, bot.Config.Mention) || toMyself {
-			botMsg.BotMentioned = true
-			//log.Printf("Message to me from %s: %s\n", msg.From, msg.Body)
-		}
-		for _, p := range loadedPlugins {
-			pluginConf := p.Config()
-
-			if pluginConf == nil {
+		select {
+		case <-bot.disconnected:
+			return
+		case msg := <-msgs:
+			botMsg := &BotMessage{Message: msg}
+			botMsg.FromUser = bot.GetUser(msg.From)
+			botMsg.FromRoom = bot.GetRoom(msg.From)
+			if botMsg.FromUser == nil {
+				log.Printf("Message from unknown user, skipping: %#v\n", botMsg)
 				continue
 			}
 
-			if !pluginConf.EchoMessages && fromMyself {
-				//log.Printf("no echo but I just messaged myself")
-				continue
-			}
-			if pluginConf.OnlyMentions && !botMsg.BotMentioned {
-				//log.Printf("only mentions but not BotMentioned")
-				continue
+			log.Printf("Incoming message: %s\n", botMsg)
+
+			atMention := "@" + bot.Config.Mention
+			fromMyself := strings.HasPrefix(botMsg.FromNick(), bot.Config.Nickname)
+			mentionColon := bot.Config.Mention + ":"
+			mentionComma := bot.Config.Mention + ","
+
+			if strings.Contains(msg.Body, atMention) || strings.HasPrefix(msg.Body, mentionColon) || strings.HasPrefix(msg.Body, mentionComma) || botMsg.IsPrivate() {
+				botMsg.BotMentioned = true
 			}
 
-			p.Handle(bot, botMsg)
+			for _, p := range loadedPlugins {
+				pluginConf := p.Config()
+
+				if pluginConf == nil {
+					continue
+				}
+
+				if !pluginConf.EchoMessages && fromMyself {
+					//log.Printf("no echo but I just messaged myself")
+					continue
+				}
+				if pluginConf.OnlyMentions && !botMsg.BotMentioned {
+					//log.Printf("only mentions but not BotMentioned")
+					continue
+				}
+
+				p.Handle(bot, botMsg)
+			}
 		}
 	}
 }
 
-func (bot *Bot) disconnectHandler(disconnect chan bool) {
+// Disconnect, you can call many times, checks closed channel first.
+func (bot *Bot) Disconnect() {
 	select {
-	case <-disconnect:
-		return
+	case _, ok := <-bot.disconnected:
+		if ok {
+			close(bot.disconnected)
+		}
+	default:
 	}
-	close(disconnect)
 }
 
-func (bot *Bot) usersPolling(disconnect chan bool) {
+func (bot *Bot) usersPolling() {
 	timeout := time.After(0)
 	for {
 		select {
-		case <-disconnect:
+		case <-bot.disconnected:
 			return
 		case <-timeout:
 			// FIXME: Disregard error?! wwoooaah!
-			users, _ := hipchatv2.GetUsers(bot.Config.HipchatApiToken)
+			hcUsers, _ := hipchatv2.GetUsers(bot.Config.HipchatApiToken)
+			users := []User{}
+			for _, hcu := range hcUsers {
+				users = append(users, User{hcu})
+			}
 			bot.Users = users
+			//log.Printf("Users: %#v\n", users)
 		}
 		timeout = time.After(3 * time.Minute)
-		reply := <-bot.replySink
-		if reply != nil {
-			bot.client.Say(reply.To, bot.Config.Nickname, reply.Message)
-			time.Sleep(50 * time.Millisecond)
-		}
 	}
 }
 
-func (bot *Bot) roomsPolling(disconnect chan bool) {
+func (bot *Bot) roomsPolling() {
 	timeout := time.After(0)
 	for {
 		select {
-		case <-disconnect:
+		case <-bot.disconnected:
 			return
 		case <-timeout:
-			rooms, _ := hipchatv2.GetRooms(bot.Config.HipchatApiToken)
+			hcRooms, _ := hipchatv2.GetRooms(bot.Config.HipchatApiToken)
+			rooms := []Room{}
+			for _, hcu := range hcRooms {
+				rooms = append(rooms, Room{hcu})
+			}
 			bot.Rooms = rooms
+			//log.Printf("Rooms: %#v\n", rooms)
 		}
 		timeout = time.After(3 * time.Minute)
-		reply := <-bot.replySink
-		if reply != nil {
-			bot.client.Say(reply.To, bot.Config.Nickname, reply.Message)
-			time.Sleep(50 * time.Millisecond)
-		}
 	}
 }
 
-// GetUser returns a hipchatv2.User by JID, ID, Name or Email
-func (bot *Bot) GetUser(find string) *hipchatv2.User {
+// GetUser returns a User by JID, ID, Name or Email
+func (bot *Bot) GetUser(find string) *User {
 	if strings.Contains(find, "/") {
 		parts := strings.Split(find, "/")
 		jid := parts[0]
@@ -333,6 +365,24 @@ func (bot *Bot) GetUser(find string) *hipchatv2.User {
 		//log.Printf("Hmmmm, %#v\n", user)
 		if user.Email == find || user.JID == find || strconv.FormatInt(user.ID, 10) == find || user.Name == find {
 			return &user
+		}
+	}
+	return nil
+}
+
+// GetUser returns a User by JID, ID or Name
+func (bot *Bot) GetRoom(q string) *Room {
+	if strings.Contains(q, "@chat.hipchat.com") {
+		return nil
+	}
+	if strings.Contains(q, "/") {
+		q = strings.Split(q, "/")[0]
+		// assert: strings.Contains(jid, "@conf.hipchat.com")
+	}
+	for _, room := range bot.Rooms {
+		//log.Printf("Hmmmm, %#v\n", room)
+		if room.JID == q || strconv.FormatInt(room.ID, 10) == q || room.Name == q {
+			return &room
 		}
 	}
 	return nil

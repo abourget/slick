@@ -1,6 +1,14 @@
 package ahipbot
 
-import "strings"
+import (
+	"strings"
+
+	"github.com/abourget/ahipbot/hipchatv2"
+)
+
+type Room struct {
+	hipchatv2.Room
+}
 
 func canonicalRoom(room string) string {
 	if !strings.Contains(room, "@") {
