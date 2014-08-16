@@ -52,7 +52,6 @@ func (dep *Deployer) websocketReader(ws *websocket.Conn) {
 			continue
 		}
 
-		// TODO: check the parameters, ensure they're right
-		dep.handleDeploy(deployParams)
+		go dep.handleDeploy(deployParams)
 	}
 }

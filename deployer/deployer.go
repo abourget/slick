@@ -81,11 +81,11 @@ func (dep *Deployer) Config() *ahipbot.PluginConfig {
  */
 
 type DeployJob struct {
-	process *os.Process
-	params  *DeployParams
-	quit    chan bool
-	kill    chan bool
-	killing bool
+	process   *os.Process
+	params    *DeployParams
+	quit      chan bool
+	kill      chan bool
+	killing   bool
 }
 
 var deployFormat = regexp.MustCompile(`deploy( ([a-zA-Z0-9_\.-]+))? to ([a-z_-]+)((,| with)? tags?:? ?(.+))?`)
@@ -102,8 +102,8 @@ func (dep *Deployer) Handle(bot *ahipbot.Bot, msg *ahipbot.BotMessage) {
 			bot.Reply(msg, fmt.Sprintf("Deploy currently running: %s", params))
 			return
 		} else {
-			params := &DeployParams{Environment: match[3], Branch: match[2], Tags: match[6], InitiatedBy: msg.FromNick(), From: "chat"}
-			dep.handleDeploy(params)
+			params := &DeployParams{Environment: match[3], Branch: match[2], Tags: match[6], InitiatedBy: msg.FromNick(), From: "chat", initiatedByChat: msg}
+			go dep.handleDeploy(params)
 		}
 		return
 	}
@@ -148,6 +148,7 @@ func (dep *Deployer) handleDeploy(params *DeployParams) {
 	}
 
 	dep.bot.Notify("Plotly", "purple", "text", fmt.Sprintf("[deployer] Launching: %s", params), true)
+	dep.replyPersonnally(params, "deploying my friend")
 
 	dep.pubLine(fmt.Sprintf("[deployer] Running cmd: %s", strings.Join(cmdArgs, " ")))
 	cmd := exec.Command(cmdArgs[0], cmdArgs[1:]...)
@@ -160,10 +161,10 @@ func (dep *Deployer) handleDeploy(params *DeployParams) {
 	}
 
 	dep.runningJob = &DeployJob{
-		process: cmd.Process,
-		params:  params,
-		quit:    make(chan bool, 2),
-		kill:    make(chan bool, 2),
+		process:   cmd.Process,
+		params:    params,
+		quit:      make(chan bool, 2),
+		kill:      make(chan bool, 2),
 	}
 
 	go dep.manageDeployIo(pty)
@@ -171,14 +172,15 @@ func (dep *Deployer) handleDeploy(params *DeployParams) {
 
 	if err := cmd.Wait(); err != nil {
 		dep.pubLine(fmt.Sprintf("[deployer] terminated with error: %s", err))
+		dep.replyPersonnally(params, fmt.Sprintf("your deploy failed: %s", err))
 	} else {
 		dep.pubLine("[deployer] terminated successfully")
+		dep.replyPersonnally(params, "your deploy was successful")
 	}
 
 	dep.runningJob.quit <- true
 	dep.runningJob = nil
 }
-
 
 func (dep *Deployer) pullDeployRepo() error {
 	cmd := exec.Command("git", "pull")
@@ -219,4 +221,12 @@ func (dep *Deployer) manageDeployIo(reader io.Reader) {
 		}
 		dep.pubLine(scanner.Text())
 	}
+}
+
+func (dep *Deployer) replyPersonnally(params *DeployParams, msg string) {
+	if params.initiatedByChat == nil {
+		return
+	}
+	fromUser := params.initiatedByChat.FromUser
+	dep.bot.Reply(params.initiatedByChat, fmt.Sprintf("@%s %s", fromUser.MentionName, msg))
 }

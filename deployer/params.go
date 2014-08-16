@@ -3,14 +3,17 @@ package deployer
 import (
 	"fmt"
 	"strings"
+
+	"github.com/abourget/ahipbot"
 )
 
 type DeployParams struct {
-	Environment string
-	Branch      string
-	Tags        string
-	InitiatedBy string
-	From        string
+	Environment     string
+	Branch          string
+	Tags            string
+	InitiatedBy     string
+	From            string
+	initiatedByChat *ahipbot.BotMessage
 }
 
 func (p *DeployParams) ParsedTags() string {
