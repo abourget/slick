@@ -1,6 +1,12 @@
 package funny
 
-import "github.com/abourget/ahipbot"
+import (
+	"fmt"
+	"time"
+
+	"github.com/abourget/ahipbot"
+	"github.com/abourget/ahipbot/blaster"
+)
 
 type Funny struct {
 }
@@ -56,5 +62,19 @@ func (funny *Funny) Handle(bot *ahipbot.Bot, msg *ahipbot.BotMessage) {
 		url := ahipbot.RandomString("forcePush")
 		bot.Reply(msg, url)
 		return
+	}
+
+	if msg.Contains("blast") {
+		//url := "https://plot.ly/__internal/ping"
+		//url := "https://plot.ly/"
+		url := "https://stage.plot.ly/__internal/ping"
+		go func() {
+			bot.Reply(msg, fmt.Sprintf("Blasting URL: %s for 60 seconds, with 5 workers", url))
+			b := blaster.New(url)
+			b.Start(5, time.Duration(60*time.Second))
+			for rep := range b.Reply {
+				bot.Reply(msg, rep)
+			}
+		}()
 	}
 }
