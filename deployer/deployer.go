@@ -25,6 +25,7 @@ import (
 	"github.com/tuxychandru/pubsub"
 
 	"github.com/abourget/ahipbot"
+	"github.com/abourget/ahipbot/internal"
 )
 
 type Deployer struct {
@@ -33,6 +34,7 @@ type Deployer struct {
 	env        string
 	config     *DeployerConfig
 	pubsub     *pubsub.PubSub
+	internal   *internal.InternalAPI
 }
 
 type DeployerConfig struct {
@@ -56,10 +58,16 @@ func init() {
 			dep.env = "debug"
 		}
 
+		dep.loadInternalAPI()
+
 		go dep.pubsubForwardReply()
 
 		return dep
 	})
+}
+
+func (dep *Deployer) loadInternalAPI() {
+	dep.internal = internal.New(dep.bot.LoadConfig)
 }
 
 func (dep *Deployer) Config() *ahipbot.PluginConfig {
@@ -81,11 +89,11 @@ func (dep *Deployer) Config() *ahipbot.PluginConfig {
  */
 
 type DeployJob struct {
-	process   *os.Process
-	params    *DeployParams
-	quit      chan bool
-	kill      chan bool
-	killing   bool
+	process *os.Process
+	params  *DeployParams
+	quit    chan bool
+	kill    chan bool
+	killing bool
 }
 
 var deployFormat = regexp.MustCompile(`deploy( ([a-zA-Z0-9_\.-]+))? to ([a-z_-]+)((,| with)? tags?:? ?(.+))?`)
@@ -99,7 +107,7 @@ func (dep *Deployer) Handle(bot *ahipbot.Bot, msg *ahipbot.BotMessage) {
 	if match := deployFormat.FindStringSubmatch(msg.Body); match != nil {
 		if dep.runningJob != nil {
 			params := dep.runningJob.params
-			bot.Reply(msg, fmt.Sprintf("Deploy currently running: %s", params))
+			bot.Reply(msg, fmt.Sprintf("@%s Deploy currently running: %s", msg.FromUser.MentionName, params))
 			return
 		} else {
 			params := &DeployParams{Environment: match[3], Branch: match[2], Tags: match[6], InitiatedBy: msg.FromNick(), From: "chat", initiatedByChat: msg}
@@ -147,8 +155,16 @@ func (dep *Deployer) handleDeploy(params *DeployParams) {
 		}
 	}
 
+	//
+	// Launching deploy
+	//
+
 	dep.bot.Notify("Plotly", "purple", "text", fmt.Sprintf("[deployer] Launching: %s", params), true)
 	dep.replyPersonnally(params, "deploying my friend")
+
+	if params.Environment == "prod" {
+		dep.publishCompareUrl(params.Environment, params.Branch)
+	}
 
 	dep.pubLine(fmt.Sprintf("[deployer] Running cmd: %s", strings.Join(cmdArgs, " ")))
 	cmd := exec.Command(cmdArgs[0], cmdArgs[1:]...)
@@ -161,10 +177,10 @@ func (dep *Deployer) handleDeploy(params *DeployParams) {
 	}
 
 	dep.runningJob = &DeployJob{
-		process:   cmd.Process,
-		params:    params,
-		quit:      make(chan bool, 2),
-		kill:      make(chan bool, 2),
+		process: cmd.Process,
+		params:  params,
+		quit:    make(chan bool, 2),
+		kill:    make(chan bool, 2),
 	}
 
 	go dep.manageDeployIo(pty)
@@ -229,4 +245,18 @@ func (dep *Deployer) replyPersonnally(params *DeployParams, msg string) {
 	}
 	fromUser := params.initiatedByChat.FromUser
 	dep.bot.Reply(params.initiatedByChat, fmt.Sprintf("@%s %s", fromUser.MentionName, msg))
+}
+
+func (dep *Deployer) publishCompareUrl(env, branch string) {
+	if dep.internal == nil {
+		return
+	}
+
+	currentHead := dep.internal.GetCurrentHead(env)
+	if currentHead == "" {
+		return
+	}
+
+	msg := fmt.Sprintf("[deployer] Compare what is being pushed: https://github.com/plotly/streambed/compare/%s...%s", currentHead, branch)
+	dep.pubLine(msg)
 }
