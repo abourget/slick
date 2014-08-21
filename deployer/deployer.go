@@ -114,9 +114,7 @@ func (dep *Deployer) Handle(bot *ahipbot.Bot, msg *ahipbot.BotMessage) {
 			go dep.handleDeploy(params)
 		}
 		return
-	}
-
-	if msg.Contains("cancel deploy") {
+	} else if msg.Contains("cancel deploy") {
 		if dep.runningJob == nil {
 			bot.Reply(msg, "No deploy running, sorry man..")
 		} else {
@@ -130,6 +128,15 @@ func (dep *Deployer) Handle(bot *ahipbot.Bot, msg *ahipbot.BotMessage) {
 			}
 		}
 		return
+	} else if msg.Contains("in the pipe") {
+		url := dep.getCompareUrl("prod", "master")
+		mention := msg.FromUser.MentionName
+		if url != "" {
+			bot.Reply(msg, fmt.Sprintf("@%s in master, waiting to reach prod: %s", mention, url))
+		} else {
+			bot.Reply(msg, fmt.Sprintf("@%s couldn't get current revision on prod", mention))
+		}
+
 	}
 }
 
@@ -163,7 +170,10 @@ func (dep *Deployer) handleDeploy(params *DeployParams) {
 	dep.replyPersonnally(params, "deploying my friend")
 
 	if params.Environment == "prod" {
-		dep.publishCompareUrl(params.Environment, params.Branch)
+		url := dep.getCompareUrl(params.Environment, params.Branch)
+		if url != "" {
+			dep.pubLine(fmt.Sprintf("[deployer] Compare what is being pushed: %s", url))
+		}
 	}
 
 	dep.pubLine(fmt.Sprintf("[deployer] Running cmd: %s", strings.Join(cmdArgs, " ")))
@@ -247,16 +257,16 @@ func (dep *Deployer) replyPersonnally(params *DeployParams, msg string) {
 	dep.bot.Reply(params.initiatedByChat, fmt.Sprintf("@%s %s", fromUser.MentionName, msg))
 }
 
-func (dep *Deployer) publishCompareUrl(env, branch string) {
+func (dep *Deployer) getCompareUrl(env, branch string) string {
 	if dep.internal == nil {
-		return
+		return ""
 	}
 
 	currentHead := dep.internal.GetCurrentHead(env)
 	if currentHead == "" {
-		return
+		return ""
 	}
 
-	msg := fmt.Sprintf("[deployer] Compare what is being pushed: https://github.com/plotly/streambed/compare/%s...%s", currentHead, branch)
-	dep.pubLine(msg)
+	url := fmt.Sprintf("https://github.com/plotly/streambed/compare/%s...%s", currentHead, branch)
+	return url
 }
