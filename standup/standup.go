@@ -210,7 +210,7 @@ type userProgress struct {
 
 func (up *userProgress) waitAndCheckProgress(msg *ahipbot.BotMessage, remindCh chan *ahipbot.BotMessage) {
 	select {
-	case <-time.After(30 * time.Second):
+	case <-time.After(90 * time.Second):
 		remindCh <- msg
 	case <-up.cancelTimer:
 		return
@@ -219,6 +219,6 @@ func (up *userProgress) waitAndCheckProgress(msg *ahipbot.BotMessage, remindCh c
 
 // waitForReset waits a couple of minutes and stops listening to that user altogether.  We want to poke the user once or twice if he's slow.. but not eternally.
 func (up *userProgress) waitForReset(msg *ahipbot.BotMessage, resetCh chan *ahipbot.BotMessage) {
-	<-time.After(3 * time.Minute)
+	<-time.After(15 * time.Minute)
 	resetCh <- msg
 }
