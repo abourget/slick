@@ -1,9 +1,9 @@
 package standup
 
 import (
-	"bytes"
 	"encoding/gob"
-	"log"
+	"fmt"
+	"regexp"
 	"strings"
 	"time"
 
@@ -11,7 +11,8 @@ import (
 )
 
 type Standup struct {
-	bot *ahipbot.Bot
+	bot            *ahipbot.Bot
+	sectionUpdates chan sectionUpdate
 
 	// Map's Hipchat ID to UserData
 	data *DataMap
@@ -46,52 +47,71 @@ func init() {
 	gob.Register(&UserData{})
 	ahipbot.RegisterPlugin(func(bot *ahipbot.Bot) ahipbot.Plugin {
 		dataMap := make(DataMap)
-		standup := &Standup{bot: bot, data: &dataMap}
+		standup := &Standup{
+			bot:            bot,
+			data:           &dataMap,
+			sectionUpdates: make(chan sectionUpdate, 15),
+		}
+		go standup.manageUpdatesInteraction()
 		standup.LoadData()
 		return standup
 	})
 }
 
 func (standup *Standup) Handle(bot *ahipbot.Bot, msg *ahipbot.BotMessage) {
-	if strings.HasPrefix(msg.Body, "!yesterday") {
-		standup.StoreLine(bot, msg, TYPE_YESTERDAY, msg.Body)
-
-	} else if strings.HasPrefix(msg.Body, "!today") {
-		standup.StoreLine(bot, msg, TYPE_TODAY, msg.Body)
-
-	} else if strings.HasPrefix(msg.Body, "!blocking") {
-		standup.StoreLine(bot, msg, TYPE_BLOCKING, msg.Body)
-
+	res := sectionRegexp.FindAllStringSubmatchIndex(msg.Body, -1)
+	if res != nil {
+		for _, section := range extractSectionAndText(msg.Body, res) {
+			standup.TriggerReminders(msg, section.name)
+			standup.StoreLine(msg, section.name, section.text)
+		}
 	}
 }
 
-type LineType int8
+var sectionRegexp = regexp.MustCompile(`(?mi)^!(yesterday|today|blocking)`)
 
-const (
-	TYPE_YESTERDAY LineType = iota
-	TYPE_TODAY
-	TYPE_BLOCKING
-)
+type sectionMatch struct {
+	name string
+	text string
+}
 
-func (standup *Standup) StoreLine(bot *ahipbot.Bot, msg *ahipbot.BotMessage, lineType LineType, line string) {
-	user := bot.GetUser(msg.From)
-	if user == nil {
-		bot.Reply(msg, "Couldn't find your user profile.. have you just logged in? Wait a sec and try again.")
-		return
+// extractSectionAndText returns the "today", "this is what I did today" section from the result of "FindAllStringSubmatchindex" call.
+func extractSectionAndText(input string, res [][]int) []sectionMatch {
+	out := make([]sectionMatch, 0, 3)
+
+	for i := 0; i < len(res); i++ {
+		el := res[i]
+
+		section := input[el[2]:el[3]] // (2,3) is second group's (start,end)
+		strings.ToLower(section)
+
+		var endFullText = len(input)
+		if (i + 1) < len(res) {
+			endFullText = res[i+1][0]
+		}
+		fullText := input[el[1]:endFullText]
+		fullText = strings.TrimSpace(fullText)
+
+		out = append(out, sectionMatch{section, fullText})
 	}
 
+	return out
+}
+
+func (standup *Standup) StoreLine(msg *ahipbot.BotMessage, section string, line string) {
 	dataMap := *standup.data
+	user := standup.bot.GetUser(msg.From)
 	userData, ok := dataMap[user.ID]
 	if !ok {
 		userData = &UserData{Email: user.Email, Name: user.Name, PhotoURL: user.PhotoURL}
 		dataMap[user.ID] = userData
 	}
 
-	if lineType == TYPE_YESTERDAY {
+	if section == "yesterday" {
 		userData.Yesterday = line
-	} else if lineType == TYPE_TODAY {
+	} else if section == "today" {
 		userData.Today = line
-	} else if lineType == TYPE_BLOCKING {
+	} else if section == "blocking" {
 		userData.Blocking = line
 	}
 
@@ -100,43 +120,105 @@ func (standup *Standup) StoreLine(bot *ahipbot.Bot, msg *ahipbot.BotMessage, lin
 	standup.FlushData()
 }
 
-func (standup *Standup) LoadData() {
-	bot := standup.bot
-	redis := bot.RedisPool.Get()
-	defer redis.Close()
+func (standup *Standup) TriggerReminders(msg *ahipbot.BotMessage, section string) {
+	standup.sectionUpdates <- sectionUpdate{section, msg}
+}
 
-	fixup := func() {
-		dataMap := make(DataMap)
-		standup.data = &dataMap
-	}
+//
+// Reminder to complete all sections and reception confirmation message
+//
 
-	res, err := redis.Do("GET", "plotbot:standup")
-	if err != nil {
-		log.Println("Standup: Couldn't load data from redis. Using fresh data.")
-		fixup()
-		return
-	}
+func (standup *Standup) manageUpdatesInteraction() {
+	remindCh := make(chan *ahipbot.BotMessage)
+	resetCh := make(chan *ahipbot.BotMessage)
 
-	asBytes, _ := res.([]byte)
-	dec := gob.NewDecoder(bytes.NewBuffer(asBytes))
-	err = dec.Decode(standup.data)
-	if err != nil {
-		log.Println("Standup: Unable to decode data from redis. Using fresh data.")
-		fixup()
+	for {
+		select {
+		case update := <-standup.sectionUpdates:
+			userEmail := update.msg.FromUser.Email
+			progress := userProgressMap[userEmail]
+			if progress == nil {
+				progress = &userProgress{
+					sectionsDone: make(map[string]bool),
+					cancelTimer:  make(chan bool),
+				}
+				userProgressMap[userEmail] = progress
+				progress.sectionsDone[update.section] = true
+				go progress.waitAndCheckProgress(update.msg, remindCh)
+				go progress.waitForReset(update.msg, resetCh)
+			} else {
+				close(progress.cancelTimer)
+
+				progress.sectionsDone[update.section] = true
+				numDone := len(progress.sectionsDone)
+				if numDone == 3 {
+					standup.bot.ReplyMention(update.msg, "got it!")
+					delete(userProgressMap, update.msg.FromUser.Email)
+				} else {
+					progress.cancelTimer = make(chan bool)
+					go progress.waitAndCheckProgress(update.msg, remindCh)
+				}
+			}
+
+		case msg := <-resetCh:
+			userEmail := msg.FromUser.Email
+			progress := userProgressMap[userEmail]
+			if progress != nil {
+				close(progress.cancelTimer)
+			}
+			delete(userProgressMap, userEmail)
+
+		case msg := <-remindCh:
+			// Do the reminding for that user
+			userEmail := msg.FromUser.Email
+			userProgress := userProgressMap[userEmail]
+			if userProgress == nil {
+				continue
+			}
+
+			remains := make([]string, 0, 3)
+			if userProgress.sectionsDone["today"] == false {
+				remains = append(remains, "today")
+			}
+			if userProgress.sectionsDone["yesterday"] == false {
+				remains = append(remains, "yesterday")
+			}
+			if userProgress.sectionsDone["blocking"] == false {
+				remains = append(remains, "blocking stuff")
+			}
+
+			remain := strings.Join(remains, " or ")
+
+			if remain != "" {
+				standup.bot.ReplyMention(msg, fmt.Sprintf("what about %s ?", remain))
+			}
+		}
 	}
 }
 
-func (standup *Standup) FlushData() {
-	bot := standup.bot
-	redis := bot.RedisPool.Get()
-	defer redis.Close()
+type sectionUpdate struct {
+	section string
+	msg     *ahipbot.BotMessage
+}
 
-	buf := bytes.NewBuffer([]byte(""))
-	enc := gob.NewEncoder(buf)
-	enc.Encode(standup.data)
+var userProgressMap = make(map[string]*userProgress)
 
-	_, err := redis.Do("SET", "plotbot:standup", buf.String())
-	if err != nil {
-		log.Println("ERROR: Couldn't redis FlushData()")
+type userProgress struct {
+	sectionsDone map[string]bool
+	cancelTimer  chan bool
+}
+
+func (up *userProgress) waitAndCheckProgress(msg *ahipbot.BotMessage, remindCh chan *ahipbot.BotMessage) {
+	select {
+	case <-time.After(30 * time.Second):
+		remindCh <- msg
+	case <-up.cancelTimer:
+		return
 	}
+}
+
+// waitForReset waits a couple of minutes and stops listening to that user altogether.  We want to poke the user once or twice if he's slow.. but not eternally.
+func (up *userProgress) waitForReset(msg *ahipbot.BotMessage, resetCh chan *ahipbot.BotMessage) {
+	<-time.After(3 * time.Minute)
+	resetCh <- msg
 }

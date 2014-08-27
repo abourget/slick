@@ -253,8 +253,7 @@ func (dep *Deployer) replyPersonnally(params *DeployParams, msg string) {
 	if params.initiatedByChat == nil {
 		return
 	}
-	fromUser := params.initiatedByChat.FromUser
-	dep.bot.Reply(params.initiatedByChat, fmt.Sprintf("@%s %s", fromUser.MentionName, msg))
+	dep.bot.ReplyMention(params.initiatedByChat, msg)
 }
 
 func (dep *Deployer) getCompareUrl(env, branch string) string {

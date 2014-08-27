@@ -82,6 +82,19 @@ func (bot *Bot) Reply(msg *BotMessage, reply string) {
 	bot.replySink <- msg.Reply(reply)
 }
 
+// ReplyMention replies with a @mention named prefixed, when replying in public. When replying in private, nothing is added.
+func (bot *Bot) ReplyMention(msg *BotMessage, reply string) {
+	if msg.IsPrivate() {
+		bot.Reply(msg, reply)
+	} else {
+		prefix := ""
+		if msg.FromUser != nil {
+			prefix = fmt.Sprintf("@%s ", msg.FromUser.MentionName)
+		}
+		bot.Reply(msg, fmt.Sprintf("%s%s", prefix, reply))
+	}
+}
+
 func (bot *Bot) ReplyTo(jid, reply string) {
 	log.Println("Replying:", reply)
 	rep := &BotReply{
@@ -95,7 +108,6 @@ func (bot *Bot) ReplyPrivate(msg *BotMessage, reply string) {
 	log.Println("Replying privately:", reply)
 	bot.replySink <- msg.ReplyPrivate(reply)
 }
-
 
 func (bot *Bot) Notify(room, color, format, msg string, notify bool) (*napping.Request, error) {
 	log.Println("Notifying room ", room, ": ", msg)
