@@ -139,8 +139,13 @@ func (bot *Bot) GetRoomId(room string) string {
 }
 
 func (bot *Bot) ConnectClient() (err error) {
+	resource := bot.Config.Resource
+	if resource == "" {
+		resource = "bot"
+	}
+
 	bot.client, err = hipchat.NewClient(
-		bot.Config.Username, bot.Config.Password, "bot")
+		bot.Config.Username, bot.Config.Password, resource)
 	if err != nil {
 		log.Println("Error in ConnectClient()")
 		return

@@ -8,6 +8,7 @@ import (
 type HipchatConfig struct {
 	Username        string
 	Password        string
+	Resource        string
 	Nickname        string
 	Mention         string
 	Rooms           []string
