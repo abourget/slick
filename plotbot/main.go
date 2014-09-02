@@ -9,6 +9,7 @@ import (
 	_ "github.com/abourget/ahipbot/web"
 
 	_ "github.com/abourget/ahipbot/deployer"
+	_ "github.com/abourget/ahipbot/toxin"
 	_ "github.com/abourget/ahipbot/funny"
 	_ "github.com/abourget/ahipbot/healthy"
 	_ "github.com/abourget/ahipbot/standup"
