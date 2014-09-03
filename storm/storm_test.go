@@ -5,7 +5,7 @@ import (
 	"strings"
 	"testing"
 
-	"github.com/abourget/ahipbot/asana"
+	"github.com/plotly/plotbot/asana"
 )
 
 func TestTakerTemplate(t *testing.T) {

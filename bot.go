@@ -1,4 +1,4 @@
-package ahipbot
+package plotbot
 
 import (
 	"encoding/json"
@@ -9,7 +9,7 @@ import (
 	"strings"
 	"time"
 
-	"github.com/abourget/ahipbot/hipchatv2"
+	"github.com/plotly/plotbot/hipchatv2"
 	"github.com/garyburd/redigo/redis"
 	"github.com/jmcvetta/napping"
 	"github.com/tkawachi/hipchat"

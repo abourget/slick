@@ -4,18 +4,18 @@ import (
 	"flag"
 	"os"
 
-	"github.com/abourget/ahipbot"
+	"github.com/plotly/plotbot"
 
-	_ "github.com/abourget/ahipbot/web"
+	_ "github.com/plotly/plotbot/web"
 
-	_ "github.com/abourget/ahipbot/deployer"
-	_ "github.com/abourget/ahipbot/toxin"
-	_ "github.com/abourget/ahipbot/funny"
-	_ "github.com/abourget/ahipbot/healthy"
-	_ "github.com/abourget/ahipbot/standup"
-	_ "github.com/abourget/ahipbot/storm"
-	_ "github.com/abourget/ahipbot/tabularasa"
-	_ "github.com/abourget/ahipbot/webutils"
+	_ "github.com/plotly/plotbot/deployer"
+	_ "github.com/plotly/plotbot/toxin"
+	_ "github.com/plotly/plotbot/funny"
+	_ "github.com/plotly/plotbot/healthy"
+	_ "github.com/plotly/plotbot/standup"
+	_ "github.com/plotly/plotbot/storm"
+	_ "github.com/plotly/plotbot/tabularasa"
+	_ "github.com/plotly/plotbot/webutils"
 )
 
 var configFile = flag.String("config", os.Getenv("HOME")+"/.plotbot", "config file")
@@ -23,6 +23,6 @@ var configFile = flag.String("config", os.Getenv("HOME")+"/.plotbot", "config fi
 func main() {
 	flag.Parse()
 
-	bot := ahipbot.NewHipbot(*configFile)
+	bot := plotbot.NewHipbot(*configFile)
 	bot.Run()
 }

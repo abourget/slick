@@ -1,9 +1,9 @@
-package ahipbot
+package plotbot
 
 import (
 	"testing"
 
-	"github.com/abourget/ahipbot/hipchatv2"
+	"github.com/plotly/plotbot/hipchatv2"
 )
 
 func TestBotGetUserByName(t *testing.T) {

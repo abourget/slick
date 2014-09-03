@@ -6,7 +6,7 @@ import (
 	"strings"
 	"time"
 
-	"github.com/abourget/ahipbot"
+	"github.com/plotly/plotbot"
 )
 
 type Meeting struct {
@@ -24,7 +24,7 @@ type Meeting struct {
 	Participants   []*User
 }
 
-func NewMeeting(id string, user *ahipbot.User, goal, room string) *Meeting {
+func NewMeeting(id string, user *plotbot.User, goal, room string) *Meeting {
 	meeting := &Meeting{}
 	meeting.ID = id
 	meeting.Room = room
@@ -37,7 +37,7 @@ func NewMeeting(id string, user *ahipbot.User, goal, room string) *Meeting {
 	return meeting
 }
 
-func (meeting *Meeting) ImportUser(user *ahipbot.User) *User {
+func (meeting *Meeting) ImportUser(user *plotbot.User) *User {
 	fromEmail := user.Email
 
 	for _, user := range meeting.Participants {

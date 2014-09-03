@@ -6,19 +6,19 @@ import (
 	"net/http"
 	"strings"
 
-	"github.com/abourget/ahipbot"
+	"github.com/plotly/plotbot"
 )
 
 // Hipbot Plugin
 type Healthy struct {
 	urls   []string
-	config *ahipbot.PluginConfig
+	config *plotbot.PluginConfig
 }
 
 func init() {
-	ahipbot.RegisterPlugin(func(bot *ahipbot.Bot) ahipbot.Plugin {
+	plotbot.RegisterPlugin(func(bot *plotbot.Bot) plotbot.Plugin {
 		healthy := &Healthy{
-			config: &ahipbot.PluginConfig{
+			config: &plotbot.PluginConfig{
 				EchoMessages: false,
 				OnlyMentions: true,
 			},
@@ -37,12 +37,12 @@ func init() {
 }
 
 // Configuration
-func (healthy *Healthy) Config() *ahipbot.PluginConfig {
+func (healthy *Healthy) Config() *plotbot.PluginConfig {
 	return healthy.config
 }
 
 // Handler
-func (healthy *Healthy) Handle(bot *ahipbot.Bot, msg *ahipbot.BotMessage) {
+func (healthy *Healthy) Handle(bot *plotbot.Bot, msg *plotbot.BotMessage) {
 	if msg.ContainsAny([]string{"health", "healthy?", "health_check"}) {
 		log.Println("Health check. Requested by", msg.From)
 		bot.Reply(msg, healthy.CheckAll())

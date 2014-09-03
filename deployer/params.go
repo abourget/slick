@@ -4,7 +4,7 @@ import (
 	"fmt"
 	"strings"
 
-	"github.com/abourget/ahipbot"
+	"github.com/plotly/plotbot"
 )
 
 type DeployParams struct {
@@ -13,7 +13,7 @@ type DeployParams struct {
 	Tags            string
 	InitiatedBy     string
 	From            string
-	initiatedByChat *ahipbot.BotMessage
+	initiatedByChat *plotbot.BotMessage
 }
 
 func (p *DeployParams) ParsedTags() string {

@@ -7,12 +7,12 @@ import (
 	"strconv"
 	"time"
 
-	"github.com/abourget/ahipbot"
-	"github.com/abourget/ahipbot/asana"
+	"github.com/plotly/plotbot"
+	"github.com/plotly/plotbot/asana"
 )
 
 type Storm struct {
-	bot               *ahipbot.Bot
+	bot               *plotbot.Bot
 	config            *StormConfig
 	timeBetweenStorms time.Duration
 	stormActive       bool
@@ -28,7 +28,7 @@ type StormConfig struct {
 }
 
 func init() {
-	ahipbot.RegisterPlugin(func(bot *ahipbot.Bot) ahipbot.Plugin {
+	plotbot.RegisterPlugin(func(bot *plotbot.Bot) plotbot.Plugin {
 
 		var stormConf struct {
 			Storm StormConfig
@@ -54,7 +54,7 @@ func init() {
 			triggerPolling:    make(chan bool, 10),
 		}
 
-		ahipbot.RegisterStringList("storm", []string{
+		plotbot.RegisterStringList("storm", []string{
 			"http://static.tumblr.com/ikqttte/OlElnumnn/f9cb7_tumblr_lkfd09xr2y1qfuje9o1_500.gif",
 			"http://media.giphy.com/media/8cdBgACkApvt6/giphy.gif",
 			"http://25.media.tumblr.com/tumblr_luucaug87A1qluhjfo1_500.gif",
@@ -83,17 +83,17 @@ var stormTakerMsg = "IS THE STORM TAKER! \n" +
 	"confusing, it is your duty Storm Taker, yours alone, to remedy this. Good luck"
 
 // Configuration
-var config = &ahipbot.PluginConfig{
+var config = &plotbot.PluginConfig{
 	EchoMessages: false,
 	OnlyMentions: false,
 }
 
-func (storm *Storm) Config() *ahipbot.PluginConfig {
+func (storm *Storm) Config() *plotbot.PluginConfig {
 	return config
 }
 
 // Handler
-func (storm *Storm) Handle(bot *ahipbot.Bot, msg *ahipbot.BotMessage) {
+func (storm *Storm) Handle(bot *plotbot.Bot, msg *plotbot.BotMessage) {
 	if msg.BotMentioned && msg.Contains("stormy day") {
 
 		if storm.stormActive {
@@ -186,7 +186,7 @@ func (storm *Storm) startStorm(task *asana.Task) {
 		time.Sleep(wait * time.Second)
 
 		bot.SendToRoom(room, "@all Who will step up and take it on ?")
-		img := ahipbot.RandomString("storm")
+		img := plotbot.RandomString("storm")
 		data := tplData{
 			"StormLink": storm.stormLink,
 			"Task":      task,
@@ -245,7 +245,7 @@ func (storm *Storm) watchForTaker(task *asana.Task) {
 				buf := bytes.NewBuffer([]byte(""))
 				data := tplData{
 					"User":      user,
-					"ForcePush": ahipbot.RandomString("forcePush"),
+					"ForcePush": plotbot.RandomString("forcePush"),
 				}
 				takerTpl.Execute(buf, data)
 				storm.bot.Notify(storm.config.HipchatRoom, "green", "html", buf.String(), false)

@@ -1,6 +1,6 @@
 # The Plotly Bot -- A simple bot written in Go
 
-[![Build Status](https://drone.io/github.com/abourget/ahipbot/status.png)](https://drone.io/github.com/abourget/ahipbot/latest)
+[![Build Status](https://drone.io/github.com/plotly/plotbot/status.png)](https://drone.io/github.com/plotly/plotbot/latest)
 
 
 ## Configuration
@@ -11,18 +11,18 @@
 
 * Pull the bot and its dependencies:
 
-    go get github.com/abourget/ahipbot
+    go get github.com/plotly/plotbot
 
 * Copy the `plotbot.sample.conf` file to `$HOME/.plotbot` and tweak at will.
 
 * Build with:
 
-    cd $GOPATH/src/github.com/abourget/ahipbot/plotbot
+    cd $GOPATH/src/github.com/plotly/plotbot/plotbot
     go build && ./plotbot
 
 * Inject static stuff in the binary with:
 
-    cd $GOPATH/src/github.com/abourget/ahipbot/web
+    cd $GOPATH/src/github.com/plotly/plotbot/web
     rice append --exec=../plotbot/plotbot
 
 * Enjoy! You can deploy the binary and it has all the assets in itself now.
@@ -30,5 +30,6 @@
 
 ## Writing your own plugin
 
-Take inspiration by looking at `funny.go`.  Write your own, and don't forget to
-add your plugin to `Hipbot.registerPlugins()` in `hipbot.go`.
+Take inspiration by looking at the different plugins, like `Funny`,
+`Healthy`, `Storm`, `Deployer`, etc..  Don't forget to update your
+bot's plugins list, like `plotbot/main.go`

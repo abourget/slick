@@ -1,6 +1,6 @@
-package ahipbot
+package plotbot
 
-import "github.com/abourget/ahipbot/hipchatv2"
+import "github.com/plotly/plotbot/hipchatv2"
 
 type User struct {
 	hipchatv2.User

@@ -7,11 +7,11 @@ import (
 	"strings"
 	"time"
 
-	"github.com/abourget/ahipbot"
+	"github.com/plotly/plotbot"
 )
 
 type Standup struct {
-	bot            *ahipbot.Bot
+	bot            *plotbot.Bot
 	sectionUpdates chan sectionUpdate
 
 	// Map's Hipchat ID to UserData
@@ -34,18 +34,18 @@ func (ud *UserData) FirstName() string {
 	return strings.Split(ud.Name, " ")[0]
 }
 
-var config = &ahipbot.PluginConfig{
+var config = &plotbot.PluginConfig{
 	EchoMessages: false,
 	OnlyMentions: false,
 }
 
-func (standup *Standup) Config() *ahipbot.PluginConfig {
+func (standup *Standup) Config() *plotbot.PluginConfig {
 	return config
 }
 
 func init() {
 	gob.Register(&UserData{})
-	ahipbot.RegisterPlugin(func(bot *ahipbot.Bot) ahipbot.Plugin {
+	plotbot.RegisterPlugin(func(bot *plotbot.Bot) plotbot.Plugin {
 		dataMap := make(DataMap)
 		standup := &Standup{
 			bot:            bot,
@@ -58,7 +58,7 @@ func init() {
 	})
 }
 
-func (standup *Standup) Handle(bot *ahipbot.Bot, msg *ahipbot.BotMessage) {
+func (standup *Standup) Handle(bot *plotbot.Bot, msg *plotbot.BotMessage) {
 	res := sectionRegexp.FindAllStringSubmatchIndex(msg.Body, -1)
 	if res != nil {
 		for _, section := range extractSectionAndText(msg.Body, res) {
@@ -98,7 +98,7 @@ func extractSectionAndText(input string, res [][]int) []sectionMatch {
 	return out
 }
 
-func (standup *Standup) StoreLine(msg *ahipbot.BotMessage, section string, line string) {
+func (standup *Standup) StoreLine(msg *plotbot.BotMessage, section string, line string) {
 	dataMap := *standup.data
 	user := standup.bot.GetUser(msg.From)
 	userData, ok := dataMap[user.ID]
@@ -120,7 +120,7 @@ func (standup *Standup) StoreLine(msg *ahipbot.BotMessage, section string, line 
 	standup.FlushData()
 }
 
-func (standup *Standup) TriggerReminders(msg *ahipbot.BotMessage, section string) {
+func (standup *Standup) TriggerReminders(msg *plotbot.BotMessage, section string) {
 	standup.sectionUpdates <- sectionUpdate{section, msg}
 }
 
@@ -129,8 +129,8 @@ func (standup *Standup) TriggerReminders(msg *ahipbot.BotMessage, section string
 //
 
 func (standup *Standup) manageUpdatesInteraction() {
-	remindCh := make(chan *ahipbot.BotMessage)
-	resetCh := make(chan *ahipbot.BotMessage)
+	remindCh := make(chan *plotbot.BotMessage)
+	resetCh := make(chan *plotbot.BotMessage)
 
 	for {
 		select {
@@ -198,7 +198,7 @@ func (standup *Standup) manageUpdatesInteraction() {
 
 type sectionUpdate struct {
 	section string
-	msg     *ahipbot.BotMessage
+	msg     *plotbot.BotMessage
 }
 
 var userProgressMap = make(map[string]*userProgress)
@@ -208,7 +208,7 @@ type userProgress struct {
 	cancelTimer  chan bool
 }
 
-func (up *userProgress) waitAndCheckProgress(msg *ahipbot.BotMessage, remindCh chan *ahipbot.BotMessage) {
+func (up *userProgress) waitAndCheckProgress(msg *plotbot.BotMessage, remindCh chan *plotbot.BotMessage) {
 	select {
 	case <-time.After(90 * time.Second):
 		remindCh <- msg
@@ -218,7 +218,7 @@ func (up *userProgress) waitAndCheckProgress(msg *ahipbot.BotMessage, remindCh c
 }
 
 // waitForReset waits a couple of minutes and stops listening to that user altogether.  We want to poke the user once or twice if he's slow.. but not eternally.
-func (up *userProgress) waitForReset(msg *ahipbot.BotMessage, resetCh chan *ahipbot.BotMessage) {
+func (up *userProgress) waitForReset(msg *plotbot.BotMessage, resetCh chan *plotbot.BotMessage) {
 	<-time.After(15 * time.Minute)
 	resetCh <- msg
 }

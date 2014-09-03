@@ -24,13 +24,13 @@ import (
 	"github.com/kr/pty"
 	"github.com/tuxychandru/pubsub"
 
-	"github.com/abourget/ahipbot"
-	"github.com/abourget/ahipbot/internal"
+	"github.com/plotly/plotbot"
+	"github.com/plotly/plotbot/internal"
 )
 
 type Deployer struct {
 	runningJob *DeployJob
-	bot        *ahipbot.Bot
+	bot        *plotbot.Bot
 	env        string
 	config     *DeployerConfig
 	pubsub     *pubsub.PubSub
@@ -42,7 +42,7 @@ type DeployerConfig struct {
 }
 
 func init() {
-	ahipbot.RegisterPlugin(func(bot *ahipbot.Bot) ahipbot.Plugin {
+	plotbot.RegisterPlugin(func(bot *plotbot.Bot) plotbot.Plugin {
 		var conf struct {
 			Deployer DeployerConfig
 		}
@@ -70,8 +70,8 @@ func (dep *Deployer) loadInternalAPI() {
 	dep.internal = internal.New(dep.bot.LoadConfig)
 }
 
-func (dep *Deployer) Config() *ahipbot.PluginConfig {
-	return &ahipbot.PluginConfig{
+func (dep *Deployer) Config() *plotbot.PluginConfig {
+	return &plotbot.PluginConfig{
 		OnlyMentions: true,
 	}
 }
@@ -98,7 +98,7 @@ type DeployJob struct {
 
 var deployFormat = regexp.MustCompile(`deploy( ([a-zA-Z0-9_\.-]+))? to ([a-z_-]+)((,| with)? tags?:? ?(.+))?`)
 
-func (dep *Deployer) Handle(bot *ahipbot.Bot, msg *ahipbot.BotMessage) {
+func (dep *Deployer) Handle(bot *plotbot.Bot, msg *plotbot.BotMessage) {
 	// Discard non "mention_name, " prefixed messages
 	if !strings.HasPrefix(msg.Body, fmt.Sprintf("%s, ", bot.Config.Mention)) {
 		return

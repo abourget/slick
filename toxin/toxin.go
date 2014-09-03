@@ -6,11 +6,11 @@ import (
 	"strings"
 	"time"
 
-	"github.com/abourget/ahipbot"
+	"github.com/plotly/plotbot"
 )
 
 type Toxin struct {
-	bot          *ahipbot.Bot
+	bot          *plotbot.Bot
 	meetings     map[string]*Meeting
 	pastMeetings []*Meeting
 	config       *Config
@@ -21,7 +21,7 @@ type Config struct {
 }
 
 func init() {
-	ahipbot.RegisterPlugin(func(bot *ahipbot.Bot) ahipbot.Plugin {
+	plotbot.RegisterPlugin(func(bot *plotbot.Bot) plotbot.Plugin {
 		var conf struct {
 			Toxin Config
 		}
@@ -34,16 +34,16 @@ func init() {
 	})
 }
 
-var config = &ahipbot.PluginConfig{
+var config = &plotbot.PluginConfig{
 	EchoMessages: false,
 	OnlyMentions: false,
 }
 
-func (toxin *Toxin) Config() *ahipbot.PluginConfig {
+func (toxin *Toxin) Config() *plotbot.PluginConfig {
 	return config
 }
 
-func (toxin *Toxin) Handle(bot *ahipbot.Bot, msg *ahipbot.BotMessage) {
+func (toxin *Toxin) Handle(bot *plotbot.Bot, msg *plotbot.BotMessage) {
 	room := msg.FromRoom.JID
 	meeting, meetingExists := toxin.meetings[room]
 	if strings.HasPrefix(msg.Body, "!toxin ") {
@@ -222,7 +222,7 @@ func (toxin *Toxin) NextMeetingID() string {
 var actionMatcher = regexp.MustCompile(`a#([a-z]+|\d+)(\+\+)?`)
 var subjectMatcher = regexp.MustCompile(`s#([a-z]+|\d+)(\+\+)?`)
 
-func (toxin *Toxin) ensureOnSubject(meeting *Meeting, msg *ahipbot.BotMessage) bool {
+func (toxin *Toxin) ensureOnSubject(meeting *Meeting, msg *plotbot.BotMessage) bool {
 	if meeting.CurrentSubject == nil {
 		toxin.bot.Reply(msg, "We haven't started a subject yet, start with !next")
 		return false

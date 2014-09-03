@@ -1,9 +1,9 @@
-package ahipbot
+package plotbot
 
 import (
 	"strings"
 
-	"github.com/abourget/ahipbot/hipchatv2"
+	"github.com/plotly/plotbot/hipchatv2"
 )
 
 type Room struct {

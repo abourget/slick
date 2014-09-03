@@ -4,23 +4,23 @@ import (
 	"fmt"
 	"net/http"
 
-	"github.com/abourget/ahipbot"
-	"github.com/abourget/ahipbot/hipchatv2"
+	"github.com/plotly/plotbot"
+	"github.com/plotly/plotbot/hipchatv2"
 	"github.com/gorilla/mux"
 )
 
 type Utils struct {
-	bot *ahipbot.Bot
+	bot *plotbot.Bot
 }
 
-func (utils *Utils) Config() *ahipbot.PluginConfig {
+func (utils *Utils) Config() *plotbot.PluginConfig {
 	return nil
 }
-func (utils *Utils) Handle(bot *ahipbot.Bot, msg *ahipbot.BotMessage) {
+func (utils *Utils) Handle(bot *plotbot.Bot, msg *plotbot.BotMessage) {
 }
 
 func init() {
-	ahipbot.RegisterPlugin(func(bot *ahipbot.Bot) ahipbot.Plugin {
+	plotbot.RegisterPlugin(func(bot *plotbot.Bot) plotbot.Plugin {
 		return &Utils{bot: bot}
 	})
 }

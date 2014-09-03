@@ -4,19 +4,19 @@ import (
 	"fmt"
 	"time"
 
-	"github.com/abourget/ahipbot"
-	"github.com/abourget/ahipbot/blaster"
+	"github.com/plotly/plotbot"
+	"github.com/plotly/plotbot/blaster"
 )
 
 type Funny struct {
 }
 
 func init() {
-	ahipbot.RegisterPlugin(func(bot *ahipbot.Bot) ahipbot.Plugin {
+	plotbot.RegisterPlugin(func(bot *plotbot.Bot) plotbot.Plugin {
 		return &Funny{}
 	})
 
-	ahipbot.RegisterStringList("forcePush", []string{
+	plotbot.RegisterStringList("forcePush", []string{
 		"http://www.gifcrap.com/g2data/albums/TV/Star%20Wars%20-%20Force%20Push%20-%20Goats%20fall%20over.gif",
 		"http://i.imgur.com/ZvZR6Ff.jpg",
 		"http://i3.kym-cdn.com/photos/images/original/000/014/538/5FCNWPLR2O3TKTTMGSGJIXFERQTAEY2K.gif",
@@ -35,16 +35,16 @@ func init() {
 	})
 }
 
-var config = &ahipbot.PluginConfig{
+var config = &plotbot.PluginConfig{
 	EchoMessages: false,
 	OnlyMentions: false,
 }
 
-func (funny *Funny) Config() *ahipbot.PluginConfig {
+func (funny *Funny) Config() *plotbot.PluginConfig {
 	return config
 }
 
-func (funny *Funny) Handle(bot *ahipbot.Bot, msg *ahipbot.BotMessage) {
+func (funny *Funny) Handle(bot *plotbot.Bot, msg *plotbot.BotMessage) {
 	if msg.BotMentioned {
 		if msg.ContainsAny([]string{"excitement", "exciting"}) {
 			bot.Reply(msg, "http://static.fjcdn.com/gifs/Japanese+kids+spongebob+toys_0ad21b_3186721.gif")
@@ -59,7 +59,7 @@ func (funny *Funny) Handle(bot *ahipbot.Bot, msg *ahipbot.BotMessage) {
 		return
 
 	} else if msg.Contains("force push") {
-		url := ahipbot.RandomString("forcePush")
+		url := plotbot.RandomString("forcePush")
 		bot.Reply(msg, url)
 		return
 	}

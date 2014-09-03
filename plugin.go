@@ -1,4 +1,4 @@
-package ahipbot
+package plotbot
 
 //
 // Bot plugins

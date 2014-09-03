@@ -7,7 +7,7 @@ import (
 	"net/http"
 
 	"github.com/GeertJohan/go.rice"
-	"github.com/abourget/ahipbot"
+	"github.com/plotly/plotbot"
 	"github.com/codegangsta/negroni"
 	"github.com/golang/oauth2"
 	"github.com/gorilla/context"
@@ -20,7 +20,7 @@ var web *Webapp
 type Webapp struct {
 	config  *WebappConfig
 	store   *sessions.CookieStore
-	bot     *ahipbot.Bot
+	bot     *plotbot.Bot
 	handler *negroni.Negroni
 }
 
@@ -35,7 +35,7 @@ type WebappConfig struct {
 }
 
 func init() {
-	ahipbot.RegisterWebHandler(func(bot *ahipbot.Bot, plugins []ahipbot.Plugin) ahipbot.WebHandler {
+	plotbot.RegisterWebHandler(func(bot *plotbot.Bot, plugins []plotbot.Plugin) plotbot.WebHandler {
 		var conf struct {
 			Webapp WebappConfig
 		}
@@ -76,7 +76,7 @@ func (webapp *Webapp) Run() {
 	webapp.handler.Run(webapp.config.Listen)
 }
 
-// func LaunchWebapp(b *ahipbot.Bot) {
+// func LaunchWebapp(b *plotbot.Bot) {
 
 // 	rt.HandleFunc("/send_notif", handleNotif)
 // 	rt.HandleFunc("/hipchat/users", handleGetUsers)

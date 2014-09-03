@@ -4,17 +4,17 @@ import (
 	"fmt"
 	"sync"
 
-	"github.com/abourget/ahipbot"
-	"github.com/abourget/ahipbot/asana"
+	"github.com/plotly/plotbot"
+	"github.com/plotly/plotbot/asana"
 )
 
 type TabulaRasa struct {
-	bot         *ahipbot.Bot
+	bot         *plotbot.Bot
 	asanaClient *asana.Client
 }
 
 func init() {
-	ahipbot.RegisterPlugin(func(bot *ahipbot.Bot) ahipbot.Plugin {
+	plotbot.RegisterPlugin(func(bot *plotbot.Bot) plotbot.Plugin {
 
 		var asanaConf struct {
 			Asana struct {
@@ -37,11 +37,11 @@ func init() {
 
 }
 
-func (tabula *TabulaRasa) Config() *ahipbot.PluginConfig {
-	return &ahipbot.PluginConfig{}
+func (tabula *TabulaRasa) Config() *plotbot.PluginConfig {
+	return &plotbot.PluginConfig{}
 }
 
-func (tabula *TabulaRasa) Handle(bot *ahipbot.Bot, msg *ahipbot.BotMessage) {
+func (tabula *TabulaRasa) Handle(bot *plotbot.Bot, msg *plotbot.BotMessage) {
 	return
 }
 
