@@ -9,11 +9,6 @@ import (
 	"github.com/abourget/ahipbot"
 )
 
-// Config holders
-type HealthConfig struct {
-	Urls []string
-}
-
 // Hipbot Plugin
 type Healthy struct {
 	urls   []string
@@ -30,7 +25,9 @@ func init() {
 		}
 
 		var conf struct {
-			HealthCheck HealthConfig
+			HealthCheck struct {
+				Urls []string
+			}
 		}
 		bot.LoadConfig(&conf)
 

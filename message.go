@@ -1,11 +1,12 @@
 package ahipbot
 
 import (
-	"fmt"
+	"strings"
 
 	"github.com/tkawachi/hipchat"
+
+	"fmt"
 )
-import "strings"
 
 type BotReply struct {
 	To      string
