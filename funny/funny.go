@@ -62,6 +62,9 @@ func (funny *Funny) Handle(bot *plotbot.Bot, msg *plotbot.BotMessage) {
 		url := plotbot.RandomString("forcePush")
 		bot.Reply(msg, url)
 		return
+	} else if msg.ContainsAny([]string{"there is a bug", "there's a bug"}) {
+		bot.Reply(msg, "https://s3.amazonaws.com/pushbullet-uploads/ujy7DF0U8wm-9YYvLZkmSM8pMYcxCXXig8LjJORE9Xzt/The-life-of-a-coder.jpg")
+		return
 	}
 
 	if msg.Contains("blast") {
@@ -77,4 +80,5 @@ func (funny *Funny) Handle(bot *plotbot.Bot, msg *plotbot.BotMessage) {
 			}
 		}()
 	}
+
 }
