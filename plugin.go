@@ -42,9 +42,9 @@ type Rewarder interface {
 	InitRewarder(*Bot)
 	RegisterBadge(shortName, title, description string)
 	LogEvent(user *User, event string, data interface{}) error
-	FetchLogsSince(user *User, since time.Time, event string, data interface{}) error
-	FetchLastLog(user *User, event string, data interface{}) error
-	FetchLastNLogs(user *User, num int, event string, data interface{}) error
+	FetchEventsSince(user *User, since time.Time, event string, data interface{}) error
+	FetchLastEvent(user *User, event string, data interface{}) error
+	FetchLastNEvents(user *User, num int, event string, data interface{}) error
 	AwardBadge(bot *Bot, user *User, shortName string) error
 }
 

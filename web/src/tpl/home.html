@@ -1,17 +1,29 @@
 <h1>Plotbot Web UI</h1>
 
 <p>
+  <h2>Notify</h2>
   <button ng-click="send_notif()">NOTIFY!</button>
 </p>
 
 <div>
+  <h2>Standup</h2>
   <button ng-click="get_standup()">Get standup</button>
   <pre ng-show="standup">{{ standup | json }}</pre>
 </div>
 
 <div>
+  <h2>Tabula Rasa</h2>
   <button ng-click="tabularasa()">Tabula Rasa</button>
   <span>Unassign ALL uncompleted asana Tasks</span>
 </div>
 
-<deployer/>
+<div>
+  <h2>Badges</h2>
+  <button ng-click="load_badges()">Get badges</button>
+  <pre ng-show="badges">{{ badges | json }}</pre>
+</div>
+
+<div>
+  <h2>Deployer</h2>
+  <deployer/>
+</div>

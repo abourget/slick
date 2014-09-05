@@ -47,15 +47,30 @@ func (funny *Funny) ChatConfig() *plotbot.ChatPluginConfig {
 
 func (funny *Funny) ChatHandler(bot *plotbot.Bot, msg *plotbot.Message) {
 	if msg.BotMentioned {
-		if msg.ContainsAny([]string{"excitement", "exciting"}) {
-			bot.Reply(msg, "http://static.fjcdn.com/gifs/Japanese+kids+spongebob+toys_0ad21b_3186721.gif")
-
-		} else if msg.Contains("you're funny") {
+		if msg.Contains("you're funny") {
 			bot.Reply(msg, "/me blushes")
+		} else if msg.Contains("blast") {
+			url := "https://plot.ly/__internal/ping"
+			//url := "https://plot.ly/"
+			//url := "https://stage.plot.ly/__internal/ping"
+			go func() {
+				bot.Reply(msg, fmt.Sprintf("Blasting URL: %s for 60 seconds, with 2 workers", url))
+				b := blaster.New(url)
+				b.Start(2, time.Duration(60*time.Second))
+				for rep := range b.Reply {
+					bot.Reply(msg, rep)
+				}
+			}()
 		}
 	}
 
-	if msg.ContainsAny([]string{"what is your problem", "what's your problem"}) {
+	if msg.ContainsAny([]string{"lot of excitement", "that's exciting", "how exciting", "much excitement"}) {
+
+		bot.Reply(msg, "http://static.fjcdn.com/gifs/Japanese+kids+spongebob+toys_0ad21b_3186721.gif")
+		return
+
+	} else if msg.ContainsAny([]string{"what is your problem", "what's your problem", "is there a problem", "which problem"}) {
+
 		bot.Reply(msg, "http://media4.giphy.com/media/19hU0m3TJe6I/200w.gif")
 		return
 
@@ -63,23 +78,17 @@ func (funny *Funny) ChatHandler(bot *plotbot.Bot, msg *plotbot.Message) {
 		url := plotbot.RandomString("forcePush")
 		bot.Reply(msg, url)
 		return
+
 	} else if msg.ContainsAny([]string{"there is a bug", "there's a bug"}) {
 		bot.Reply(msg, "https://s3.amazonaws.com/pushbullet-uploads/ujy7DF0U8wm-9YYvLZkmSM8pMYcxCXXig8LjJORE9Xzt/The-life-of-a-coder.jpg")
 		return
+	} else if msg.Contains("thanks") {
+		fmt.Println("Hey thanks")
+		if bot.Rewarder != nil {
+			fmt.Println("Ok, in here")
+			bot.Rewarder.LogEvent(msg.FromUser, "thanks", nil)
+		}
 	}
 
-	if msg.Contains("blast") {
-		//url := "https://plot.ly/__internal/ping"
-		//url := "https://plot.ly/"
-		url := "https://stage.plot.ly/__internal/ping"
-		go func() {
-			bot.Reply(msg, fmt.Sprintf("Blasting URL: %s for 60 seconds, with 5 workers", url))
-			b := blaster.New(url)
-			b.Start(5, time.Duration(60*time.Second))
-			for rep := range b.Reply {
-				bot.Reply(msg, rep)
-			}
-		}()
-	}
-
+	return
 }

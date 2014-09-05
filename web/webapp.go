@@ -114,7 +114,7 @@ func (webapp *Webapp) handleRoot(w http.ResponseWriter, r *http.Request) {
 		return
 	}
 
-	var ctx = struct {
+	ctx := struct {
 		CurrentUser, EnabledPlugins template.JS
 	}{
 		profile.AsJavascript(),
