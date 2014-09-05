@@ -6,9 +6,10 @@ import (
 	"code.google.com/p/go.net/websocket"
 
 	"github.com/gorilla/mux"
+	"github.com/plotly/plotbot"
 )
 
-func (dep *Deployer) WebPluginSetup(router *mux.Router) {
+func (dep *Deployer) InitWebPlugin(bot *plotbot.Bot, router *mux.Router) {
 	router.Handle("/plugins/deployer.ws", websocket.Handler(dep.websocketManager))
 }
 

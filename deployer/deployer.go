@@ -42,36 +42,35 @@ type DeployerConfig struct {
 }
 
 func init() {
-	plotbot.RegisterPlugin(func(bot *plotbot.Bot) plotbot.Plugin {
-		var conf struct {
-			Deployer DeployerConfig
-		}
-		bot.LoadConfig(&conf)
+	plotbot.RegisterPlugin(&Deployer{})
+}
 
-		dep := &Deployer{
-			bot:    bot,
-			pubsub: pubsub.New(100),
-			config: &conf.Deployer,
-			env:    os.Getenv("PLOTLY_ENV"),
-		}
-		if dep.env == "" {
-			dep.env = "debug"
-		}
+func (dep *Deployer) InitChatPlugin(bot *plotbot.Bot) {
+	var conf struct {
+		Deployer DeployerConfig
+	}
+	bot.LoadConfig(&conf)
 
-		dep.loadInternalAPI()
+	dep.bot = bot
+	dep.pubsub = pubsub.New(100)
+	dep.config = &conf.Deployer
+	dep.env = os.Getenv("PLOTLY_ENV")
 
-		go dep.pubsubForwardReply()
+	if dep.env == "" {
+		dep.env = "debug"
+	}
 
-		return dep
-	})
+	dep.loadInternalAPI()
+
+	go dep.pubsubForwardReply()
 }
 
 func (dep *Deployer) loadInternalAPI() {
 	dep.internal = internal.New(dep.bot.LoadConfig)
 }
 
-func (dep *Deployer) Config() *plotbot.PluginConfig {
-	return &plotbot.PluginConfig{
+func (dep *Deployer) ChatConfig() *plotbot.ChatPluginConfig {
+	return &plotbot.ChatPluginConfig{
 		OnlyMentions: true,
 	}
 }
@@ -98,7 +97,7 @@ type DeployJob struct {
 
 var deployFormat = regexp.MustCompile(`deploy( ([a-zA-Z0-9_\.-]+))? to ([a-z_-]+)((,| with)? tags?:? ?(.+))?`)
 
-func (dep *Deployer) Handle(bot *plotbot.Bot, msg *plotbot.BotMessage) {
+func (dep *Deployer) ChatHandler(bot *plotbot.Bot, msg *plotbot.Message) {
 	// Discard non "mention_name, " prefixed messages
 	if !strings.HasPrefix(msg.Body, fmt.Sprintf("%s, ", bot.Config.Mention)) {
 		return

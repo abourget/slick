@@ -2,8 +2,10 @@ package tabularasa
 
 import (
 	"fmt"
+	"net/http"
 	"sync"
 
+	"github.com/gorilla/mux"
 	"github.com/plotly/plotbot"
 	"github.com/plotly/plotbot/asana"
 )
@@ -14,35 +16,30 @@ type TabulaRasa struct {
 }
 
 func init() {
-	plotbot.RegisterPlugin(func(bot *plotbot.Bot) plotbot.Plugin {
+	plotbot.RegisterPlugin(&TabulaRasa{})
+}
 
-		var asanaConf struct {
-			Asana struct {
-				APIKey    string `json:"api_key"`
-				Workspace string `json:"workspace"`
-			}
+func (tabula *TabulaRasa) InitWebPlugin(bot *plotbot.Bot, router *mux.Router) {
+	var asanaConf struct {
+		Asana struct {
+			APIKey    string `json:"api_key"`
+			Workspace string `json:"workspace"`
 		}
+	}
 
-		bot.LoadConfig(&asanaConf)
+	bot.LoadConfig(&asanaConf)
 
-		asanaClient := asana.NewClient(asanaConf.Asana.APIKey, asanaConf.Asana.Workspace)
+	asanaClient := asana.NewClient(asanaConf.Asana.APIKey, asanaConf.Asana.Workspace)
 
-		tabula := &TabulaRasa{
-			bot:         bot,
-			asanaClient: asanaClient,
-		}
+	tabula.bot = bot
+	tabula.asanaClient = asanaClient
 
-		return tabula
+	router.HandleFunc("/plugins/tabularasa", func(w http.ResponseWriter, r *http.Request) {
+
+		tabula.TabulaRasta()
+
 	})
 
-}
-
-func (tabula *TabulaRasa) Config() *plotbot.PluginConfig {
-	return &plotbot.PluginConfig{}
-}
-
-func (tabula *TabulaRasa) Handle(bot *plotbot.Bot, msg *plotbot.BotMessage) {
-	return
 }
 
 func (tabula *TabulaRasa) TabulaRasta() {

@@ -1,11 +1,26 @@
 package plotbot
 
-import "time"
+import (
+	"time"
+
+	"github.com/gorilla/mux"
+)
 
 //
 // Bot plugins
 //
-type PluginConfig struct {
+
+type Plugin interface{}
+
+type ChatPlugin interface {
+	// Handle handles incoming messages matching the constraints
+	// from ChatConfig.
+	InitChatPlugin(*Bot)
+	ChatHandler(*Bot, *Message)
+	ChatConfig() *ChatPluginConfig
+}
+
+type ChatConfig struct {
 	// Whether to handle the bot's own messages
 	EchoMessages bool
 
@@ -13,54 +28,18 @@ type PluginConfig struct {
 	OnlyMentions bool
 }
 
-type Plugin interface {
-	// Handle handles incoming messages matching the constraints
-	// from PluginConfig.
-	Handle(*Bot, *BotMessage)
-	Config() *PluginConfig
+type WebServer interface {
+	InitWebServer(*Bot, []string)
+	ServeWebRequests()
+	Router() *mux.Router
 }
 
-var registeredPlugins = make([]func(*Bot) Plugin, 0)
-
-// RegisterPlugin defers loading of plugins until main() is called with
-// config file, storage and environment ready.
-func RegisterPlugin(newFunc func(*Bot) Plugin) {
-	registeredPlugins = append(registeredPlugins, newFunc)
+type WebPlugin interface {
+	InitWebPlugin(*Bot, *mux.Router)
 }
 
-var loadedPlugins = make([]Plugin, 0)
-
-func LoadPlugins(bot *Bot) {
-	for _, newFunc := range registeredPlugins {
-		loadedPlugins = append(loadedPlugins, newFunc(bot))
-	}
-}
-
-//
-// Web plugins
-//
-type WebHandler interface {
-	Run()
-}
-
-var registeredWebHandler func(*Bot, []Plugin) WebHandler = nil
-var loadedWebHandler WebHandler = nil
-
-func RegisterWebHandler(newFunc func(*Bot, []Plugin) WebHandler) {
-	registeredWebHandler = newFunc
-}
-
-func LoadWebHandler(bot *Bot) {
-	if registeredWebHandler != nil {
-		loadedWebHandler = registeredWebHandler(bot, loadedPlugins)
-		go loadedWebHandler.Run()
-	}
-}
-
-//
-// Rewarder plugin
-//
 type Rewarder interface {
+	InitRewarder(*Bot)
 	RegisterBadge(shortName, title, description string)
 	LogEvent(user *User, event string, data interface{}) error
 	FetchLogsSince(user *User, since time.Time, event string, data interface{}) error
@@ -69,14 +48,52 @@ type Rewarder interface {
 	AwardBadge(bot *Bot, user *User, shortName string) error
 }
 
-var registeredRewarder func(*Bot) Rewarder = nil
+var registeredPlugins = make([]Plugin, 0)
 
-func RegisterRewarder(newFunc func(*Bot) Rewarder) {
-	registeredRewarder = newFunc
+func RegisterPlugin(plugin Plugin) {
+	registeredPlugins = append(registeredPlugins, plugin)
 }
 
-func LoadRewarder(bot *Bot) {
-	if registeredRewarder != nil {
-		bot.Rewarder = registeredRewarder(bot)
+func InitChatPlugins(bot *Bot) {
+	for _, plugin := range registeredPlugins {
+		chatPlugin, ok := plugin.(ChatPlugin)
+		if ok {
+			chatPlugin.InitChatPlugin(bot)
+		}
+	}
+}
+
+func InitWebServer(bot *Bot, enabledPlugins []string) {
+	for _, plugin := range registeredPlugins {
+		webServer, ok := plugin.(WebServer)
+		if ok {
+			webServer.InitWebServer(bot, enabledPlugins)
+			bot.WebServer = webServer
+			return
+		}
+	}
+}
+
+func InitWebPlugins(bot *Bot) {
+	if bot.WebServer == nil {
+		return
+	}
+
+	for _, plugin := range registeredPlugins {
+		webPlugin, ok := plugin.(WebPlugin)
+		if ok {
+			webPlugin.InitWebPlugin(bot, bot.WebServer.Router())
+		}
+	}
+}
+
+func InitRewarder(bot *Bot) {
+	for _, plugin := range registeredPlugins {
+		rewarder, ok := plugin.(Rewarder)
+		if ok {
+			rewarder.InitRewarder(bot)
+			bot.Rewarder = rewarder
+			return
+		}
 	}
 }

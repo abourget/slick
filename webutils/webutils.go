@@ -13,19 +13,12 @@ type Utils struct {
 	bot *plotbot.Bot
 }
 
-func (utils *Utils) Config() *plotbot.PluginConfig {
-	return nil
-}
-func (utils *Utils) Handle(bot *plotbot.Bot, msg *plotbot.BotMessage) {
-}
-
 func init() {
-	plotbot.RegisterPlugin(func(bot *plotbot.Bot) plotbot.Plugin {
-		return &Utils{bot: bot}
-	})
+	plotbot.RegisterPlugin(&Utils{})
 }
 
-func (utils *Utils) WebPluginSetup(router *mux.Router) {
+func (utils *Utils) InitWebPlugin(bot *plotbot.Bot, router *mux.Router) {
+	utils.bot = bot
 	router.HandleFunc("/send_notif", utils.handleNotif)
 }
 

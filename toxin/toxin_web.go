@@ -5,9 +5,10 @@ import (
 	"net/http"
 
 	"github.com/gorilla/mux"
+	"github.com/plotly/plotbot"
 )
 
-func (toxin *Toxin) WebPluginSetup(router *mux.Router) {
+func (toxin *Toxin) InitWebPlugin(bot *plotbot.Bot, router *mux.Router) {
 	router.HandleFunc("/toxin/{id}", toxin.renderMeeting)
 }
 

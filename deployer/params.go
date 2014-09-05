@@ -13,7 +13,7 @@ type DeployParams struct {
 	Tags            string
 	InitiatedBy     string
 	From            string
-	initiatedByChat *plotbot.BotMessage
+	initiatedByChat *plotbot.Message
 }
 
 func (p *DeployParams) ParsedTags() string {

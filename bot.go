@@ -5,6 +5,7 @@ import (
 	"fmt"
 	"io/ioutil"
 	"log"
+	"reflect"
 	"strconv"
 	"strings"
 	"time"
@@ -37,7 +38,8 @@ type Bot struct {
 	RedisPool *redis.Pool
 
 	// Features from the heart
-	Rewarder Rewarder
+	WebServer WebServer
+	Rewarder  Rewarder
 	// TODO: add Mood !
 }
 
@@ -54,10 +56,37 @@ func (bot *Bot) Run() {
 	bot.LoadBaseConfig()
 	bot.SetupStorage()
 
-	// Web related
-	LoadRewarder(bot)
-	LoadPlugins(bot)
-	LoadWebHandler(bot)
+	// Init all plugins
+	for _, plugin := range registeredPlugins {
+		pluginType := reflect.TypeOf(plugin)
+		if pluginType.Kind() == reflect.Ptr {
+			pluginType = pluginType.Elem()
+		}
+		typeList := make([]string, 0)
+		if _, ok := plugin.(Rewarder); ok {
+			typeList = append(typeList, "Rewarder")
+		}
+		if _, ok := plugin.(ChatPlugin); ok {
+			typeList = append(typeList, "ChatPlugin")
+		}
+		if _, ok := plugin.(WebServer); ok {
+			typeList = append(typeList, "WebServer")
+		}
+		if _, ok := plugin.(WebPlugin); ok {
+			typeList = append(typeList, "WebPlugin")
+		}
+
+		log.Printf("Plugin %s implements %s", pluginType.String(),
+			strings.Join(typeList, ", "))
+	}
+	InitRewarder(bot)
+	InitChatPlugins(bot)
+	InitWebServer(bot)
+	InitWebPlugins(bot)
+
+	if bot.WebServer != nil {
+		go bot.WebServer.ServeWebRequests()
+	}
 
 	//time.Sleep(5000 * time.Second)
 	//return
@@ -82,13 +111,13 @@ func (bot *Bot) Run() {
 	}
 }
 
-func (bot *Bot) Reply(msg *BotMessage, reply string) {
+func (bot *Bot) Reply(msg *Message, reply string) {
 	log.Println("Replying:", reply)
 	bot.replySink <- msg.Reply(reply)
 }
 
 // ReplyMention replies with a @mention named prefixed, when replying in public. When replying in private, nothing is added.
-func (bot *Bot) ReplyMention(msg *BotMessage, reply string) {
+func (bot *Bot) ReplyMention(msg *Message, reply string) {
 	if msg.IsPrivate() {
 		bot.Reply(msg, reply)
 	} else {
@@ -109,7 +138,7 @@ func (bot *Bot) ReplyTo(jid, reply string) {
 	bot.replySink <- rep
 }
 
-func (bot *Bot) ReplyPrivate(msg *BotMessage, reply string) {
+func (bot *Bot) ReplyPrivate(msg *Message, reply string) {
 	log.Println("Replying privately:", reply)
 	bot.replySink <- msg.ReplyPrivate(reply)
 }
@@ -280,7 +309,7 @@ func (bot *Bot) messageHandler() {
 		case <-bot.disconnected:
 			return
 		case msg := <-msgs:
-			botMsg := &BotMessage{Message: msg}
+			botMsg := &Message{Message: msg}
 			botMsg.FromUser = bot.GetUser(msg.From)
 			botMsg.FromRoom = bot.GetRoom(msg.From)
 			if botMsg.FromUser == nil {
@@ -299,12 +328,13 @@ func (bot *Bot) messageHandler() {
 				botMsg.BotMentioned = true
 			}
 
-			for _, p := range loadedPlugins {
-				pluginConf := p.Config()
-
-				if pluginConf == nil {
+			for _, p := range registeredPlugins {
+				chatPlugin, ok := p.(ChatPlugin)
+				if !ok {
 					continue
 				}
+
+				pluginConf := chatPlugin.ChatConfig()
 
 				if !pluginConf.EchoMessages && fromMyself {
 					//log.Printf("no echo but I just messaged myself")
@@ -315,7 +345,7 @@ func (bot *Bot) messageHandler() {
 					continue
 				}
 
-				p.Handle(bot, botMsg)
+				chatPlugin.ChatHandler(bot, botMsg)
 			}
 		}
 	}

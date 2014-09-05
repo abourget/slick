@@ -7,12 +7,12 @@ import (
 	"net/http"
 
 	"github.com/GeertJohan/go.rice"
-	"github.com/plotly/plotbot"
 	"github.com/codegangsta/negroni"
 	"github.com/golang/oauth2"
 	"github.com/gorilla/context"
 	"github.com/gorilla/mux"
 	"github.com/gorilla/sessions"
+	"github.com/plotly/plotbot"
 )
 
 var web *Webapp
@@ -22,6 +22,7 @@ type Webapp struct {
 	store   *sessions.CookieStore
 	bot     *plotbot.Bot
 	handler *negroni.Negroni
+	router  *mux.Router
 }
 
 type WebappConfig struct {
@@ -35,44 +36,38 @@ type WebappConfig struct {
 }
 
 func init() {
-	plotbot.RegisterWebHandler(func(bot *plotbot.Bot, plugins []plotbot.Plugin) plotbot.WebHandler {
-		var conf struct {
-			Webapp WebappConfig
-		}
-		bot.LoadConfig(&conf)
-
-		webapp := &Webapp{
-			bot:    bot,
-			config: &conf.Webapp,
-			store:  sessions.NewCookieStore([]byte(conf.Webapp.SessionAuthKey), []byte(conf.Webapp.SessionEncryptKey)),
-		}
-
-		configureWebapp(&conf.Webapp)
-
-		web = webapp
-
-		rt := mux.NewRouter()
-		rt.HandleFunc("/", handleRoot)
-
-		for _, plugin := range plugins {
-			webPlugin, ok := plugin.(WebPlugin)
-			if !ok {
-				continue
-			}
-			webPlugin.WebPluginSetup(rt)
-		}
-
-		mux := http.NewServeMux()
-		mux.Handle("/static/", http.StripPrefix("/static", http.FileServer(rice.MustFindBox("static").HTTPBox())))
-		mux.Handle("/", rt)
-
-		webapp.handler = negroni.Classic()
-		webapp.handler.UseHandler(context.ClearHandler(NewOAuthMiddleware(mux)))
-		return webapp
-	})
+	plotbot.RegisterPlugin(&Webapp{})
 }
 
-func (webapp *Webapp) Run() {
+func (webapp *Webapp) InitWebServer(bot *plotbot.Bot) {
+	var conf struct {
+		Webapp WebappConfig
+	}
+	bot.LoadConfig(&conf)
+
+	webapp.bot = bot
+	webapp.config = &conf.Webapp
+	webapp.store = sessions.NewCookieStore([]byte(conf.Webapp.SessionAuthKey), []byte(conf.Webapp.SessionEncryptKey))
+	webapp.router = mux.NewRouter()
+
+	configureWebapp(&conf.Webapp)
+
+	webapp.router.HandleFunc("/", handleRoot)
+	web = webapp
+}
+
+func (webapp *Webapp) Router() *mux.Router {
+	return webapp.router
+}
+
+func (webapp *Webapp) ServeWebRequests() {
+	mux := http.NewServeMux()
+	mux.Handle("/static/", http.StripPrefix("/static", http.FileServer(rice.MustFindBox("static").HTTPBox())))
+	mux.Handle("/", webapp.router)
+
+	webapp.handler = negroni.Classic()
+	webapp.handler.UseHandler(context.ClearHandler(NewOAuthMiddleware(mux)))
+
 	webapp.handler.Run(webapp.config.Listen)
 }
 

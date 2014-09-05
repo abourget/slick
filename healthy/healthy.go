@@ -12,37 +12,36 @@ import (
 // Hipbot Plugin
 type Healthy struct {
 	urls   []string
-	config *plotbot.PluginConfig
+	config *plotbot.ChatPluginConfig
 }
 
 func init() {
-	plotbot.RegisterPlugin(func(bot *plotbot.Bot) plotbot.Plugin {
-		healthy := &Healthy{
-			config: &plotbot.PluginConfig{
-				EchoMessages: false,
-				OnlyMentions: true,
-			},
-		}
+	plotbot.RegisterPlugin(&Healthy{})
+}
 
-		var conf struct {
-			HealthCheck struct {
-				Urls []string
-			}
-		}
-		bot.LoadConfig(&conf)
+func (healthy *Healthy) InitChatPlugin(bot *plotbot.Bot) {
+	healthy.config = &plotbot.ChatPluginConfig{
+		EchoMessages: false,
+		OnlyMentions: true,
+	}
 
-		healthy.urls = conf.HealthCheck.Urls
-		return healthy
-	})
+	var conf struct {
+		HealthCheck struct {
+			Urls []string
+		}
+	}
+	bot.LoadConfig(&conf)
+
+	healthy.urls = conf.HealthCheck.Urls
 }
 
 // Configuration
-func (healthy *Healthy) Config() *plotbot.PluginConfig {
+func (healthy *Healthy) ChatConfig() *plotbot.ChatPluginConfig {
 	return healthy.config
 }
 
 // Handler
-func (healthy *Healthy) Handle(bot *plotbot.Bot, msg *plotbot.BotMessage) {
+func (healthy *Healthy) ChatHandler(bot *plotbot.Bot, msg *plotbot.Message) {
 	if msg.ContainsAny([]string{"health", "healthy?", "health_check"}) {
 		log.Println("Health check. Requested by", msg.From)
 		bot.Reply(msg, healthy.CheckAll())

@@ -6,9 +6,10 @@ import (
 	"net/http"
 
 	"github.com/gorilla/mux"
+	"github.com/plotly/plotbot"
 )
 
-func (standup *Standup) WebPluginSetup(router *mux.Router) {
+func (standup *Standup) InitWebPlugin(bot *plotbot.Bot, router *mux.Router) {
 	router.HandleFunc("/plugins/standup.json", func(w http.ResponseWriter, r *http.Request) {
 		data := struct {
 			Users []*UserData

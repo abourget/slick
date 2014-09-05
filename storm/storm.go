@@ -28,47 +28,44 @@ type StormConfig struct {
 }
 
 func init() {
-	plotbot.RegisterPlugin(func(bot *plotbot.Bot) plotbot.Plugin {
+	plotbot.RegisterPlugin(&Storm{})
+}
 
-		var stormConf struct {
-			Storm StormConfig
+func (storm *Storm) InitChatPlugin(bot *plotbot.Bot) {
+	var stormConf struct {
+		Storm StormConfig
+	}
+
+	var asanaConf struct {
+		Asana struct {
+			APIKey    string `json:"api_key"`
+			Workspace string `json:"workspace"`
 		}
+	}
 
-		var asanaConf struct {
-			Asana struct {
-				APIKey    string `json:"api_key"`
-				Workspace string `json:"workspace"`
-			}
-		}
+	bot.LoadConfig(&asanaConf)
+	bot.LoadConfig(&stormConf)
 
-		bot.LoadConfig(&asanaConf)
-		bot.LoadConfig(&stormConf)
+	asanaClient := asana.NewClient(asanaConf.Asana.APIKey, asanaConf.Asana.Workspace)
 
-		asanaClient := asana.NewClient(asanaConf.Asana.APIKey, asanaConf.Asana.Workspace)
+	storm.bot = bot
+	storm.config = &stormConf.Storm
+	storm.timeBetweenStorms = 60 * time.Second
+	storm.asanaClient = asanaClient
+	storm.triggerPolling = make(chan bool, 10)
 
-		storm := &Storm{
-			bot:               bot,
-			config:            &stormConf.Storm,
-			timeBetweenStorms: 60 * time.Second,
-			asanaClient:       asanaClient,
-			triggerPolling:    make(chan bool, 10),
-		}
-
-		plotbot.RegisterStringList("storm", []string{
-			"http://static.tumblr.com/ikqttte/OlElnumnn/f9cb7_tumblr_lkfd09xr2y1qfuje9o1_500.gif",
-			"http://media.giphy.com/media/8cdBgACkApvt6/giphy.gif",
-			"http://25.media.tumblr.com/tumblr_luucaug87A1qluhjfo1_500.gif",
-			"http://cdn.mdjunction.com/components/com_joomlaboard/uploaded/images/storm.gif",
-			"http://www.churchhousecollection.com/resources/animated-jesus-calms-storm.gif",
-			"http://i251.photobucket.com/albums/gg307/angellovernumberone/HEATHERS%20%20MIXED%20WATER%20ANIMATIONS/LightningStorm02.gif",
-			"http://wac.450f.edgecastcdn.net/80450F/screencrush.com/files/2013/04/x-men-storm.gif",
-			"http://i.imgur.com/SNLbnO8.gif?1",
-		})
-
-		go storm.launchWatcher()
-
-		return storm
+	plotbot.RegisterStringList("storm", []string{
+		"http://static.tumblr.com/ikqttte/OlElnumnn/f9cb7_tumblr_lkfd09xr2y1qfuje9o1_500.gif",
+		"http://media.giphy.com/media/8cdBgACkApvt6/giphy.gif",
+		"http://25.media.tumblr.com/tumblr_luucaug87A1qluhjfo1_500.gif",
+		"http://cdn.mdjunction.com/components/com_joomlaboard/uploaded/images/storm.gif",
+		"http://www.churchhousecollection.com/resources/animated-jesus-calms-storm.gif",
+		"http://i251.photobucket.com/albums/gg307/angellovernumberone/HEATHERS%20%20MIXED%20WATER%20ANIMATIONS/LightningStorm02.gif",
+		"http://wac.450f.edgecastcdn.net/80450F/screencrush.com/files/2013/04/x-men-storm.gif",
+		"http://i.imgur.com/SNLbnO8.gif?1",
 	})
+
+	go storm.launchWatcher()
 }
 
 type StormMode struct {
@@ -83,17 +80,17 @@ var stormTakerMsg = "IS THE STORM TAKER! \n" +
 	"confusing, it is your duty Storm Taker, yours alone, to remedy this. Good luck"
 
 // Configuration
-var config = &plotbot.PluginConfig{
+var config = &plotbot.ChatPluginConfig{
 	EchoMessages: false,
 	OnlyMentions: false,
 }
 
-func (storm *Storm) Config() *plotbot.PluginConfig {
+func (storm *Storm) ChatConfig() *plotbot.ChatPluginConfig {
 	return config
 }
 
 // Handler
-func (storm *Storm) Handle(bot *plotbot.Bot, msg *plotbot.BotMessage) {
+func (storm *Storm) ChatHandler(bot *plotbot.Bot, msg *plotbot.Message) {
 	if msg.BotMentioned && msg.Contains("stormy day") {
 
 		if storm.stormActive {

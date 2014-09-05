@@ -12,9 +12,10 @@ type Funny struct {
 }
 
 func init() {
-	plotbot.RegisterPlugin(func(bot *plotbot.Bot) plotbot.Plugin {
-		return &Funny{}
-	})
+	plotbot.RegisterPlugin(&Funny{})
+}
+
+func (funny *Funny) InitChatPlugin(bot *plotbot.Bot) {
 
 	plotbot.RegisterStringList("forcePush", []string{
 		"http://www.gifcrap.com/g2data/albums/TV/Star%20Wars%20-%20Force%20Push%20-%20Goats%20fall%20over.gif",
@@ -35,16 +36,16 @@ func init() {
 	})
 }
 
-var config = &plotbot.PluginConfig{
+var config = &plotbot.ChatPluginConfig{
 	EchoMessages: false,
 	OnlyMentions: false,
 }
 
-func (funny *Funny) Config() *plotbot.PluginConfig {
+func (funny *Funny) ChatConfig() *plotbot.ChatPluginConfig {
 	return config
 }
 
-func (funny *Funny) Handle(bot *plotbot.Bot, msg *plotbot.BotMessage) {
+func (funny *Funny) ChatHandler(bot *plotbot.Bot, msg *plotbot.Message) {
 	if msg.BotMentioned {
 		if msg.ContainsAny([]string{"excitement", "exciting"}) {
 			bot.Reply(msg, "http://static.fjcdn.com/gifs/Japanese+kids+spongebob+toys_0ad21b_3186721.gif")

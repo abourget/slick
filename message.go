@@ -13,18 +13,18 @@ type BotReply struct {
 	Message string
 }
 
-type BotMessage struct {
+type Message struct {
 	*hipchat.Message
 	BotMentioned bool
 	FromUser     *User
 	FromRoom     *Room
 }
 
-func (msg *BotMessage) IsPrivate() bool {
+func (msg *Message) IsPrivate() bool {
 	return msg.FromRoom == nil
 }
 
-func (msg *BotMessage) ContainsAnyCased(strs []string) bool {
+func (msg *Message) ContainsAnyCased(strs []string) bool {
 	for _, s := range strs {
 		if strings.Contains(msg.Body, s) {
 			return true
@@ -33,7 +33,7 @@ func (msg *BotMessage) ContainsAnyCased(strs []string) bool {
 	return false
 }
 
-func (msg *BotMessage) ContainsAny(strs []string) bool {
+func (msg *Message) ContainsAny(strs []string) bool {
 	lowerStr := strings.ToLower(msg.Body)
 
 	for _, s := range strs {
@@ -46,7 +46,7 @@ func (msg *BotMessage) ContainsAny(strs []string) bool {
 	return false
 }
 
-func (msg *BotMessage) Contains(s string) bool {
+func (msg *Message) Contains(s string) bool {
 	lowerStr := strings.ToLower(msg.Body)
 	lowerInput := strings.ToLower(s)
 
@@ -56,21 +56,21 @@ func (msg *BotMessage) Contains(s string) bool {
 	return false
 }
 
-func (msg *BotMessage) Reply(s string) *BotReply {
+func (msg *Message) Reply(s string) *BotReply {
 	return &BotReply{
 		To:      msg.From,
 		Message: s,
 	}
 }
 
-func (msg *BotMessage) ReplyPrivate(s string) *BotReply {
+func (msg *Message) ReplyPrivate(s string) *BotReply {
 	return &BotReply{
 		To:      msg.FromUser.JID,
 		Message: s,
 	}
 }
 
-func (msg *BotMessage) String() string {
+func (msg *Message) String() string {
 	fromUser := "<unknown>"
 	if msg.FromUser != nil {
 		fromUser = msg.FromUser.Name
@@ -79,5 +79,5 @@ func (msg *BotMessage) String() string {
 	if msg.FromRoom != nil {
 		fromRoom = msg.FromRoom.Name
 	}
-	return fmt.Sprintf(`BotMessage{"%s", from_user=%s, from_room=%s, mentioned=%v, private=%v}`, msg.Body, fromUser, fromRoom, msg.BotMentioned, msg.IsPrivate())
+	return fmt.Sprintf(`Message{"%s", from_user=%s, from_room=%s, mentioned=%v, private=%v}`, msg.Body, fromUser, fromRoom, msg.BotMentioned, msg.IsPrivate())
 }

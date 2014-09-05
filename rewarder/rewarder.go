@@ -12,15 +12,14 @@ type Rewarder struct {
 }
 
 func init() {
-	plotbot.RegisterRewarder(func(bot *plotbot.Bot) plotbot.Rewarder {
-		rew := &Rewarder{
-			badges: make([]*Badge, 3),
-		}
-		rew.RegisterBadge("small_mentioner", "Small Mentioner", `This badge is awarded when you mention Plotbot's name for the first time.`)
-		rew.RegisterBadge("intimate_mentioner", "Intimave Mentioner", `This badge is awarded when you talk to Plotbot privately for the first time`)
-		rew.RegisterBadge("great_mentioner", "Great Mentioner", `This badge is awarded when you have mentioned Plotbot's name at least 10 times in the past week`)
-		return rew
-	})
+	plotbot.RegisterPlugin(&Rewarder{})
+}
+
+func (rew *Rewarder) InitRewarder(bot *plotbot.Bot) {
+	rew.badges = make([]*Badge, 3)
+	rew.RegisterBadge("small_mentioner", "Small Mentioner", `This badge is awarded when you mention Plotbot's name for the first time.`)
+	rew.RegisterBadge("intimate_mentioner", "Intimave Mentioner", `This badge is awarded when you talk to Plotbot privately for the first time`)
+	rew.RegisterBadge("great_mentioner", "Great Mentioner", `This badge is awarded when you have mentioned Plotbot's name at least 10 times in the past week`)
 }
 
 func (rew *Rewarder) RegisterBadge(shortName, title, description string) {

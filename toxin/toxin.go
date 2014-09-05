@@ -21,29 +21,30 @@ type Config struct {
 }
 
 func init() {
-	plotbot.RegisterPlugin(func(bot *plotbot.Bot) plotbot.Plugin {
-		var conf struct {
-			Toxin Config
-		}
-		bot.LoadConfig(&conf)
-		return &Toxin{
-			bot:      bot,
-			meetings: make(map[string]*Meeting),
-			config:   &conf.Toxin,
-		}
-	})
+	plotbot.RegisterPlugin(&Toxin{})
 }
 
-var config = &plotbot.PluginConfig{
+func (toxin *Toxin) InitChatPlugin(bot *plotbot.Bot) {
+	var conf struct {
+		Toxin Config
+	}
+	bot.LoadConfig(&conf)
+
+	toxin.bot = bot
+	toxin.meetings = make(map[string]*Meeting)
+	toxin.config = &conf.Toxin
+}
+
+var config = &plotbot.ChatPluginConfig{
 	EchoMessages: false,
 	OnlyMentions: false,
 }
 
-func (toxin *Toxin) Config() *plotbot.PluginConfig {
+func (toxin *Toxin) ChatConfig() *plotbot.ChatPluginConfig {
 	return config
 }
 
-func (toxin *Toxin) Handle(bot *plotbot.Bot, msg *plotbot.BotMessage) {
+func (toxin *Toxin) ChatHandler(bot *plotbot.Bot, msg *plotbot.Message) {
 	room := msg.FromRoom.JID
 	meeting, meetingExists := toxin.meetings[room]
 	if strings.HasPrefix(msg.Body, "!toxin ") {
@@ -129,7 +130,6 @@ func (toxin *Toxin) Handle(bot *plotbot.Bot, msg *plotbot.BotMessage) {
 			subject.TimeLimit += duration
 			bot.Reply(msg, fmt.Sprintf("extended to a total of %s, don't do that too often!", subject.TimeLimit.String()))
 		}
-
 
 		// Extend counters, update timers and notifications
 
@@ -222,7 +222,7 @@ func (toxin *Toxin) NextMeetingID() string {
 var actionMatcher = regexp.MustCompile(`a#([a-z]+|\d+)(\+\+)?`)
 var subjectMatcher = regexp.MustCompile(`s#([a-z]+|\d+)(\+\+)?`)
 
-func (toxin *Toxin) ensureOnSubject(meeting *Meeting, msg *plotbot.BotMessage) bool {
+func (toxin *Toxin) ensureOnSubject(meeting *Meeting, msg *plotbot.Message) bool {
 	if meeting.CurrentSubject == nil {
 		toxin.bot.Reply(msg, "We haven't started a subject yet, start with !next")
 		return false

@@ -19,6 +19,14 @@ type RedisConfig struct {
 	Host string
 }
 
+type ChatPluginConfig struct {
+	// Whether to handle the bot's own messages
+	EchoMessages bool
+
+	// Whether to handle messages that are not destined to me
+	OnlyMentions bool
+}
+
 type Config struct {
 	Hipchat HipchatConfig `json:"Hipchat"`
 }
