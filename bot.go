@@ -57,6 +57,7 @@ func (bot *Bot) Run() {
 	bot.SetupStorage()
 
 	// Init all plugins
+	enabledPlugins := make([]string, 0)
 	for _, plugin := range registeredPlugins {
 		pluginType := reflect.TypeOf(plugin)
 		if pluginType.Kind() == reflect.Ptr {
@@ -78,10 +79,12 @@ func (bot *Bot) Run() {
 
 		log.Printf("Plugin %s implements %s", pluginType.String(),
 			strings.Join(typeList, ", "))
+		enabledPlugins = append(enabledPlugins, strings.Replace(pluginType.String(), ".", "_", -1))
 	}
+
 	InitRewarder(bot)
 	InitChatPlugins(bot)
-	InitWebServer(bot)
+	InitWebServer(bot, enabledPlugins)
 	InitWebPlugins(bot)
 
 	if bot.WebServer != nil {

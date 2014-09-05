@@ -1,6 +1,7 @@
 package web
 
 import (
+	"encoding/json"
 	"fmt"
 	"html/template"
 	"log"
@@ -18,11 +19,12 @@ import (
 var web *Webapp
 
 type Webapp struct {
-	config  *WebappConfig
-	store   *sessions.CookieStore
-	bot     *plotbot.Bot
-	handler *negroni.Negroni
-	router  *mux.Router
+	config         *WebappConfig
+	store          *sessions.CookieStore
+	bot            *plotbot.Bot
+	handler        *negroni.Negroni
+	router         *mux.Router
+	enabledPlugins []string
 }
 
 type WebappConfig struct {
@@ -39,20 +41,21 @@ func init() {
 	plotbot.RegisterPlugin(&Webapp{})
 }
 
-func (webapp *Webapp) InitWebServer(bot *plotbot.Bot) {
+func (webapp *Webapp) InitWebServer(bot *plotbot.Bot, enabledPlugins []string) {
 	var conf struct {
 		Webapp WebappConfig
 	}
 	bot.LoadConfig(&conf)
 
 	webapp.bot = bot
+	webapp.enabledPlugins = enabledPlugins
 	webapp.config = &conf.Webapp
 	webapp.store = sessions.NewCookieStore([]byte(conf.Webapp.SessionAuthKey), []byte(conf.Webapp.SessionEncryptKey))
 	webapp.router = mux.NewRouter()
 
 	configureWebapp(&conf.Webapp)
 
-	webapp.router.HandleFunc("/", handleRoot)
+	webapp.router.HandleFunc("/", webapp.handleRoot)
 	web = webapp
 }
 
@@ -97,7 +100,7 @@ func configureWebapp(conf *WebappConfig) {
 	}
 }
 
-func handleRoot(w http.ResponseWriter, r *http.Request) {
+func (webapp *Webapp) handleRoot(w http.ResponseWriter, r *http.Request) {
 	if r.URL.Path != "/" {
 		http.NotFound(w, r)
 		return
@@ -111,7 +114,13 @@ func handleRoot(w http.ResponseWriter, r *http.Request) {
 		return
 	}
 
-	tpl.Execute(w, profile)
+	var ctx = struct {
+		CurrentUser, EnabledPlugins template.JS
+	}{
+		profile.AsJavascript(),
+		webapp.getEnabledPluginsJS(),
+	}
+	tpl.Execute(w, ctx)
 }
 
 func getRootTemplate() (*template.Template, error) {
@@ -131,4 +140,18 @@ func getRootTemplate() (*template.Template, error) {
 	}
 
 	return tpl, nil
+}
+
+func (webapp *Webapp) getEnabledPluginsJS() template.JS {
+	out := make(map[string]bool)
+	for _, pluginName := range webapp.enabledPlugins {
+		out[pluginName] = true
+	}
+
+	jsonMap, err := json.MarshalIndent(out, "", "  ")
+	if err != nil {
+		log.Fatal("Couldn't marshal EnabledPlugins list for rendering", err)
+		return template.JS("{}")
+	}
+	return template.JS(jsonMap)
 }

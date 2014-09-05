@@ -18,15 +18,12 @@ type GoogleUserProfile struct {
 func (up *GoogleUserProfile) AsJavascript() template.JS {
 	jsonProfile, err := json.MarshalIndent(up, "", "  ")
 	if err != nil {
-		log.Fatal("Couldn't unmarshal Cookie with GoogleUserProfile in there", err)
+		log.Fatal("Couldn't marshal GoogleUserProfile for rendering", err)
+		return template.JS("{}")
 	}
 	return template.JS(jsonProfile)
 }
 
 func init() {
 	gob.Register(&GoogleUserProfile{})
-
-	// Backwards compatibility
-	type UserProfile GoogleUserProfile
-	gob.Register(&UserProfile{})
 }
