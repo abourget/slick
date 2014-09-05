@@ -33,7 +33,7 @@ func (mw *OAuthMiddlware) ServeHTTP(w http.ResponseWriter, r *http.Request) {
 	if err != nil {
 		if r.URL.Path == "/" {
 			log.Println("Not logged in", err)
-			url := oauthCfg.AuthCodeURL("")
+			url := oauthCfg.AuthCodeURL("", "online", "auto")
 			http.Redirect(w, r, url, http.StatusFound)
 		} else {
 			w.WriteHeader(http.StatusForbidden)
