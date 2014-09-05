@@ -9,9 +9,9 @@ import (
 	"strings"
 	"time"
 
-	"github.com/plotly/plotbot/hipchatv2"
 	"github.com/garyburd/redigo/redis"
 	"github.com/jmcvetta/napping"
+	"github.com/plotly/plotbot/hipchatv2"
 	"github.com/tkawachi/hipchat"
 )
 
@@ -35,6 +35,10 @@ type Bot struct {
 	redisConfig RedisConfig
 	// RedisPool holds a connection to Redis.  NOTE: Prefix all your keys with "plotbot:" please.
 	RedisPool *redis.Pool
+
+	// Features from the heart
+	Rewarder Rewarder
+	// TODO: add Mood !
 }
 
 func NewHipbot(configFile string) *Bot {
@@ -51,6 +55,7 @@ func (bot *Bot) Run() {
 	bot.SetupStorage()
 
 	// Web related
+	LoadRewarder(bot)
 	LoadPlugins(bot)
 	LoadWebHandler(bot)
 

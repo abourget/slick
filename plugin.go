@@ -1,5 +1,7 @@
 package plotbot
 
+import "time"
+
 //
 // Bot plugins
 //
@@ -52,5 +54,29 @@ func LoadWebHandler(bot *Bot) {
 	if registeredWebHandler != nil {
 		loadedWebHandler = registeredWebHandler(bot, loadedPlugins)
 		go loadedWebHandler.Run()
+	}
+}
+
+//
+// Rewarder plugin
+//
+type Rewarder interface {
+	RegisterBadge(shortName, title, description string)
+	LogEvent(user *User, event string, data interface{}) error
+	FetchLogsSince(user *User, since time.Time, event string, data interface{}) error
+	FetchLastLog(user *User, event string, data interface{}) error
+	FetchLastNLogs(user *User, num int, event string, data interface{}) error
+	AwardBadge(bot *Bot, user *User, shortName string) error
+}
+
+var registeredRewarder func(*Bot) Rewarder = nil
+
+func RegisterRewarder(newFunc func(*Bot) Rewarder) {
+	registeredRewarder = newFunc
+}
+
+func LoadRewarder(bot *Bot) {
+	if registeredRewarder != nil {
+		bot.Rewarder = registeredRewarder(bot)
 	}
 }
