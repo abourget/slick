@@ -189,10 +189,7 @@ func (bot *Bot) ConnectClient() (err error) {
 	}
 
 	for _, room := range bot.Config.Rooms {
-		if !strings.Contains(room, "@") {
-			room = room + "@" + ConfDomain
-		}
-		bot.client.Join(room, bot.Config.Nickname)
+		bot.client.Join(canonicalRoom(room), bot.Config.Nickname)
 	}
 
 	return

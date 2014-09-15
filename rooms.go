@@ -12,7 +12,7 @@ type Room struct {
 
 func canonicalRoom(room string) string {
 	if !strings.Contains(room, "@") {
-		room += "@conf.hipchat.com"
+		room += "@" + ConfDomain
 	}
 	return room
 }

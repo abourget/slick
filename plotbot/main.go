@@ -12,6 +12,7 @@ import (
 
 	_ "github.com/plotly/plotbot/deployer"
 	_ "github.com/plotly/plotbot/funny"
+	_ "github.com/plotly/plotbot/totw"
 	_ "github.com/plotly/plotbot/healthy"
 	_ "github.com/plotly/plotbot/standup"
 	_ "github.com/plotly/plotbot/storm"
