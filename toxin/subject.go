@@ -60,6 +60,10 @@ func (subject *Subject) RecordPlusplus(user *User) {
 	subject.Plusplus = append(subject.Plusplus, pp)
 }
 
+func (subject *Subject) String() string {
+	return fmt.Sprintf("%s (timebox: %s ref: s#%s)", subject.Text, subject.Timebox(), subject.ID)
+}
+
 func (subject *Subject) Start(bot *plotbot.Bot, msg *plotbot.Message) {
 	if subject.BeginTime.IsZero() {
 		subject.BeginTime = time.Now()

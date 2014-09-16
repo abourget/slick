@@ -2,7 +2,6 @@ package toxin
 
 import (
 	"fmt"
-	"log"
 	"regexp"
 	"strings"
 	"time"
@@ -92,7 +91,7 @@ func (toxin *Toxin) ChatHandler(bot *plotbot.Bot, msg *plotbot.Message) {
 				if subject == meeting.CurrentSubject {
 					current = " <---- currently discussing"
 				}
-				bot.ReplyPrivate(msg, fmt.Sprintf("%d. %s (ref: s#%s timebox: %s)%s", i+1, subject.Text, subject.ID, subject.TimeLimit, current))
+				bot.ReplyPrivate(msg, fmt.Sprintf("%d. %s %s", i+1, subject, current))
 			}
 		}()
 
@@ -106,7 +105,7 @@ func (toxin *Toxin) ChatHandler(bot *plotbot.Bot, msg *plotbot.Message) {
 				bot.Reply(msg, fmt.Sprintf("No subjects listed, add some with !subject"))
 			} else {
 				subject := meeting.NextSubject(bot, msg)
-				bot.Reply(msg, fmt.Sprintf("Starting subject: %s\nTime limit: %s - Ref: s#%s", subject.Text, subject.TimeLimit.String(), subject.ID))
+				bot.Reply(msg, fmt.Sprintf("Goal: %s\nStarting subject: %s", meeting.Goal, subject))
 			}
 		}
 
@@ -120,13 +119,13 @@ func (toxin *Toxin) ChatHandler(bot *plotbot.Bot, msg *plotbot.Message) {
 			if meeting.CurrentSubject == nil {
 				meeting.NextSubject(bot, msg)
 				subject := meeting.CurrentSubject
-				bot.Reply(msg, fmt.Sprintf("Goal: %s\nStarting subject: %s\nTime limit: %s - Ref: s#%s", meeting.Goal,  subject.Text, subject.TimeLimit.String(), subject.ID))
+				bot.Reply(msg, fmt.Sprintf("Goal: %s\nStarting subject: %s", meeting.Goal, subject))
 			} else {
 				if meeting.CurrentIsLast() {
 					bot.Reply(msg, fmt.Sprintf("No more subjects.  Add some with !subject or !conclude the toxin"))
 				} else {
 					subject := meeting.NextSubject(bot, msg)
-					bot.Reply(msg, fmt.Sprintf("Goal: %s\nPassing on to subject: %s\nTime limit: %s - Ref: s#%s", meeting.Goal, subject.Text, subject.Timebox(), subject.ID))
+					bot.Reply(msg, fmt.Sprintf("Goal: %s\nPassing on to subject: %s", meeting.Goal, subject))
 				}
 			}
 		}
@@ -198,7 +197,6 @@ func (toxin *Toxin) ChatHandler(bot *plotbot.Bot, msg *plotbot.Message) {
 		}
 	}
 
-	log.Println("LOGGING MESSAGE!")
 	// Log message
 	newMessage := &Message{
 		From:      user,

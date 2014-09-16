@@ -28,7 +28,7 @@ func NewMeeting(id string, user *plotbot.User, goal, room string) *Meeting {
 	meeting := &Meeting{}
 	meeting.ID = id
 	meeting.Room = room
-	meeting.Goal = goal
+	meeting.Goal = strings.TrimSpace(goal)
 	meeting.StartTime = time.Now()
 
 	newUser := meeting.ImportUser(user)
