@@ -2,6 +2,7 @@ package toxin
 
 import (
 	"fmt"
+	"log"
 	"regexp"
 	"strings"
 	"time"
@@ -62,9 +63,16 @@ func (toxin *Toxin) ChatHandler(bot *plotbot.Bot, msg *plotbot.Message) {
 	}
 
 	if !meetingExists {
+		if strings.HasPrefix(msg.Body, "!subjects") {
+			bot.ReplyPrivate(msg, fmt.Sprintf(`No meeting running in "%s"`, msg.FromRoom.Name))
+		}
+
 		return
 	}
 
+	//
+	// Manage messages from within a meeting
+	//
 	user := meeting.ImportUser(msg.FromUser)
 
 	if strings.HasPrefix(msg.Body, "!subject ") {
@@ -75,6 +83,19 @@ func (toxin *Toxin) ChatHandler(bot *plotbot.Bot, msg *plotbot.Message) {
 			bot.Reply(msg, fmt.Sprintf("Subject added, timebox: %s, ref: s#%s", subject.Timebox(), subject.ID))
 		}
 
+	} else if strings.HasPrefix(msg.Body, "!subjects") {
+		go func() {
+			bot.ReplyPrivate(msg, fmt.Sprintf(`Subjects in "%s":`, msg.FromRoom.Name))
+			for i, subject := range meeting.Subjects {
+				time.Sleep(100 * time.Millisecond)
+				current := ""
+				if subject == meeting.CurrentSubject {
+					current = " <---- currently discussing"
+				}
+				bot.ReplyPrivate(msg, fmt.Sprintf("%d. %s (ref: s#%s timebox: %s)%s", i+1, subject.Text, subject.ID, subject.TimeLimit, current))
+			}
+		}()
+
 	} else if strings.HasPrefix(msg.Body, "!start") {
 
 		if meeting.CurrentSubject != nil {
@@ -84,8 +105,8 @@ func (toxin *Toxin) ChatHandler(bot *plotbot.Bot, msg *plotbot.Message) {
 			if len(meeting.Subjects) == 0 {
 				bot.Reply(msg, fmt.Sprintf("No subjects listed, add some with !subject"))
 			} else {
-				subject := meeting.NextSubject()
-				bot.Reply(msg, fmt.Sprintf("Starting Toxin with subject: %s\n- Time limit: %s - Ref: s#%s", subject.Text, subject.TimeLimit.String(), subject.ID))
+				subject := meeting.NextSubject(bot, msg)
+				bot.Reply(msg, fmt.Sprintf("Starting subject: %s\nTime limit: %s - Ref: s#%s", subject.Text, subject.TimeLimit.String(), subject.ID))
 			}
 		}
 
@@ -97,16 +118,15 @@ func (toxin *Toxin) ChatHandler(bot *plotbot.Bot, msg *plotbot.Message) {
 			// Wrap up counters
 			// Start the next subject, the first is none is started.
 			if meeting.CurrentSubject == nil {
-				meeting.NextSubject()
+				meeting.NextSubject(bot, msg)
 				subject := meeting.CurrentSubject
-				bot.Reply(msg, fmt.Sprintf("Starting Toxin with subject: %s\n- Time limit: %s - Ref: s#%s", subject.Text, subject.TimeLimit.String(), subject.ID))
+				bot.Reply(msg, fmt.Sprintf("Goal: %s\nStarting subject: %s\nTime limit: %s - Ref: s#%s", meeting.Goal,  subject.Text, subject.TimeLimit.String(), subject.ID))
 			} else {
 				if meeting.CurrentIsLast() {
 					bot.Reply(msg, fmt.Sprintf("No more subjects.  Add some with !subject or !conclude the toxin"))
 				} else {
-					prevSubject := meeting.CurrentSubject
-					subject := meeting.NextSubject()
-					bot.Reply(msg, fmt.Sprintf("ok, done with subject s#%s: %s\nDiscussing subject: %s\n- Time limit: %s - Ref: s#%s", prevSubject.ID, prevSubject.Text, subject.Text, subject.TimeLimit.String(), subject.ID))
+					subject := meeting.NextSubject(bot, msg)
+					bot.Reply(msg, fmt.Sprintf("Goal: %s\nPassing on to subject: %s\nTime limit: %s - Ref: s#%s", meeting.Goal, subject.Text, subject.Timebox(), subject.ID))
 				}
 			}
 		}
@@ -123,12 +143,12 @@ func (toxin *Toxin) ChatHandler(bot *plotbot.Bot, msg *plotbot.Message) {
 
 		duration, err := time.ParseDuration(msg.Body[8:])
 		if err != nil {
-			bot.Reply(msg, "hmm, wrong syntax !extend, or invalid duration")
+			bot.Reply(msg, "Hmm, wrong syntax !extend, or invalid duration")
 		} else {
 			subject := meeting.CurrentSubject
 			subject.WasExtended = true
-			subject.TimeLimit += duration
-			bot.Reply(msg, fmt.Sprintf("extended to a total of %s, don't do that too often!", subject.TimeLimit.String()))
+			subject.TimeLimit = duration
+			bot.Reply(msg, fmt.Sprintf("Extended for another %s, don't do that too often!", subject.Timebox()))
 		}
 
 		// Extend counters, update timers and notifications
@@ -152,7 +172,6 @@ func (toxin *Toxin) ChatHandler(bot *plotbot.Bot, msg *plotbot.Message) {
 		bot.Reply(msg, "Ref. added")
 
 	} else if strings.HasPrefix(msg.Body, "!conclude") {
-
 		meeting.Conclude()
 		// TODO: kill all waiting goroutines dealing with messaging
 		delete(toxin.meetings, room)
@@ -164,7 +183,7 @@ func (toxin *Toxin) ChatHandler(bot *plotbot.Bot, msg *plotbot.Message) {
 		if action != nil {
 			if match[2] == "++" {
 				action.RecordPlusplus(user)
-				bot.Reply(msg, "noted")
+				bot.ReplyMention(msg, "noted")
 			}
 		}
 
@@ -174,11 +193,12 @@ func (toxin *Toxin) ChatHandler(bot *plotbot.Bot, msg *plotbot.Message) {
 		if subject != nil {
 			if match[2] == "++" {
 				subject.RecordPlusplus(user)
-				bot.Reply(msg, "noted")
+				bot.ReplyMention(msg, "noted")
 			}
 		}
 	}
 
+	log.Println("LOGGING MESSAGE!")
 	// Log message
 	newMessage := &Message{
 		From:      user,

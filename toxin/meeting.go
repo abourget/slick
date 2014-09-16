@@ -139,20 +139,21 @@ func (meeting *Meeting) CurrentIsLast() bool {
 }
 
 // NextSubject is called when switching subject.  Do not call to start.
-func (meeting *Meeting) NextSubject() *Subject {
+func (meeting *Meeting) NextSubject(bot *plotbot.Bot, msg *plotbot.Message) *Subject {
 	prevSubject := meeting.CurrentSubject
+	getNext := false
+
 	if prevSubject != nil {
 		// Wrap up counters
 		prevSubject.Stop()
 	} else {
-		meeting.CurrentSubject = meeting.Subjects[0]
-		return meeting.CurrentSubject
+		getNext = true
 	}
 
-	getNext := false
 	for _, subject := range meeting.Subjects {
 		if getNext {
 			meeting.CurrentSubject = subject
+			subject.Start(bot, msg)
 			return subject
 		}
 		if prevSubject == subject {
@@ -161,7 +162,7 @@ func (meeting *Meeting) NextSubject() *Subject {
 	}
 
 	// That shouldn't happen, provided there *is* a next subject.
-	// You should call CurrentIsLast() prior to calling this.
+	// You should call CurrentIsLast() prior to calling this method.
 	return nil
 }
 
@@ -221,90 +222,4 @@ func (meeting *Meeting) Conclude() {
 	if meeting.CurrentSubject != nil {
 		meeting.CurrentSubject.Stop()
 	}
-}
-
-type Message struct {
-	From      *User
-	Timestamp time.Time
-	Text      string
-}
-
-type Subject struct {
-	ID        string
-	AddedBy   *User
-	Text      string
-	TimeLimit time.Duration
-
-	// Global timing
-	Duration  time.Duration
-	BeginTime time.Time
-	FinalTime time.Time
-	// Local timing, when we talk about the subject
-	StartTime time.Time
-	EndTime   time.Time
-
-	Actions     []*Action
-	Plusplus    []*Plusplus
-	Refs        []*Reference
-	WasExtended bool
-}
-
-func (subject *Subject) Timebox() string {
-	if subject.TimeLimit == 0 {
-		return "[no limit]"
-	} else {
-		return subject.TimeLimit.String()
-	}
-}
-
-func (subject *Subject) RecordPlusplus(user *User) {
-	pp := NewPlusplus(user)
-	subject.Plusplus = append(subject.Plusplus, pp)
-}
-
-func (subject *Subject) Stop() {
-	subject.EndTime = time.Now()
-	subject.Duration += subject.EndTime.Sub(subject.StartTime)
-	subject.FinalTime = time.Now()
-}
-func (subject *Subject) Start() {
-	if subject.BeginTime.IsZero() {
-		subject.BeginTime = time.Now()
-	}
-	subject.StartTime = time.Now()
-}
-
-type Plusplus struct {
-	From *User
-}
-
-func NewPlusplus(from *User) *Plusplus {
-	pp := &Plusplus{
-		From: from,
-	}
-	return pp
-}
-
-type Reference struct {
-	AddedBy *User
-	URL     string
-	Text    string
-}
-
-type Action struct {
-	ID       string
-	AddedBy  *User
-	Text     string
-	Plusplus []*Plusplus
-}
-
-func (action *Action) RecordPlusplus(user *User) {
-	pp := NewPlusplus(user)
-	action.Plusplus = append(action.Plusplus, pp)
-}
-
-type User struct {
-	Email    string
-	Fullname string
-	PhotoURL string
 }
