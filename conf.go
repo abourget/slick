@@ -13,6 +13,7 @@ type HipchatConfig struct {
 	Mention         string
 	Rooms           []string
 	HipchatApiToken string `json:"hipchat_api_token"`
+	WebBaseURL      string `json:"web_base_url"`
 }
 
 type RedisConfig struct {

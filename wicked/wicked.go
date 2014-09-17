@@ -58,7 +58,7 @@ func (wicked *Wicked) ChatHandler(bot *plotbot.Bot, msg *plotbot.Message) {
 		meeting := NewMeeting(id, msg.FromUser, msg.Body[6:], room)
 		wicked.pastMeetings = append(wicked.pastMeetings, meeting)
 		wicked.meetings[room] = meeting
-		bot.Reply(msg, fmt.Sprintf("Wicked meeting started.  Welcome aboard.  Access report at %s/wicked/%s", wicked.config.WebBaseURL, meeting.ID))
+		bot.Reply(msg, fmt.Sprintf("Wicked meeting started.  Welcome aboard.  Access report at %s/wicked/%s", wicked.bot.Config.WebBaseURL, meeting.ID))
 	}
 
 	if !meetingExists {
