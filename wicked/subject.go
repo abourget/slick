@@ -1,4 +1,4 @@
-package toxin
+package wicked
 
 import (
 	"fmt"
@@ -9,7 +9,7 @@ import (
 )
 
 func init() {
-	plotbot.RegisterStringList("toxin annoyments", []string{
+	plotbot.RegisterStringList("wicked annoyments", []string{
 		"friends, told you it was enough",
 		"can't you guys control yourselves!",
 		"I'm going to have to intervene!",
@@ -110,7 +110,7 @@ func (subject *Subject) manageSubject(bot *plotbot.Bot, msg *plotbot.Message) {
 	for {
 		select {
 		case <-time.After(annoymentInterval):
-			bot.Reply(msg, plotbot.RandomString("toxin annoyments"))
+			bot.Reply(msg, plotbot.RandomString("wicked annoyments"))
 		case <-doneCh:
 			return
 		}

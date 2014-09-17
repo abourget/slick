@@ -1,4 +1,4 @@
-package toxin
+package wicked
 
 import (
 	"fmt"
@@ -9,7 +9,7 @@ import (
 	"github.com/plotly/plotbot"
 )
 
-type Toxin struct {
+type Wicked struct {
 	bot          *plotbot.Bot
 	meetings     map[string]*Meeting
 	pastMeetings []*Meeting
@@ -21,18 +21,18 @@ type Config struct {
 }
 
 func init() {
-	plotbot.RegisterPlugin(&Toxin{})
+	plotbot.RegisterPlugin(&Wicked{})
 }
 
-func (toxin *Toxin) InitChatPlugin(bot *plotbot.Bot) {
+func (wicked *Wicked) InitChatPlugin(bot *plotbot.Bot) {
 	var conf struct {
-		Toxin Config
+		Wicked Config
 	}
 	bot.LoadConfig(&conf)
 
-	toxin.bot = bot
-	toxin.meetings = make(map[string]*Meeting)
-	toxin.config = &conf.Toxin
+	wicked.bot = bot
+	wicked.meetings = make(map[string]*Meeting)
+	wicked.config = &conf.Wicked
 }
 
 var config = &plotbot.ChatPluginConfig{
@@ -40,25 +40,25 @@ var config = &plotbot.ChatPluginConfig{
 	OnlyMentions: false,
 }
 
-func (toxin *Toxin) ChatConfig() *plotbot.ChatPluginConfig {
+func (wicked *Wicked) ChatConfig() *plotbot.ChatPluginConfig {
 	return config
 }
 
-func (toxin *Toxin) ChatHandler(bot *plotbot.Bot, msg *plotbot.Message) {
+func (wicked *Wicked) ChatHandler(bot *plotbot.Bot, msg *plotbot.Message) {
 	room := msg.FromRoom.JID
-	meeting, meetingExists := toxin.meetings[room]
-	if strings.HasPrefix(msg.Body, "!toxin ") {
+	meeting, meetingExists := wicked.meetings[room]
+	if strings.HasPrefix(msg.Body, "!wicked ") {
 		if meetingExists {
-			bot.Reply(msg, "Toxin already running in current room")
+			bot.Reply(msg, "Wicked meeting already running in current room")
 			return
 		}
-		// Accept !toxin  and start.
+		// Accept !wicked  and start.
 
-		id := toxin.NextMeetingID()
+		id := wicked.NextMeetingID()
 		meeting := NewMeeting(id, msg.FromUser, msg.Body[6:], room)
-		toxin.pastMeetings = append(toxin.pastMeetings, meeting)
-		toxin.meetings[room] = meeting
-		bot.Reply(msg, fmt.Sprintf("Toxin started.  Welcome aboard.  Access report at %s/toxin/%s", toxin.config.WebBaseURL, meeting.ID))
+		wicked.pastMeetings = append(wicked.pastMeetings, meeting)
+		wicked.meetings[room] = meeting
+		bot.Reply(msg, fmt.Sprintf("Wicked meeting started.  Welcome aboard.  Access report at %s/wicked/%s", wicked.config.WebBaseURL, meeting.ID))
 	}
 
 	if !meetingExists {
@@ -122,7 +122,7 @@ func (toxin *Toxin) ChatHandler(bot *plotbot.Bot, msg *plotbot.Message) {
 				bot.Reply(msg, fmt.Sprintf("Goal: %s\nStarting subject: %s", meeting.Goal, subject))
 			} else {
 				if meeting.CurrentIsLast() {
-					bot.Reply(msg, fmt.Sprintf("No more subjects.  Add some with !subject or !conclude the toxin"))
+					bot.Reply(msg, fmt.Sprintf("No more subjects.  Add some with !subject or !conclude the wicked meeting"))
 				} else {
 					subject := meeting.NextSubject(bot, msg)
 					bot.Reply(msg, fmt.Sprintf("Goal: %s\nPassing on to subject: %s", meeting.Goal, subject))
@@ -131,12 +131,12 @@ func (toxin *Toxin) ChatHandler(bot *plotbot.Bot, msg *plotbot.Message) {
 		}
 
 	} else if strings.HasPrefix(msg.Body, "!previous") {
-		if !toxin.ensureOnSubject(meeting, msg) {
+		if !wicked.ensureOnSubject(meeting, msg) {
 			return
 		}
 
 	} else if strings.HasPrefix(msg.Body, "!extend ") {
-		if !toxin.ensureOnSubject(meeting, msg) {
+		if !wicked.ensureOnSubject(meeting, msg) {
 			return
 		}
 
@@ -154,7 +154,7 @@ func (toxin *Toxin) ChatHandler(bot *plotbot.Bot, msg *plotbot.Message) {
 
 	} else if strings.HasPrefix(msg.Body, "!action ") {
 
-		if !toxin.ensureOnSubject(meeting, msg) {
+		if !wicked.ensureOnSubject(meeting, msg) {
 			return
 		}
 		// Add to Subject *and* Meeting
@@ -173,8 +173,8 @@ func (toxin *Toxin) ChatHandler(bot *plotbot.Bot, msg *plotbot.Message) {
 	} else if strings.HasPrefix(msg.Body, "!conclude") {
 		meeting.Conclude()
 		// TODO: kill all waiting goroutines dealing with messaging
-		delete(toxin.meetings, room)
-		bot.Reply(msg, "Concluding toxin, that's all folks!")
+		delete(wicked.meetings, room)
+		bot.Reply(msg, "Concluding wicked meeting, that's all folks!")
 
 	} else if match := actionMatcher.FindStringSubmatch(msg.Body); match != nil {
 
@@ -207,7 +207,7 @@ func (toxin *Toxin) ChatHandler(bot *plotbot.Bot, msg *plotbot.Message) {
 	/**
 	* Handle everything for this meeting:
 	*
-	* !toxin [goal]
+	* !wicked [goal]
 	* !subject [s#tag] <duration as \d+m> <Subject text>
 	* !next
 	* !previous
@@ -220,11 +220,11 @@ func (toxin *Toxin) ChatHandler(bot *plotbot.Bot, msg *plotbot.Message) {
 	**/
 }
 
-func (toxin *Toxin) NextMeetingID() string {
+func (wicked *Wicked) NextMeetingID() string {
 	for i := 1; i < 10000; i++ {
 		strID := fmt.Sprintf("%d", i)
 		taken := false
-		for _, meeting := range toxin.pastMeetings {
+		for _, meeting := range wicked.pastMeetings {
 			if meeting.ID == strID {
 				taken = true
 				break
@@ -240,9 +240,9 @@ func (toxin *Toxin) NextMeetingID() string {
 var actionMatcher = regexp.MustCompile(`a#([a-z]+|\d+)(\+\+)?`)
 var subjectMatcher = regexp.MustCompile(`s#([a-z]+|\d+)(\+\+)?`)
 
-func (toxin *Toxin) ensureOnSubject(meeting *Meeting, msg *plotbot.Message) bool {
+func (wicked *Wicked) ensureOnSubject(meeting *Meeting, msg *plotbot.Message) bool {
 	if meeting.CurrentSubject == nil {
-		toxin.bot.Reply(msg, "We haven't started a subject yet, start with !next")
+		wicked.bot.Reply(msg, "We haven't started a subject yet, start with !next")
 		return false
 	}
 	return true

@@ -1,4 +1,4 @@
-package toxin
+package wicked
 
 import (
 	"encoding/json"
@@ -8,16 +8,16 @@ import (
 	"github.com/plotly/plotbot"
 )
 
-func (toxin *Toxin) InitWebPlugin(bot *plotbot.Bot, router *mux.Router) {
-	router.HandleFunc("/toxin/{id}", toxin.renderMeeting)
+func (wicked *Wicked) InitWebPlugin(bot *plotbot.Bot, router *mux.Router) {
+	router.HandleFunc("/wicked/{id}", wicked.renderMeeting)
 }
 
-func (toxin *Toxin) renderMeeting(w http.ResponseWriter, r *http.Request) {
+func (wicked *Wicked) renderMeeting(w http.ResponseWriter, r *http.Request) {
 	params := mux.Vars(r)
 	id := params["id"]
 
 	var meeting *Meeting
-	for _, meetingEl := range toxin.pastMeetings {
+	for _, meetingEl := range wicked.pastMeetings {
 		if meetingEl.ID == id {
 			meeting = meetingEl
 		}

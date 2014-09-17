@@ -1,4 +1,4 @@
-package toxin
+package wicked
 
 type Action struct {
 	ID       string

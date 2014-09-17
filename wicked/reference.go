@@ -1,4 +1,4 @@
-package toxin
+package wicked
 
 type Reference struct {
 	AddedBy *User

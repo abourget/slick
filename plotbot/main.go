@@ -17,7 +17,7 @@ import (
 	_ "github.com/plotly/plotbot/standup"
 	_ "github.com/plotly/plotbot/storm"
 	_ "github.com/plotly/plotbot/tabularasa"
-	_ "github.com/plotly/plotbot/toxin"
+	_ "github.com/plotly/plotbot/wicked"
 	_ "github.com/plotly/plotbot/webutils"
 )
 
