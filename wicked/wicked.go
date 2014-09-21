@@ -13,11 +13,6 @@ type Wicked struct {
 	bot          *plotbot.Bot
 	meetings     map[string]*Meeting
 	pastMeetings []*Meeting
-	config       *Config
-}
-
-type Config struct {
-	WebBaseURL string `json:"web_base_url"`
 }
 
 func init() {
@@ -25,14 +20,8 @@ func init() {
 }
 
 func (wicked *Wicked) InitChatPlugin(bot *plotbot.Bot) {
-	var conf struct {
-		Wicked Config
-	}
-	bot.LoadConfig(&conf)
-
 	wicked.bot = bot
 	wicked.meetings = make(map[string]*Meeting)
-	wicked.config = &conf.Wicked
 }
 
 var config = &plotbot.ChatPluginConfig{
