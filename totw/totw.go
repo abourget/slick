@@ -56,7 +56,7 @@ func (totw *Totw) ChatConfig() *plotbot.ChatPluginConfig {
 }
 
 func (totw *Totw) ChatHandler(bot *plotbot.Bot, msg *plotbot.Message) {
-	if strings.HasPrefix(msg.Body, "!totw") {
+	if strings.HasPrefix(msg.Body, "!totw") || strings.HasPrefix(msg.Body, "!techoftheweek"){
 		bot.ReplyMention(msg, plotbot.RandomString("tech adept"))
 	}
 }
@@ -69,6 +69,6 @@ func (totw *Totw) ScheduleAlerts(room string, w time.Weekday, hour, min int) {
 		<-time.After(when)
 
 		totw.bot.SendToRoom(room, plotbot.RandomString("useless techs"))
-		totw.bot.SendToRoom(room, `Time for some tech of the week! What's your pick ?  Start your line with "!totw"`)
+		totw.bot.SendToRoom(room, `Time for some Tech of the Week! What's your pick ?  Start your line with "!techoftheweek"`)
 	}
 }
