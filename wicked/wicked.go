@@ -90,8 +90,8 @@ func (wicked *Wicked) ChatHandler(bot *plotbot.Bot, msg *plotbot.Message) {
 
 		meeting.sendToRoom(fmt.Sprintf(`*** Access report at %s/wicked/%s.html`, wicked.bot.Config.WebBaseURL, meeting.ID))
 		meeting.setTopic(fmt.Sprintf(`[Running] W%s goal: %s`, meeting.ID, meeting.Goal))
-	} else if strings.HasPrefix(msg.Body, "!join ") {
-		match := decisionMatcher.FindStringSubmatch(msg.Body)
+	} else if strings.HasPrefix(msg.Body, "!join") {
+		match := joinMatcher.FindStringSubmatch(msg.Body)
 		if match == nil {
 			bot.ReplyMention(msg, `invalid !join syntax. Use something like "!join W123"`)
 		} else {
@@ -194,4 +194,4 @@ func (wicked *Wicked) NextMeetingID() string {
 }
 
 var decisionMatcher = regexp.MustCompile(`(?mi)D(\d+)\+\+`)
-var wickedMeetingMatcher = regexp.MustCompile(`(?mi)W(\d+)`)
+var joinMatcher = regexp.MustCompile(`!join\s+(?mi)W(\d+)`)
