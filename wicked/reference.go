@@ -1,7 +1,10 @@
 package wicked
 
+import "time"
+
 type Reference struct {
-	AddedBy *User
-	URL     string
-	Text    string
+	AddedBy   *User
+	Timestamp time.Time
+	URL       string
+	Text      string
 }

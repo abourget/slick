@@ -154,7 +154,7 @@ func (bot *Bot) Notify(room, color, format, msg string, notify bool) (*napping.R
 func (bot *Bot) SendToRoom(room string, message string) {
 	log.Println("Sending to room ", room, ": ", message)
 
-	room = canonicalRoom(room)
+	room = CanonicalRoom(room)
 
 	reply := &BotReply{
 		To:      room,
@@ -166,7 +166,7 @@ func (bot *Bot) SendToRoom(room string, message string) {
 
 // GetRoomdId returns the numeric room ID as string for a given XMPP room JID
 func (bot *Bot) GetRoomId(room string) string {
-	roomName := canonicalRoom(room)
+	roomName := CanonicalRoom(room)
 	for _, room := range bot.Rooms {
 		if roomName == room.JID {
 			return fmt.Sprintf("%v", room.ID)
@@ -189,7 +189,7 @@ func (bot *Bot) ConnectClient() (err error) {
 	}
 
 	for _, room := range bot.Config.Rooms {
-		bot.client.Join(canonicalRoom(room), bot.Config.Nickname)
+		bot.client.Join(CanonicalRoom(room), bot.Config.Nickname)
 	}
 
 	return
@@ -372,8 +372,8 @@ func (bot *Bot) usersPolling() {
 			// FIXME: Disregard error?! wwoooaah!
 			hcUsers, _ := hipchatv2.GetUsers(bot.Config.HipchatApiToken)
 			users := []User{}
-			for _, hcu := range hcUsers {
-				users = append(users, User{hcu})
+			for _, user := range hcUsers {
+				users = append(users, UserFromHipchatv2(user))
 			}
 			bot.Users = users
 			//log.Printf("Users: %#v\n", users)
@@ -391,8 +391,8 @@ func (bot *Bot) roomsPolling() {
 		case <-timeout:
 			hcRooms, _ := hipchatv2.GetRooms(bot.Config.HipchatApiToken)
 			rooms := []Room{}
-			for _, hcu := range hcRooms {
-				rooms = append(rooms, Room{hcu})
+			for _, room := range hcRooms {
+				rooms = append(rooms, RoomFromHipchatv2(room))
 			}
 			bot.Rooms = rooms
 			//log.Printf("Rooms: %#v\n", rooms)

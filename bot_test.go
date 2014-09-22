@@ -1,14 +1,10 @@
 package plotbot
 
-import (
-	"testing"
-
-	"github.com/plotly/plotbot/hipchatv2"
-)
+import "testing"
 
 func TestBotGetUserByName(t *testing.T) {
-	u1 := User{hipchatv2.User{Name: "Bob Dylan"}}
-	u2 := User{hipchatv2.User{Name: "Robert"}}
+	u1 := User{Name: "Bob Dylan"}
+	u2 := User{Name: "Robert"}
 	bot := &Bot{
 		Users: []User{u1, u2},
 	}
@@ -19,7 +15,7 @@ func TestBotGetUserByName(t *testing.T) {
 }
 
 func TestBotGetUserByGroupChatJID(t *testing.T) {
-	u1 := User{hipchatv2.User{Name: "Alexandre Bourget", ID: 10}}
+	u1 := User{Name: "Alexandre Bourget", ID: 10}
 	bot := &Bot{
 		Users: []User{u1},
 	}
@@ -34,7 +30,7 @@ func TestBotGetUserByGroupChatJID(t *testing.T) {
 }
 
 func TestBotGetUserByPrivateChatJID(t *testing.T) {
-	u1 := User{hipchatv2.User{JID: "123823_902463@chat.hipchat.com", ID: 10}}
+	u1 := User{JID: "123823_902463@chat.hipchat.com", ID: 10}
 	bot := &Bot{
 		Users: []User{u1},
 	}
@@ -49,7 +45,7 @@ func TestBotGetUserByPrivateChatJID(t *testing.T) {
 }
 
 func TestBotGetRoomByName(t *testing.T) {
-	r1 := Room{hipchatv2.Room{JID: "123823_devops@conf.hipchat.com", ID: 5, Name: "DevOps"}}
+	r1 := Room{JID: "123823_devops@conf.hipchat.com", ID: 5, Name: "DevOps"}
 	bot := &Bot{
 		Rooms: []Room{r1},
 	}
@@ -67,7 +63,7 @@ func TestBotGetRoomByName(t *testing.T) {
 //    From: 123823_902438@chat.hipchat.com/linux
 
 func TestBotGetRoomByJID(t *testing.T) {
-	r1 := Room{hipchatv2.Room{JID: "123823_devops@conf.hipchat.com", ID: 5, Name: "DevOps"}}
+	r1 := Room{JID: "123823_devops@conf.hipchat.com", ID: 5, Name: "DevOps"}
 	bot := &Bot{
 		Rooms: []Room{r1},
 	}

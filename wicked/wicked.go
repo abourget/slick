@@ -1,5 +1,16 @@
 package wicked
 
+/**
+ * TODO:
+ * Implement notion of Wicked Confroom, and its management
+ * Remove "Subject" altogether
+ * Implement !join , with Wicked meetings references W11 and W22, etc..
+ * Change Plusplus to D12++ and R23++ and W22++ ..
+ * Time reminder, simply send to the Wicked Confroom, a reminer of the time,
+ *   maybe as a bold statement, for how long the meeting has ran, and if it's
+ *   over the time.
+ */
+
 import (
 	"fmt"
 	"regexp"
@@ -11,6 +22,7 @@ import (
 
 type Wicked struct {
 	bot          *plotbot.Bot
+	confRooms    []string
 	meetings     map[string]*Meeting
 	pastMeetings []*Meeting
 }
@@ -22,6 +34,16 @@ func init() {
 func (wicked *Wicked) InitChatPlugin(bot *plotbot.Bot) {
 	wicked.bot = bot
 	wicked.meetings = make(map[string]*Meeting)
+
+	var conf struct {
+		Wicked struct {
+			Confrooms []string `json:"conf_rooms"`
+		}
+	}
+	bot.LoadConfig(&conf)
+	for _, confroom := range conf.Wicked.Confrooms {
+		wicked.confRooms = append(wicked.confRooms, plotbot.CanonicalRoom(confroom))
+	}
 }
 
 var config = &plotbot.ChatPluginConfig{
@@ -34,179 +56,126 @@ func (wicked *Wicked) ChatConfig() *plotbot.ChatPluginConfig {
 }
 
 func (wicked *Wicked) ChatHandler(bot *plotbot.Bot, msg *plotbot.Message) {
-	room := msg.FromRoom.JID
-	meeting, meetingExists := wicked.meetings[room]
+	uuidNow := time.Now()
+
 	if strings.HasPrefix(msg.Body, "!wicked ") {
-		if meetingExists {
-			bot.Reply(msg, "Wicked meeting already running in current room")
-			return
+		fromRoom := ""
+		if msg.FromRoom != nil {
+			fromRoom = msg.FromRoom.JID
 		}
-		// Accept !wicked  and start.
+
+		availableRoom := wicked.FindAvailableRoom(fromRoom)
+
+		if availableRoom == nil {
+			bot.Reply(msg, "No available Wicked Confroom for a meeting! Seems you'll need to create new Wicked Confrooms !")
+			goto continueLogging
+		}
 
 		id := wicked.NextMeetingID()
-		meeting := NewMeeting(id, msg.FromUser, msg.Body[6:], room)
-		wicked.pastMeetings = append(wicked.pastMeetings, meeting)
-		wicked.meetings[room] = meeting
-		bot.Reply(msg, fmt.Sprintf("Wicked meeting started.  Welcome aboard.  Access report at %s/wicked/%s", wicked.bot.Config.WebBaseURL, meeting.ID))
-	}
+		meeting := NewMeeting(id, msg.FromUser, msg.Body[7:], bot, availableRoom, uuidNow)
 
-	if !meetingExists {
-		if strings.HasPrefix(msg.Body, "!subjects") {
-			bot.ReplyPrivate(msg, fmt.Sprintf(`No meeting running in "%s"`, msg.FromRoom.Name))
+		wicked.pastMeetings = append(wicked.pastMeetings, meeting)
+		wicked.meetings[availableRoom.JID] = meeting
+
+		if availableRoom.JID == fromRoom {
+			meeting.sendToRoom(fmt.Sprintf(`*** Starting wicked meeting W%s in here.`, meeting.ID))
+		} else {
+			bot.Reply(msg, fmt.Sprintf(`*** Starting wicked meeting W%s in room "%s". Join with !join W%s`, meeting.ID, availableRoom.Name, meeting.ID))
+			initiatedFrom := ""
+			if fromRoom != "" {
+				initiatedFrom = fmt.Sprintf(` in "%s"`, msg.FromRoom.Name)
+			}
+			meeting.sendToRoom(fmt.Sprintf(`*** Wicked meeting initiated by @%s%s. Goal: %s`, msg.FromUser.MentionName, initiatedFrom, meeting.Goal))
 		}
 
+		meeting.sendToRoom(fmt.Sprintf(`*** Access report at %s/wicked/%s`, wicked.bot.Config.WebBaseURL, meeting.ID))
+		meeting.setTopic(fmt.Sprintf(`[Running] W%s goal: %s`, meeting.ID, meeting.Goal))
+	}
+
+continueLogging:
+
+	//
+	// Public commands and messages
+	//
+	if msg.FromRoom == nil {
+		return
+	}
+	room := msg.FromRoom.JID
+	meeting, meetingExists := wicked.meetings[room]
+	if !meetingExists {
 		return
 	}
 
-	//
-	// Manage messages from within a meeting
-	//
 	user := meeting.ImportUser(msg.FromUser)
 
-	if strings.HasPrefix(msg.Body, "!subject ") {
-		subject := meeting.AddSubject(user, msg.Body[9:])
-		if subject == nil {
-			bot.Reply(msg, "Whoops, wrong syntax for !subject")
+	if strings.HasPrefix(msg.Body, "!decision ") {
+		decision := meeting.AddDecision(user, msg.Body[8:], uuidNow)
+		if decision == nil {
+			bot.Reply(msg, "Whoops, wrong syntax for !decision")
 		} else {
-			bot.Reply(msg, fmt.Sprintf("Subject added, timebox: %s, ref: s#%s", subject.Timebox(), subject.ID))
-		}
-
-	} else if strings.HasPrefix(msg.Body, "!subjects") {
-		go func() {
-			bot.ReplyPrivate(msg, fmt.Sprintf(`Subjects in "%s":`, msg.FromRoom.Name))
-			for i, subject := range meeting.Subjects {
-				time.Sleep(100 * time.Millisecond)
-				current := ""
-				if subject == meeting.CurrentSubject {
-					current = " <---- currently discussing"
-				}
-				bot.ReplyPrivate(msg, fmt.Sprintf("%d. %s %s", i+1, subject, current))
-			}
-		}()
-
-	} else if strings.HasPrefix(msg.Body, "!start") {
-
-		if meeting.CurrentSubject != nil {
-			subject := meeting.CurrentSubject
-			bot.Reply(msg, fmt.Sprintf("Hmm, you've started already. We're discussing s#%s: %s", subject.ID, subject.Text))
-		} else {
-			if len(meeting.Subjects) == 0 {
-				bot.Reply(msg, fmt.Sprintf("No subjects listed, add some with !subject"))
-			} else {
-				subject := meeting.NextSubject(bot, msg)
-				bot.Reply(msg, fmt.Sprintf("Goal: %s\nStarting subject: %s", meeting.Goal, subject))
-			}
-		}
-
-	} else if strings.HasPrefix(msg.Body, "!next") {
-		if len(meeting.Subjects) == 0 {
-			bot.Reply(msg, "No subjects listed, add some with !subject")
-		} else {
-
-			// Wrap up counters
-			// Start the next subject, the first is none is started.
-			if meeting.CurrentSubject == nil {
-				meeting.NextSubject(bot, msg)
-				subject := meeting.CurrentSubject
-				bot.Reply(msg, fmt.Sprintf("Goal: %s\nStarting subject: %s", meeting.Goal, subject))
-			} else {
-				if meeting.CurrentIsLast() {
-					bot.Reply(msg, fmt.Sprintf("No more subjects.  Add some with !subject or !conclude the wicked meeting"))
-				} else {
-					subject := meeting.NextSubject(bot, msg)
-					bot.Reply(msg, fmt.Sprintf("Goal: %s\nPassing on to subject: %s", meeting.Goal, subject))
-				}
-			}
-		}
-
-	} else if strings.HasPrefix(msg.Body, "!previous") {
-		if !wicked.ensureOnSubject(meeting, msg) {
-			return
-		}
-
-	} else if strings.HasPrefix(msg.Body, "!extend ") {
-		if !wicked.ensureOnSubject(meeting, msg) {
-			return
-		}
-
-		duration, err := time.ParseDuration(msg.Body[8:])
-		if err != nil {
-			bot.Reply(msg, "Hmm, wrong syntax !extend, or invalid duration")
-		} else {
-			subject := meeting.CurrentSubject
-			subject.WasExtended = true
-			subject.TimeLimit = duration
-			bot.Reply(msg, fmt.Sprintf("Extended for another %s, don't do that too often!", subject.Timebox()))
-		}
-
-		// Extend counters, update timers and notifications
-
-	} else if strings.HasPrefix(msg.Body, "!action ") {
-
-		if !wicked.ensureOnSubject(meeting, msg) {
-			return
-		}
-		// Add to Subject *and* Meeting
-		action := meeting.AddAction(user, meeting.CurrentSubject, msg.Body[8:])
-		if action == nil {
-			bot.Reply(msg, "Whoops, wrong syntax for !action")
-		} else {
-			bot.Reply(msg, fmt.Sprintf("Action added, ref: a#%s", action.ID))
+			bot.Reply(msg, fmt.Sprintf("Decision added, ref: D%s", decision.ID))
 		}
 
 	} else if strings.HasPrefix(msg.Body, "!ref ") {
 
-		meeting.AddReference(user, msg.Body[5:])
+		meeting.AddReference(user, msg.Body[4:], uuidNow)
 		bot.Reply(msg, "Ref. added")
 
 	} else if strings.HasPrefix(msg.Body, "!conclude") {
 		meeting.Conclude()
 		// TODO: kill all waiting goroutines dealing with messaging
 		delete(wicked.meetings, room)
-		bot.Reply(msg, "Concluding wicked meeting, that's all folks!")
+		meeting.sendToRoom("Concluding Wicked meeting, that's all folks!")
+		meeting.setTopic(fmt.Sprintf(`[Concluded] W%s goal: %s`, meeting.ID, meeting.Goal))
 
-	} else if match := actionMatcher.FindStringSubmatch(msg.Body); match != nil {
+	} else if match := decisionMatcher.FindStringSubmatch(msg.Body); match != nil {
 
-		action := meeting.GetActionByID(match[1])
-		if action != nil {
-			if match[2] == "++" {
-				action.RecordPlusplus(user)
-				bot.ReplyMention(msg, "noted")
-			}
+		decision := meeting.GetDecisionByID(match[1])
+		if decision != nil {
+			decision.RecordPlusplus(user)
+			bot.ReplyMention(msg, "noted")
 		}
 
-	} else if match := subjectMatcher.FindStringSubmatch(msg.Body); match != nil {
-
-		subject := meeting.GetSubjectByID(match[1])
-		if subject != nil {
-			if match[2] == "++" {
-				subject.RecordPlusplus(user)
-				bot.ReplyMention(msg, "noted")
-			}
-		}
 	}
 
 	// Log message
 	newMessage := &Message{
 		From:      user,
-		Timestamp: time.Now(),
+		Timestamp: uuidNow,
 		Text:      msg.Body,
 	}
 	meeting.Logs = append(meeting.Logs, newMessage)
 	/**
 	* Handle everything for this meeting:
 	*
-	* !wicked [goal]
-	* !subject [s#tag] <duration as \d+m> <Subject text>
+	* !wicked [15m] <Goal>
 	* !next
 	* !previous
 	* !extend
-	* !action [a#tag] <Action text>
+	* !decision <Decision text>
 	* !ref [url] <Some reference text>
 	* !conclude
 	*
-	* Handles: a#tag++, s#tag++ in any sentence
+	* Handles: D12++ in any sentence
 	**/
+}
+
+func (wicked *Wicked) FindAvailableRoom(fromRoom string) *plotbot.Room {
+	nextFree := ""
+	for _, confRoom := range wicked.confRooms {
+		_, occupied := wicked.meetings[confRoom]
+		if occupied {
+			continue
+		}
+		if fromRoom == confRoom {
+			return wicked.bot.GetRoom(confRoom)
+		}
+		if nextFree == "" {
+			nextFree = confRoom
+		}
+	}
+
+	return wicked.bot.GetRoom(nextFree)
 }
 
 func (wicked *Wicked) NextMeetingID() string {
@@ -226,13 +195,4 @@ func (wicked *Wicked) NextMeetingID() string {
 	return "fail"
 }
 
-var actionMatcher = regexp.MustCompile(`a#([a-z]+|\d+)(\+\+)?`)
-var subjectMatcher = regexp.MustCompile(`s#([a-z]+|\d+)(\+\+)?`)
-
-func (wicked *Wicked) ensureOnSubject(meeting *Meeting, msg *plotbot.Message) bool {
-	if meeting.CurrentSubject == nil {
-		wicked.bot.Reply(msg, "We haven't started a subject yet, start with !next")
-		return false
-	}
-	return true
-}
+var decisionMatcher = regexp.MustCompile(`(?mi)D(\d+)\+\+`)
