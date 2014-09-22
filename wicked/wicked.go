@@ -88,8 +88,19 @@ func (wicked *Wicked) ChatHandler(bot *plotbot.Bot, msg *plotbot.Message) {
 			meeting.sendToRoom(fmt.Sprintf(`*** Wicked meeting initiated by @%s%s. Goal: %s`, msg.FromUser.MentionName, initiatedFrom, meeting.Goal))
 		}
 
-		meeting.sendToRoom(fmt.Sprintf(`*** Access report at %s/wicked/%s`, wicked.bot.Config.WebBaseURL, meeting.ID))
+		meeting.sendToRoom(fmt.Sprintf(`*** Access report at %s/wicked/%s.html`, wicked.bot.Config.WebBaseURL, meeting.ID))
 		meeting.setTopic(fmt.Sprintf(`[Running] W%s goal: %s`, meeting.ID, meeting.Goal))
+	} else if strings.HasPrefix(msg.Body, "!join ") {
+		match := decisionMatcher.FindStringSubmatch(msg.Body)
+		if match == nil {
+			bot.ReplyMention(msg, `invalid !join syntax. Use something like "!join W123"`)
+		} else {
+			for _, meeting := range wicked.meetings {
+				if match[1] == meeting.ID {
+					meeting.sendToRoom(fmt.Sprintf(`*** @%s asked to join`, msg.FromUser.MentionName))
+				}
+			}
+		}
 	}
 
 continueLogging:
@@ -109,7 +120,7 @@ continueLogging:
 	user := meeting.ImportUser(msg.FromUser)
 
 	if strings.HasPrefix(msg.Body, "!decision ") {
-		decision := meeting.AddDecision(user, msg.Body[8:], uuidNow)
+		decision := meeting.AddDecision(user, msg.Body[9:], uuidNow)
 		if decision == nil {
 			bot.Reply(msg, "Whoops, wrong syntax for !decision")
 		} else {
@@ -145,19 +156,6 @@ continueLogging:
 		Text:      msg.Body,
 	}
 	meeting.Logs = append(meeting.Logs, newMessage)
-	/**
-	* Handle everything for this meeting:
-	*
-	* !wicked [15m] <Goal>
-	* !next
-	* !previous
-	* !extend
-	* !decision <Decision text>
-	* !ref [url] <Some reference text>
-	* !conclude
-	*
-	* Handles: D12++ in any sentence
-	**/
 }
 
 func (wicked *Wicked) FindAvailableRoom(fromRoom string) *plotbot.Room {
@@ -196,3 +194,4 @@ func (wicked *Wicked) NextMeetingID() string {
 }
 
 var decisionMatcher = regexp.MustCompile(`(?mi)D(\d+)\+\+`)
+var wickedMeetingMatcher = regexp.MustCompile(`(?mi)W(\d+)`)
