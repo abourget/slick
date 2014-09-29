@@ -90,5 +90,9 @@ func (funny *Funny) ChatHandler(bot *plotbot.Bot, msg *plotbot.Message) {
 		}
 	}
 
+	if msg.Body == "ls" {
+		bot.Reply(msg, "/code deploy/      Contributors-Guide/ image_server/     sheep_porn/     streambed/\nstreamhead/  README.md")
+	}
+
 	return
 }
