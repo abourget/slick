@@ -119,12 +119,12 @@ continueLogging:
 
 	user := meeting.ImportUser(msg.FromUser)
 
-	if strings.HasPrefix(msg.Body, "!decision ") {
-		decision := meeting.AddDecision(user, msg.Body[9:], uuidNow)
+	if strings.HasPrefix(msg.Body, "!proposition ") {
+		decision := meeting.AddDecision(user, msg.Body[12:], uuidNow)
 		if decision == nil {
-			bot.Reply(msg, "Whoops, wrong syntax for !decision")
+			bot.Reply(msg, "Whoops, wrong syntax for !proposition")
 		} else {
-			bot.Reply(msg, fmt.Sprintf("Decision added, ref: D%s", decision.ID))
+			bot.Reply(msg, fmt.Sprintf("Proposition added, ref: D%s", decision.ID))
 		}
 
 	} else if strings.HasPrefix(msg.Body, "!ref ") {

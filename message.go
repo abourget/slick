@@ -1,11 +1,10 @@
 package plotbot
 
 import (
+	"fmt"
 	"strings"
 
 	"github.com/tkawachi/hipchat"
-
-	"fmt"
 )
 
 type BotReply struct {

@@ -40,7 +40,7 @@ type Bot struct {
 	// Features from the heart
 	WebServer WebServer
 	Rewarder  Rewarder
-	// TODO: add Mood !
+	Mood      Mood
 }
 
 func NewHipbot(configFile string) *Bot {

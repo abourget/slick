@@ -12,6 +12,7 @@ type HipchatConfig struct {
 	Nickname        string
 	Mention         string
 	Rooms           []string
+	TeamRoom        string `json:"team_room"`
 	HipchatApiToken string `json:"hipchat_api_token"`
 	WebBaseURL      string `json:"web_base_url"`
 }

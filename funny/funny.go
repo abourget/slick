@@ -48,7 +48,7 @@ func (funny *Funny) ChatConfig() *plotbot.ChatPluginConfig {
 func (funny *Funny) ChatHandler(bot *plotbot.Bot, msg *plotbot.Message) {
 	if msg.BotMentioned {
 		if msg.Contains("you're funny") {
-			bot.Reply(msg, "/me blushes")
+			bot.Reply(msg, bot.WithMood("/me blushes", "buzz off"))
 		} else if msg.Contains("blast") {
 			url := "https://plot.ly/__internal/ping"
 			//url := "https://plot.ly/"
@@ -75,15 +75,19 @@ func (funny *Funny) ChatHandler(bot *plotbot.Bot, msg *plotbot.Message) {
 		return
 
 	} else if msg.Contains("force push") {
+
 		url := plotbot.RandomString("forcePush")
 		bot.Reply(msg, url)
 		return
 
 	} else if msg.ContainsAny([]string{"there is a bug", "there's a bug"}) {
+
 		bot.Reply(msg, "https://s3.amazonaws.com/pushbullet-uploads/ujy7DF0U8wm-9YYvLZkmSM8pMYcxCXXig8LjJORE9Xzt/The-life-of-a-coder.jpg")
 		return
-	} else if msg.Contains("thanks") {
-		fmt.Println("Hey thanks")
+
+	} else if msg.ContainsAny([]string{"thanks", "thank you", "thx", "thnks"}) {
+		bot.Reply(msg, bot.WithMood("my pleasure", "get a life"))
+
 		if bot.Rewarder != nil {
 			fmt.Println("Ok, in here")
 			bot.Rewarder.LogEvent(msg.FromUser, "thanks", nil)

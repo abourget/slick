@@ -76,18 +76,23 @@ func (wicked *Wicked) renderMeetingHtml(w http.ResponseWriter, r *http.Request) 
   </p>
 
 
-  <h3>Decisions</h3>
+  <h3>Propositions / Decisions</h3>
   {{if .Decisions}}
     {{range .Decisions}}
     <div>
       <a id="decision-{{.Timestamp | idify}}" />
+      <h4>{{if .IsProposition}}Proposition:{{else}}Decision:{{end}}</h4>
       {{.Text}}
       <p style="font-size: 90%;">proposed by: {{.AddedBy.Fullname}}, at {{.Timestamp}}</p>
+      {{if .Plusplus}}
+      <p>Vouched for by: {{range .Plusplus}}{{.From.Fullname}}, {{end}}</p>
+      {{end}}
     </div>
     {{end}}
   {{else}}
-    <p>No decisions</p>
+    <p>Nothing proposed</p>
   {{end}}
+
 
   <h3>References</h3>
   {{if .Refs}}

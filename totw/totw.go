@@ -43,7 +43,7 @@ func (totw *Totw) InitChatPlugin(bot *plotbot.Bot) {
 
 	totw.bot = bot
 
-	go totw.ScheduleAlerts("123823_plotly", time.Thursday, 16, 0)
+	go totw.ScheduleAlerts(bot.Config.TeamRoom, time.Thursday, 16, 0)
 }
 
 var config = &plotbot.ChatPluginConfig{
