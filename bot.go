@@ -369,14 +369,19 @@ func (bot *Bot) usersPolling() {
 		case <-bot.disconnected:
 			return
 		case <-timeout:
-			// FIXME: Disregard error?! wwoooaah!
-			hcUsers, _ := hipchatv2.GetUsers(bot.Config.HipchatApiToken)
+			hcUsers, err := hipchatv2.GetUsers(bot.Config.HipchatApiToken)
+
+			if err != nil {
+				log.Printf("GetUsers error: %s", err)
+				timeout = time.After( 5 * time.Second)
+				continue
+			}
+
 			users := []User{}
 			for _, user := range hcUsers {
 				users = append(users, UserFromHipchatv2(user))
 			}
 			bot.Users = users
-			//log.Printf("Users: %#v\n", users)
 		}
 		timeout = time.After(3 * time.Minute)
 	}
@@ -389,13 +394,20 @@ func (bot *Bot) roomsPolling() {
 		case <-bot.disconnected:
 			return
 		case <-timeout:
-			hcRooms, _ := hipchatv2.GetRooms(bot.Config.HipchatApiToken)
+			hcRooms, err := hipchatv2.GetRooms(bot.Config.HipchatApiToken)
+
+			if err != nil {
+				log.Printf("GetRooms error: %s", err)
+				timeout = time.After( 5 * time.Second)
+				continue
+			}
+
 			rooms := []Room{}
 			for _, room := range hcRooms {
 				rooms = append(rooms, RoomFromHipchatv2(room))
 			}
+
 			bot.Rooms = rooms
-			//log.Printf("Rooms: %#v\n", rooms)
 		}
 		timeout = time.After(3 * time.Minute)
 	}
