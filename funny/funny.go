@@ -97,12 +97,14 @@ func (funny *Funny) ChatHandler(bot *plotbot.Bot, msg *plotbot.Message) {
 
 	} else if msg.ContainsAny([]string{"a meeting", "an interview"}) {
 
-		bot.Reply(msg, "like this one:\nhttps://i.chzbgr.com/maxW500/6696664320/hFC69678C.gif")
+		bot.Reply(msg, "like this one:")
+		bot.Reply(msg, "https://i.chzbgr.com/maxW500/6696664320/hFC69678C.gif")
 		return
 
 	} else if msg.ContainsAny([]string{"gotta go", "have to go", "uroclub"}) {
 
-		bot.Reply(msg, "When you gotta go, you gotta go\nhttps://i.chzbgr.com/maxW250/7159139072/hB63619C4.gif")
+		bot.Reply(msg, "When you gotta go, you gotta go")
+		bot.Reply(msg, "https://i.chzbgr.com/maxW250/7159139072/hB63619C4.gif")
 		return
 
 	} else if msg.ContainsAny([]string{"it's odd", "it is odd", "that's odd", "that is odd", "it's awkward", "it is awkward", "that's awkward", "that is awkward"}) {
@@ -111,7 +113,8 @@ func (funny *Funny) ChatHandler(bot *plotbot.Bot, msg *plotbot.Message) {
 		if msg.Contains("odd") {
 			term = "odd"
 		}
-		bot.Reply(msg, fmt.Sprintf("THAT's %s:\nhttps://i.chzbgr.com/maxW500/8296294144/h7AC1001C.gif", term))
+		bot.Reply(msg, fmt.Sprintf("THAT's %s:", term))
+		bot.Reply(msg, "https://i.chzbgr.com/maxW500/8296294144/h7AC1001C.gif")
 		return
 
 	} else if msg.ContainsAny([]string{"thanks", "thank you", "thx", "thnks"}) {
