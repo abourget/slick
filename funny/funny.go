@@ -85,6 +85,35 @@ func (funny *Funny) ChatHandler(bot *plotbot.Bot, msg *plotbot.Message) {
 		bot.Reply(msg, "https://s3.amazonaws.com/pushbullet-uploads/ujy7DF0U8wm-9YYvLZkmSM8pMYcxCXXig8LjJORE9Xzt/The-life-of-a-coder.jpg")
 		return
 
+	} else if msg.ContainsAny([]string{"oh yeah", "approved"}) {
+
+		bot.Reply(msg, "https://i.chzbgr.com/maxW250/4496881920/h9C58F860.gif")
+		return
+
+	} else if msg.ContainsAny([]string{"spider", "pee on", "inappropriate"}) {
+
+		bot.Reply(msg, "https://i.chzbgr.com/maxW500/5626597120/hB2E11E61.gif")
+		return
+
+	} else if msg.ContainsAny([]string{"a meeting", "an interview"}) {
+
+		bot.Reply(msg, "like this one:\nhttps://i.chzbgr.com/maxW500/6696664320/hFC69678C.gif")
+		return
+
+	} else if msg.ContainsAny([]string{"gotta go", "have to go", "uroclub"}) {
+
+		bot.Reply(msg, "When you gotta go, you gotta go\nhttps://i.chzbgr.com/maxW250/7159139072/hB63619C4.gif")
+		return
+
+	} else if msg.ContainsAny([]string{"it's odd", "it is odd", "that's odd", "that is odd", "it's awkward", "it is awkward", "that's awkward", "that is awkward"}) {
+
+		term := "awkward"
+		if msg.Contains("odd") {
+			term = "odd"
+		}
+		bot.Reply(msg, fmt.Sprintf("THAT's %s:\nhttps://i.chzbgr.com/maxW500/8296294144/h7AC1001C.gif", term))
+		return
+
 	} else if msg.ContainsAny([]string{"thanks", "thank you", "thx", "thnks"}) {
 		bot.Reply(msg, bot.WithMood("my pleasure", "get a life"))
 
