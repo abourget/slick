@@ -97,7 +97,7 @@ func (funny *Funny) ChatHandler(bot *plotbot.Bot, msg *plotbot.Message) {
 
 	} else if msg.ContainsAny([]string{"a meeting", "an interview"}) {
 
-		bot.Reply(msg, "like this one:")
+		bot.Reply(msg, "like this one")
 		bot.Reply(msg, "https://i.chzbgr.com/maxW500/6696664320/hFC69678C.gif")
 		return
 
@@ -113,7 +113,7 @@ func (funny *Funny) ChatHandler(bot *plotbot.Bot, msg *plotbot.Message) {
 		if msg.Contains("odd") {
 			term = "odd"
 		}
-		bot.Reply(msg, fmt.Sprintf("THAT's %s:", term))
+		bot.Reply(msg, fmt.Sprintf("THAT's %s", term))
 		bot.Reply(msg, "https://i.chzbgr.com/maxW500/8296294144/h7AC1001C.gif")
 		return
 
