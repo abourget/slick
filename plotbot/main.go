@@ -15,6 +15,7 @@ import (
 	_ "github.com/plotly/plotbot/totw"
 	_ "github.com/plotly/plotbot/healthy"
 	_ "github.com/plotly/plotbot/mooder"
+	_ "github.com/plotly/plotbot/hooker"
 	_ "github.com/plotly/plotbot/standup"
 	_ "github.com/plotly/plotbot/storm"
 	_ "github.com/plotly/plotbot/tabularasa"

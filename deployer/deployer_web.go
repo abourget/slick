@@ -9,8 +9,8 @@ import (
 	"github.com/plotly/plotbot"
 )
 
-func (dep *Deployer) InitWebPlugin(bot *plotbot.Bot, router *mux.Router) {
-	router.Handle("/plugins/deployer.ws", websocket.Handler(dep.websocketManager))
+func (dep *Deployer) InitWebPlugin(bot *plotbot.Bot, privRouter *mux.Router, pubRouter *mux.Router) {
+	privRouter.Handle("/plugins/deployer.ws", websocket.Handler(dep.websocketManager))
 }
 
 func (dep *Deployer) websocketManager(ws *websocket.Conn) {

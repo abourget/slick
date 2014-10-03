@@ -23,7 +23,8 @@ type Webapp struct {
 	store          *sessions.CookieStore
 	bot            *plotbot.Bot
 	handler        *negroni.Negroni
-	router         *mux.Router
+	privateRouter  *mux.Router
+	publicRouter   *mux.Router
 	enabledPlugins []string
 }
 
@@ -51,25 +52,33 @@ func (webapp *Webapp) InitWebServer(bot *plotbot.Bot, enabledPlugins []string) {
 	webapp.enabledPlugins = enabledPlugins
 	webapp.config = &conf.Webapp
 	webapp.store = sessions.NewCookieStore([]byte(conf.Webapp.SessionAuthKey), []byte(conf.Webapp.SessionEncryptKey))
-	webapp.router = mux.NewRouter()
+	webapp.privateRouter = mux.NewRouter()
+	webapp.publicRouter = mux.NewRouter()
 
 	configureWebapp(&conf.Webapp)
 
-	webapp.router.HandleFunc("/", webapp.handleRoot)
+	webapp.privateRouter.HandleFunc("/", webapp.handleRoot)
 	web = webapp
 }
 
-func (webapp *Webapp) Router() *mux.Router {
-	return webapp.router
+func (webapp *Webapp) PrivateRouter() *mux.Router {
+	return webapp.privateRouter
+}
+func (webapp *Webapp) PublicRouter() *mux.Router {
+	return webapp.publicRouter
 }
 
 func (webapp *Webapp) ServeWebRequests() {
-	mux := http.NewServeMux()
-	mux.Handle("/static/", http.StripPrefix("/static", http.FileServer(rice.MustFindBox("static").HTTPBox())))
-	mux.Handle("/", webapp.router)
+	privMux := http.NewServeMux()
+	privMux.Handle("/static/", http.StripPrefix("/static", http.FileServer(rice.MustFindBox("static").HTTPBox())))
+	privMux.Handle("/", webapp.privateRouter)
+
+	pubMux := http.NewServeMux()
+	pubMux.Handle("/public/", webapp.publicRouter)
+	pubMux.Handle("/", NewOAuthMiddleware(privMux))
 
 	webapp.handler = negroni.Classic()
-	webapp.handler.UseHandler(context.ClearHandler(NewOAuthMiddleware(mux)))
+	webapp.handler.UseHandler(context.ClearHandler(pubMux))
 
 	webapp.handler.Run(webapp.config.Listen)
 }

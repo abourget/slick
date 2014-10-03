@@ -9,8 +9,8 @@ import (
 	"github.com/plotly/plotbot"
 )
 
-func (standup *Standup) InitWebPlugin(bot *plotbot.Bot, router *mux.Router) {
-	router.HandleFunc("/plugins/standup.json", func(w http.ResponseWriter, r *http.Request) {
+func (standup *Standup) InitWebPlugin(bot *plotbot.Bot, privRouter *mux.Router, pubRouter *mux.Router) {
+	pubRouter.HandleFunc("/public/plugins/standup.json", func(w http.ResponseWriter, r *http.Request) {
 		data := struct {
 			Users []*UserData
 		}{
@@ -19,6 +19,8 @@ func (standup *Standup) InitWebPlugin(bot *plotbot.Bot, router *mux.Router) {
 		for _, value := range *standup.data {
 			data.Users = append(data.Users, value)
 		}
+
+		w.Header().Set("Content-Type", "application/json")
 
 		err := json.NewEncoder(w).Encode(data)
 		if err != nil {

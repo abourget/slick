@@ -31,11 +31,13 @@ type ChatConfig struct {
 type WebServer interface {
 	InitWebServer(*Bot, []string)
 	ServeWebRequests()
-	Router() *mux.Router
+	PrivateRouter() *mux.Router
+	PublicRouter() *mux.Router
 }
 
+// WebPlugin initializes plugins with a `Bot` instance, a `privateRouter` and a `publicRouter`. All URLs handled by the `publicRouter` must start with `/public/`.
 type WebPlugin interface {
-	InitWebPlugin(*Bot, *mux.Router)
+	InitWebPlugin(*Bot, *mux.Router, *mux.Router)
 }
 
 type Rewarder interface {
@@ -82,7 +84,7 @@ func InitWebPlugins(bot *Bot) {
 	for _, plugin := range registeredPlugins {
 		webPlugin, ok := plugin.(WebPlugin)
 		if ok {
-			webPlugin.InitWebPlugin(bot, bot.WebServer.Router())
+			webPlugin.InitWebPlugin(bot, bot.WebServer.PrivateRouter(), bot.WebServer.PublicRouter())
 		}
 	}
 }

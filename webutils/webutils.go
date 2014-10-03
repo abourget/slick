@@ -17,9 +17,9 @@ func init() {
 	plotbot.RegisterPlugin(&Utils{})
 }
 
-func (utils *Utils) InitWebPlugin(bot *plotbot.Bot, router *mux.Router) {
+func (utils *Utils) InitWebPlugin(bot *plotbot.Bot, privRouter *mux.Router, pubRouter *mux.Router) {
 	utils.bot = bot
-	router.HandleFunc("/send_notif", utils.handleNotif)
+	privRouter.HandleFunc("/send_notif", utils.handleNotif)
 }
 
 func (utils *Utils) handleNotif(w http.ResponseWriter, r *http.Request) {

@@ -8,8 +8,8 @@ import (
 	"github.com/plotly/plotbot"
 )
 
-func (rew *Rewarder) InitWebPlugin(bot *plotbot.Bot, router *mux.Router) {
-	router.HandleFunc("/rewarder/badges.json", func(w http.ResponseWriter, r *http.Request) {
+func (rew *Rewarder) InitWebPlugin(bot *plotbot.Bot, privRouter *mux.Router, pubRouter *mux.Router) {
+	privRouter.HandleFunc("/rewarder/badges.json", func(w http.ResponseWriter, r *http.Request) {
 		data := struct {
 			Badges []*Badge `json:"badges"`
 		}{rew.Badges()}

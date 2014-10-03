@@ -12,9 +12,9 @@ import (
 	"github.com/plotly/plotbot"
 )
 
-func (wicked *Wicked) InitWebPlugin(bot *plotbot.Bot, router *mux.Router) {
-	router.HandleFunc("/wicked/{id}.json", wicked.renderMeetingJson)
-	router.HandleFunc("/wicked/{id}.html", wicked.renderMeetingHtml)
+func (wicked *Wicked) InitWebPlugin(bot *plotbot.Bot, privRouter *mux.Router, pubRouter *mux.Router) {
+	privRouter.HandleFunc("/wicked/{id}.json", wicked.renderMeetingJson)
+	privRouter.HandleFunc("/wicked/{id}.html", wicked.renderMeetingHtml)
 }
 
 func (wicked *Wicked) renderMeetingJson(w http.ResponseWriter, r *http.Request) {

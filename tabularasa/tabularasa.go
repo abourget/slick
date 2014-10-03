@@ -18,8 +18,7 @@ type TabulaRasa struct {
 func init() {
 	plotbot.RegisterPlugin(&TabulaRasa{})
 }
-
-func (tabula *TabulaRasa) InitWebPlugin(bot *plotbot.Bot, router *mux.Router) {
+func (tabula *TabulaRasa) InitWebPlugin(bot *plotbot.Bot, privRouter *mux.Router, pubRouter *mux.Router) {
 	var asanaConf struct {
 		Asana struct {
 			APIKey    string `json:"api_key"`
@@ -34,7 +33,7 @@ func (tabula *TabulaRasa) InitWebPlugin(bot *plotbot.Bot, router *mux.Router) {
 	tabula.bot = bot
 	tabula.asanaClient = asanaClient
 
-	router.HandleFunc("/plugins/tabularasa", func(w http.ResponseWriter, r *http.Request) {
+	privRouter.HandleFunc("/plugins/tabularasa", func(w http.ResponseWriter, r *http.Request) {
 
 		tabula.TabulaRasta()
 
