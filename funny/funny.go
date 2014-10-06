@@ -48,7 +48,13 @@ func (funny *Funny) ChatConfig() *plotbot.ChatPluginConfig {
 func (funny *Funny) ChatHandler(bot *plotbot.Bot, msg *plotbot.Message) {
 	if msg.BotMentioned {
 		if msg.Contains("you're funny") {
+
 			bot.Reply(msg, bot.WithMood("/me blushes", "buzz off"))
+
+		} else if msg.ContainsAny([]string{"dumb ass", "dumbass"}) {
+
+			bot.Reply(msg, bot.WithMood("don't say such things", "you stink"))
+
 		} else if msg.Contains("blast") {
 			url := "https://plot.ly/__internal/ping"
 			//url := "https://plot.ly/"
@@ -61,6 +67,13 @@ func (funny *Funny) ChatHandler(bot *plotbot.Bot, msg *plotbot.Message) {
 					bot.Reply(msg, rep)
 				}
 			}()
+		} else if msg.ContainsAny([]string{"thanks", "thank you", "thx", "thnks"}) {
+			bot.Reply(msg, bot.WithMood("my pleasure", "get a life"))
+
+			if bot.Rewarder != nil {
+				fmt.Println("Ok, in here")
+				bot.Rewarder.LogEvent(msg.FromUser, "thanks", nil)
+			}
 		}
 	}
 
@@ -117,13 +130,6 @@ func (funny *Funny) ChatHandler(bot *plotbot.Bot, msg *plotbot.Message) {
 		bot.Reply(msg, "https://i.chzbgr.com/maxW500/8296294144/h7AC1001C.gif")
 		return
 
-	} else if msg.ContainsAny([]string{"thanks", "thank you", "thx", "thnks"}) {
-		bot.Reply(msg, bot.WithMood("my pleasure", "get a life"))
-
-		if bot.Rewarder != nil {
-			fmt.Println("Ok, in here")
-			bot.Rewarder.LogEvent(msg.FromUser, "thanks", nil)
-		}
 	}
 
 	if msg.Body == "ls" {

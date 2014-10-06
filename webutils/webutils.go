@@ -4,9 +4,9 @@ import (
 	"fmt"
 	"net/http"
 
+	"github.com/gorilla/mux"
 	"github.com/plotly/plotbot"
 	"github.com/plotly/plotbot/hipchatv2"
-	"github.com/gorilla/mux"
 )
 
 type Utils struct {
