@@ -55,18 +55,6 @@ func (funny *Funny) ChatHandler(bot *plotbot.Bot, msg *plotbot.Message) {
 
 			bot.Reply(msg, bot.WithMood("don't say such things", "you stink"))
 
-		} else if msg.Contains("blast") {
-			url := "https://plot.ly/__internal/ping"
-			//url := "https://plot.ly/"
-			//url := "https://stage.plot.ly/__internal/ping"
-			go func() {
-				bot.Reply(msg, fmt.Sprintf("Blasting URL: %s for 60 seconds, with 2 workers", url))
-				b := blaster.New(url)
-				b.Start(2, time.Duration(60*time.Second))
-				for rep := range b.Reply {
-					bot.Reply(msg, rep)
-				}
-			}()
 		} else if msg.ContainsAny([]string{"thanks", "thank you", "thx", "thnks"}) {
 			bot.Reply(msg, bot.WithMood("my pleasure", "get a life"))
 

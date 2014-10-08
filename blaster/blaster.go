@@ -7,6 +7,15 @@ import (
 	"time"
 )
 
+/*
+ * This plugin is wrong, if you run two blaster, your process will crash
+ * of an overload and ulimit blocking.
+ *
+ * I don't know how `ab` or other blaster tools do it. We'd need to shut
+ * down the sockets quicker, time them out or prevent opening new sockets
+ * if previous ones have not shut down.
+ */
+
 type Blaster struct {
 	URL        string
 	Done       chan bool
