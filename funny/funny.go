@@ -2,10 +2,8 @@ package funny
 
 import (
 	"fmt"
-	"time"
 
 	"github.com/plotly/plotbot"
-	"github.com/plotly/plotbot/blaster"
 )
 
 type Funny struct {
