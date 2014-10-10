@@ -97,7 +97,7 @@ func (funny *Funny) ChatHandler(bot *plotbot.Bot, msg *plotbot.Message) {
 
 	} else if msg.Contains("quick fix") {
 
-		bot.Reply(msg, "https://i.chzbgr.com/maxW250/4496881920/h9C58F860.gif")
+		bot.Reply(msg, "http://blog.pgi.com/wp-content/uploads/2013/02/jim-carey.gif")
 		bot.Reply(msg, "make it real quick")
 		return
 
