@@ -89,6 +89,36 @@ func (funny *Funny) ChatHandler(bot *plotbot.Bot, msg *plotbot.Message) {
 		bot.Reply(msg, "https://i.chzbgr.com/maxW250/4496881920/h9C58F860.gif")
 		return
 
+	} else if msg.Contains("cookies") {
+
+		bot.Reply(msg, "https://i.chzbgr.com/maxW250/4496881920/h9C58F860.gif")
+		bot.Reply(msg, "Cookies ??")
+		return
+
+	} else if msg.Contains("quick fix") {
+
+		bot.Reply(msg, "https://i.chzbgr.com/maxW250/4496881920/h9C58F860.gif")
+		bot.Reply(msg, "make it real quick")
+		return
+
+	} else if msg.ContainsAny([]string{"crack an egg", "crack something", "to crack"}) {
+
+		bot.Reply(msg, "http://s3-ec.buzzfed.com/static/enhanced/webdr02/2012/11/8/18/anigif_enhanced-buzz-31656-1352415875-9.gif")
+		bot.Reply(msg, "crack an egg, yeah")
+		return
+
+	} else if msg.ContainsAny([]string{"i'm stuck", "I'm stuck", "we're stuck"}) {
+
+		bot.Reply(msg, "http://media.giphy.com/media/RVlWx1msxnf7W/giphy.gif")
+		bot.Reply(msg, "I'm stuck too!")
+		return
+
+	} else if msg.ContainsAny([]string{"watching tv", "watch tv"}) {
+
+		bot.Reply(msg, "http://i0.kym-cdn.com/photos/images/newsfeed/000/495/040/9ab.gif")
+		bot.Reply(msg, "like that ?")
+		return
+
 	} else if msg.ContainsAny([]string{"spider", "pee on", "inappropriate"}) {
 
 		bot.Reply(msg, "https://i.chzbgr.com/maxW500/5626597120/hB2E11E61.gif")

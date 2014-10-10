@@ -27,6 +27,8 @@ func (totw *Totw) InitChatPlugin(bot *plotbot.Bot) {
 		"http://i.imgur.com/CRuLGek.gif",
 		"http://i.imgur.com/EteBF9K.gif",
 		"http://www.ohmagif.com/wp-content/uploads/2011/12/useless-invention.gif",
+		"http://i3.kym-cdn.com/photos/images/original/000/495/044/9b8.gif",
+		"http://uproxx.files.wordpress.com/2012/09/iron.gif",
 	})
 	plotbot.RegisterStringList("tech adept", []string{
 		"you're a real tech adept",
@@ -56,7 +58,7 @@ func (totw *Totw) ChatConfig() *plotbot.ChatPluginConfig {
 }
 
 func (totw *Totw) ChatHandler(bot *plotbot.Bot, msg *plotbot.Message) {
-	if strings.HasPrefix(msg.Body, "!totw") || strings.HasPrefix(msg.Body, "!techoftheweek"){
+	if strings.HasPrefix(msg.Body, "!totw") || strings.HasPrefix(msg.Body, "!techoftheweek") {
 		bot.ReplyMention(msg, plotbot.RandomString("tech adept"))
 	}
 }
