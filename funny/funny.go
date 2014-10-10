@@ -91,8 +91,14 @@ func (funny *Funny) ChatHandler(bot *plotbot.Bot, msg *plotbot.Message) {
 
 	} else if msg.Contains("cookies") {
 
-		bot.Reply(msg, "https://i.chzbgr.com/maxW250/4496881920/h9C58F860.gif")
+		bot.Reply(msg, "http://www.pbh2.com/wordpress/wp-content/uploads/2013/06/funny-gif-cookie-monster.gif")
 		bot.Reply(msg, "Cookies ??")
+		return
+
+	} else if msg.ContainsAny([]string{"lot of tension", "some tension", " tensed"}) {
+
+		bot.Reply("http://thumbpress.com/wp-content/uploads/2014/01/funny-gif-meeting-strangers-girl-scared1.gif")
+		bot.Reply(msg, "tensed, like that ?")
 		return
 
 	} else if msg.Contains("quick fix") {
