@@ -120,7 +120,9 @@ func (meeting *Meeting) AddReference(user *User, text string, uuidNow time.Time)
 	if strings.HasPrefix(text, "http") {
 		chunks := strings.SplitN(text, " ", 2)
 		ref.URL = chunks[0]
-		ref.Text = chunks[1]
+		if len(chunks) > 1 {
+			ref.Text = chunks[1]
+		}
 	} else {
 		ref.Text = text
 	}
