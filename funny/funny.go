@@ -97,7 +97,7 @@ func (funny *Funny) ChatHandler(bot *plotbot.Bot, msg *plotbot.Message) {
 
 	} else if msg.ContainsAny([]string{"lot of tension", "some tension", " tensed"}) {
 
-		bot.Reply("http://thumbpress.com/wp-content/uploads/2014/01/funny-gif-meeting-strangers-girl-scared1.gif")
+		bot.Reply(msg, "http://thumbpress.com/wp-content/uploads/2014/01/funny-gif-meeting-strangers-girl-scared1.gif")
 		bot.Reply(msg, "tensed, like that ?")
 		return
 

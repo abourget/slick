@@ -51,7 +51,9 @@ func (hooker *Hooker) InitWebPlugin(bot *plotbot.Bot, privRouter *mux.Router, pu
 
 		// TODO: unmarshal the JSON, and check "hooker.config.GitHubSecret"
 
-		bot.SendToRoom("123823_devops", fmt.Sprintf("/code Got a webhook from Github:\n%s", body))
+		text := fmt.Sprintf("/code Got a webhook from Github:\n%s", body)
+		fmt.Println("TEST: ", text)
+		//bot.SendToRoom("123823_devops", )
 	})
 
 	stripeUrl := fmt.Sprintf("/public/stripehook/%s", hooker.config.StripeSecret)
