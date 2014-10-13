@@ -63,6 +63,10 @@ func (dep *Deployer) InitChatPlugin(bot *plotbot.Bot) {
 	dep.loadInternalAPI()
 
 	go dep.pubsubForwardReply()
+
+	bot.ListenFor(&plotbot.Conversation{
+		HandlerFunc: dep.ChatHandler,
+	})
 }
 
 func (dep *Deployer) loadInternalAPI() {
@@ -97,7 +101,9 @@ type DeployJob struct {
 
 var deployFormat = regexp.MustCompile(`deploy( ([a-zA-Z0-9_\.-]+))? to ([a-z_-]+)((,| with)? tags?:? ?(.+))?`)
 
-func (dep *Deployer) ChatHandler(bot *plotbot.Bot, msg *plotbot.Message) {
+func (dep *Deployer) ChatHandler(conv *plotbot.Conversation, msg *plotbot.Message) {
+	bot := conv.Bot
+
 	// Discard non "mention_name, " prefixed messages
 	if !strings.HasPrefix(msg.Body, fmt.Sprintf("%s, ", bot.Config.Mention)) {
 		return
@@ -106,22 +112,24 @@ func (dep *Deployer) ChatHandler(bot *plotbot.Bot, msg *plotbot.Message) {
 	if match := deployFormat.FindStringSubmatch(msg.Body); match != nil {
 		if dep.runningJob != nil {
 			params := dep.runningJob.params
-			bot.Reply(msg, fmt.Sprintf("@%s Deploy currently running: %s", msg.FromUser.MentionName, params))
+			conv.Reply(msg, fmt.Sprintf("@%s Deploy currently running: %s", msg.FromUser.MentionName, params))
 			return
 		} else {
 			params := &DeployParams{Environment: match[3], Branch: match[2], Tags: match[6], InitiatedBy: msg.FromNick(), From: "chat", initiatedByChat: msg}
 			go dep.handleDeploy(params)
 		}
 		return
+
 	} else if msg.Contains("cancel deploy") {
+
 		if dep.runningJob == nil {
-			bot.Reply(msg, "No deploy running, sorry man..")
+			conv.Reply(msg, "No deploy running, sorry man..")
 		} else {
 			if dep.runningJob.killing == true {
-				bot.Reply(msg, "deploy: Interrupt signal already sent, waiting to die")
+				conv.Reply(msg, "deploy: Interrupt signal already sent, waiting to die")
 				return
 			} else {
-				bot.Reply(msg, "deploy: Sending Interrupt signal...")
+				conv.Reply(msg, "deploy: Sending Interrupt signal...")
 				dep.runningJob.killing = true
 				dep.runningJob.kill <- true
 			}
@@ -131,9 +139,9 @@ func (dep *Deployer) ChatHandler(bot *plotbot.Bot, msg *plotbot.Message) {
 		url := dep.getCompareUrl("prod", "master")
 		mention := msg.FromUser.MentionName
 		if url != "" {
-			bot.Reply(msg, fmt.Sprintf("@%s in master, waiting to reach prod: %s", mention, url))
+			conv.Reply(msg, fmt.Sprintf("@%s in master, waiting to reach prod: %s", mention, url))
 		} else {
-			bot.Reply(msg, fmt.Sprintf("@%s couldn't get current revision on prod", mention))
+			conv.Reply(msg, fmt.Sprintf("@%s couldn't get current revision on prod", mention))
 		}
 
 	}

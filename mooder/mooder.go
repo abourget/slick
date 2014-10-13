@@ -20,14 +20,6 @@ func (mooder *Mooder) InitChatPlugin(bot *plotbot.Bot) {
 	go mooder.SetupMoodChanger()
 }
 
-func (mooder *Mooder) ChatConfig() *plotbot.ChatPluginConfig {
-	return &plotbot.ChatPluginConfig{}
-}
-
-func (mooder *Mooder) ChatHandler(bot *plotbot.Bot, msg *plotbot.Message) {
-	// TODO: we could implement some messages that make him change mood
-}
-
 func (mooder *Mooder) SetupMoodChanger() {
 	bot := mooder.bot
 	for {

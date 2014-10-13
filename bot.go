@@ -27,6 +27,11 @@ type Bot struct {
 	// Hipchat XMPP client
 	client *hipchat.Client
 
+	// Conversations handling
+	conversations   []*Conversation
+	addConversation chan *Conversation
+	delConversation chan *Conversation
+
 	// replySink sends messages to Hipchat rooms or users
 	disconnected chan bool
 	replySink    chan *BotReply
@@ -45,16 +50,18 @@ type Bot struct {
 
 func NewHipbot(configFile string) *Bot {
 	bot := &Bot{
-		configFile: configFile,
-		replySink:  make(chan *BotReply, 10),
+		configFile:      configFile,
+		replySink:       make(chan *BotReply, 10),
+		addConversation: make(chan *Conversation, 100),
+		delConversation: make(chan *Conversation, 100),
 	}
 
 	return bot
 }
 
 func (bot *Bot) Run() {
-	bot.LoadBaseConfig()
-	bot.SetupStorage()
+	bot.loadBaseConfig()
+	bot.setupStorage()
 
 	// Init all plugins
 	enabledPlugins := make([]string, 0)
@@ -96,14 +103,14 @@ func (bot *Bot) Run() {
 
 	for {
 		log.Println("Connecting client...")
-		err := bot.ConnectClient()
+		err := bot.connectClient()
 		if err != nil {
 			log.Println("  `- Failed: ", err)
 			time.Sleep(3 * time.Second)
 			continue
 		}
 
-		bot.SetupHandlers()
+		bot.setupHandlers()
 
 		select {
 		case <-bot.disconnected:
@@ -112,6 +119,26 @@ func (bot *Bot) Run() {
 			continue
 		}
 	}
+}
+
+func (bot *Bot) ListenFor(conv *Conversation) error {
+	conv.Bot = bot
+
+	err := conv.checkParams()
+	if err != nil {
+		log.Println("Bot.ListenFor(): Invalid Conversation: ", err)
+		return err
+	}
+
+	conv.setupChannels()
+
+	if conv.isManaged() {
+		go conv.launchManager()
+	}
+
+	bot.addConversation <- conv
+
+	return nil
 }
 
 func (bot *Bot) Reply(msg *Message, reply string) {
@@ -130,15 +157,6 @@ func (bot *Bot) ReplyMention(msg *Message, reply string) {
 		}
 		bot.Reply(msg, fmt.Sprintf("%s%s", prefix, reply))
 	}
-}
-
-func (bot *Bot) ReplyTo(jid, reply string) {
-	log.Println("Replying:", reply)
-	rep := &BotReply{
-		To:      jid,
-		Message: reply,
-	}
-	bot.replySink <- rep
 }
 
 func (bot *Bot) ReplyPrivate(msg *Message, reply string) {
@@ -175,7 +193,7 @@ func (bot *Bot) GetRoomId(room string) string {
 	return room
 }
 
-func (bot *Bot) ConnectClient() (err error) {
+func (bot *Bot) connectClient() (err error) {
 	resource := bot.Config.Resource
 	if resource == "" {
 		resource = "bot"
@@ -184,7 +202,7 @@ func (bot *Bot) ConnectClient() (err error) {
 	bot.client, err = hipchat.NewClient(
 		bot.Config.Username, bot.Config.Password, resource)
 	if err != nil {
-		log.Println("Error in ConnectClient()")
+		log.Println("Error in connectClient(): ", err)
 		return
 	}
 
@@ -195,7 +213,7 @@ func (bot *Bot) ConnectClient() (err error) {
 	return
 }
 
-func (bot *Bot) SetupHandlers() {
+func (bot *Bot) setupHandlers() {
 	bot.client.Status("chat")
 	bot.disconnected = make(chan bool)
 	go bot.client.KeepAlive()
@@ -206,7 +224,7 @@ func (bot *Bot) SetupHandlers() {
 	log.Println("Bot ready")
 }
 
-func (bot *Bot) LoadBaseConfig() {
+func (bot *Bot) loadBaseConfig() {
 	if err := checkPermission(bot.configFile); err != nil {
 		log.Fatal("ERROR Checking Permissions: ", err)
 	}
@@ -232,7 +250,7 @@ func (bot *Bot) LoadBaseConfig() {
 	}
 }
 
-func (bot *Bot) SetupStorage() error {
+func (bot *Bot) setupStorage() error {
 	server := bot.redisConfig.Host
 	if server == "" {
 		server = "127.0.0.1:6379"
@@ -308,45 +326,61 @@ func (bot *Bot) messageHandler() {
 		select {
 		case <-bot.disconnected:
 			return
-		case msg := <-msgs:
-			botMsg := &Message{Message: msg}
-			botMsg.FromUser = bot.GetUser(msg.From)
-			botMsg.FromRoom = bot.GetRoom(msg.From)
-			if botMsg.FromUser == nil {
-				log.Printf("Message from unknown user, skipping: %#v\n", botMsg)
+
+		case conv := <-bot.addConversation:
+			bot.conversations = append(bot.conversations, conv)
+
+		case conv := <-bot.delConversation:
+			// TODO: remove from Conversations
+			fmt.Println("BOO", conv)
+			continue
+
+		case rawMsg := <-msgs:
+			fromUser := bot.GetUser(rawMsg.From)
+
+			if fromUser == nil {
+				log.Printf("Message from unknown user, skipping: %#v\n", rawMsg)
 				continue
 			}
 
-			log.Printf("Incoming message: %s\n", botMsg)
+			msg := &Message{Message: rawMsg}
+			msg.FromUser = fromUser
+			msg.FromRoom = bot.GetRoom(rawMsg.From)
+			msg.applyMentionedMe(bot)
+			msg.applyFromMe(bot)
 
-			atMention := "@" + bot.Config.Mention
-			fromMyself := strings.HasPrefix(botMsg.FromNick(), bot.Config.Nickname)
-			mentionColon := bot.Config.Mention + ":"
-			mentionComma := bot.Config.Mention + ","
+			log.Printf("Incoming message: %s\n", msg)
 
-			if strings.Contains(msg.Body, atMention) || strings.HasPrefix(msg.Body, mentionColon) || strings.HasPrefix(msg.Body, mentionComma) || botMsg.IsPrivate() {
-				botMsg.BotMentioned = true
+			for _, conv := range bot.conversations {
+				filterFunc := defaultFilterFunc
+				if conv.FilterFunc != nil {
+					filterFunc = conv.FilterFunc
+				}
+
+				if filterFunc(conv, msg) {
+					conv.HandlerFunc(conv, msg)
+				}
 			}
 
-			for _, p := range registeredPlugins {
-				chatPlugin, ok := p.(ChatPlugin)
-				if !ok {
-					continue
-				}
+			// for _, p := range registeredPlugins {
+			// 	chatPlugin, ok := p.(ChatPlugin)
+			// 	if !ok {
+			// 		continue
+			// 	}
 
-				pluginConf := chatPlugin.ChatConfig()
+			// 	pluginConf := chatPlugin.ChatConfig()
 
-				if !pluginConf.EchoMessages && fromMyself {
-					//log.Printf("no echo but I just messaged myself")
-					continue
-				}
-				if pluginConf.OnlyMentions && !botMsg.BotMentioned {
-					//log.Printf("only mentions but not BotMentioned")
-					continue
-				}
+			// 	if !pluginConf.EchoMessages && fromMyself {
+			// 		//log.Printf("no echo but I just messaged myself")
+			// 		continue
+			// 	}
+			// 	if pluginConf.OnlyMentions && !msg.MentionedMe {
+			// 		//log.Printf("only mentions but not BotMentioned")
+			// 		continue
+			// 	}
 
-				chatPlugin.ChatHandler(bot, botMsg)
-			}
+			// 	chatPlugin.ChatHandler(bot, msg)
+			// }
 		}
 	}
 }
@@ -373,7 +407,7 @@ func (bot *Bot) usersPolling() {
 
 			if err != nil {
 				log.Printf("GetUsers error: %s", err)
-				timeout = time.After( 5 * time.Second)
+				timeout = time.After(5 * time.Second)
 				continue
 			}
 
@@ -398,7 +432,7 @@ func (bot *Bot) roomsPolling() {
 
 			if err != nil {
 				log.Printf("GetRooms error: %s", err)
-				timeout = time.After( 5 * time.Second)
+				timeout = time.After(5 * time.Second)
 				continue
 			}
 

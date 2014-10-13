@@ -33,19 +33,17 @@ func (healthy *Healthy) InitChatPlugin(bot *plotbot.Bot) {
 	bot.LoadConfig(&conf)
 
 	healthy.urls = conf.HealthCheck.Urls
-}
 
-// Configuration
-func (healthy *Healthy) ChatConfig() *plotbot.ChatPluginConfig {
-	return healthy.config
+	bot.ListenFor(&plotbot.Conversation{
+		ContainsAny: []string{"health", "healthy?", "health_check"},
+		HandlerFunc: healthy.ChatHandler,
+	})
 }
 
 // Handler
-func (healthy *Healthy) ChatHandler(bot *plotbot.Bot, msg *plotbot.Message) {
-	if msg.ContainsAny([]string{"health", "healthy?", "health_check"}) {
-		log.Println("Health check. Requested by", msg.From)
-		bot.Reply(msg, healthy.CheckAll())
-	}
+func (healthy *Healthy) ChatHandler(conv *plotbot.Conversation, msg *plotbot.Message) {
+	log.Println("Health check. Requested by", msg.From)
+	conv.Reply(msg, healthy.CheckAll())
 }
 
 func (healthy *Healthy) CheckAll() string {

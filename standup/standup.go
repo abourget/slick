@@ -46,16 +46,13 @@ func (standup *Standup) InitChatPlugin(bot *plotbot.Bot) {
 
 	go standup.manageUpdatesInteraction()
 	standup.LoadData()
+
+	bot.ListenFor(&plotbot.Conversation{
+		HandlerFunc: standup.ChatHandler,
+	})
 }
 
-func (standup *Standup) ChatConfig() *plotbot.ChatPluginConfig {
-	return &plotbot.ChatPluginConfig{
-		EchoMessages: false,
-		OnlyMentions: false,
-	}
-}
-
-func (standup *Standup) ChatHandler(bot *plotbot.Bot, msg *plotbot.Message) {
+func (standup *Standup) ChatHandler(conv *plotbot.Conversation, msg *plotbot.Message) {
 	res := sectionRegexp.FindAllStringSubmatchIndex(msg.Body, -1)
 	if res != nil {
 		for _, section := range extractSectionAndText(msg.Body, res) {

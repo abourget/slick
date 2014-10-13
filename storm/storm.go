@@ -66,6 +66,10 @@ func (storm *Storm) InitChatPlugin(bot *plotbot.Bot) {
 	})
 
 	go storm.launchWatcher()
+
+	bot.ListenFor(&plotbot.Conversation{
+		HandlerFunc: storm.ChatHandler,
+	})
 }
 
 type StormMode struct {
@@ -79,30 +83,20 @@ var stormTakerMsg = "IS THE STORM TAKER! \n" +
 	"these requirements into tasks. If the requirements are incomplete or " +
 	"confusing, it is your duty Storm Taker, yours alone, to remedy this. Good luck"
 
-// Configuration
-var config = &plotbot.ChatPluginConfig{
-	EchoMessages: false,
-	OnlyMentions: false,
-}
-
-func (storm *Storm) ChatConfig() *plotbot.ChatPluginConfig {
-	return config
-}
-
 // Handler
-func (storm *Storm) ChatHandler(bot *plotbot.Bot, msg *plotbot.Message) {
-	if msg.BotMentioned && msg.Contains("stormy day") {
+func (storm *Storm) ChatHandler(conv *plotbot.Conversation, msg *plotbot.Message) {
+	if msg.MentionedMe && msg.Contains("stormy day") {
 
 		if storm.stormActive {
-			bot.Reply(msg, "We're in the middle of a storm, can't you feel it ?")
+			conv.Reply(msg, "We're in the middle of a storm, can't you feel it ?")
 		} else {
-			bot.Reply(msg, "You'll know it soon enough")
+			conv.Reply(msg, "You'll know it soon enough")
 			storm.triggerPolling <- true
 		}
 
 	} else if storm.stormActive && (msg.Body == "ENOUGH" || msg.Body == "ENOUGH!") {
 		storm.stormActive = false
-		bot.Reply(msg, "ok, ok !")
+		conv.Reply(msg, "ok, ok !")
 	}
 
 	return

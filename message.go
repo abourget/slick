@@ -14,9 +14,10 @@ type BotReply struct {
 
 type Message struct {
 	*hipchat.Message
-	BotMentioned bool
-	FromUser     *User
-	FromRoom     *Room
+	MentionedMe bool
+	FromMe      bool
+	FromUser    *User
+	FromRoom    *Room
 }
 
 func (msg *Message) IsPrivate() bool {
@@ -78,5 +79,22 @@ func (msg *Message) String() string {
 	if msg.FromRoom != nil {
 		fromRoom = msg.FromRoom.Name
 	}
-	return fmt.Sprintf(`Message{"%s", from_user=%s, from_room=%s, mentioned=%v, private=%v}`, msg.Body, fromUser, fromRoom, msg.BotMentioned, msg.IsPrivate())
+	return fmt.Sprintf(`Message{"%s", from_user=%s, from_room=%s, mentioned=%v, private=%v}`, msg.Body, fromUser, fromRoom, msg.MentionedMe, msg.IsPrivate())
+}
+
+func (msg *Message) applyMentionedMe(bot *Bot) {
+	atMention := "@" + bot.Config.Mention
+	mentionColon := bot.Config.Mention + ":"
+	mentionComma := bot.Config.Mention + ","
+
+	msg.MentionedMe = (strings.Contains(msg.Body, atMention) ||
+		strings.HasPrefix(msg.Body, mentionColon) ||
+		strings.HasPrefix(msg.Body, mentionComma) ||
+		msg.IsPrivate())
+
+	return
+}
+
+func (msg *Message) applyFromMe(bot *Bot) {
+	msg.FromMe = strings.HasPrefix(msg.FromNick(), bot.Config.Nickname)
 }

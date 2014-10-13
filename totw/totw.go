@@ -37,7 +37,7 @@ func (totw *Totw) InitChatPlugin(bot *plotbot.Bot) {
 		"a real innovator you are",
 		"way to go, I'm impressed",
 		"hope it's better than my own code",
-		"noted, but double check, you can never be certain",
+		"noted, but are you sure it's good ?",
 		"I'll take a look into this one",
 		"you're generous!",
 		"hurray!",
@@ -46,20 +46,15 @@ func (totw *Totw) InitChatPlugin(bot *plotbot.Bot) {
 	totw.bot = bot
 
 	go totw.ScheduleAlerts(bot.Config.TeamRoom, time.Thursday, 16, 0)
+
+	bot.ListenFor(&plotbot.Conversation{
+		HandlerFunc: totw.ChatHandler,
+	})
 }
 
-var config = &plotbot.ChatPluginConfig{
-	EchoMessages: false,
-	OnlyMentions: false,
-}
-
-func (totw *Totw) ChatConfig() *plotbot.ChatPluginConfig {
-	return config
-}
-
-func (totw *Totw) ChatHandler(bot *plotbot.Bot, msg *plotbot.Message) {
+func (totw *Totw) ChatHandler(conv *plotbot.Conversation, msg *plotbot.Message) {
 	if strings.HasPrefix(msg.Body, "!totw") || strings.HasPrefix(msg.Body, "!techoftheweek") {
-		bot.ReplyMention(msg, plotbot.RandomString("tech adept"))
+		conv.ReplyMention(msg, plotbot.RandomString("tech adept"))
 	}
 }
 

@@ -16,8 +16,6 @@ type ChatPlugin interface {
 	// Handle handles incoming messages matching the constraints
 	// from ChatConfig.
 	InitChatPlugin(*Bot)
-	ChatHandler(*Bot, *Message)
-	ChatConfig() *ChatPluginConfig
 }
 
 type ChatConfig struct {
