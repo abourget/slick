@@ -168,6 +168,10 @@ func (funny *Funny) ChatHandler(conv *plotbot.Conversation, msg *plotbot.Message
 
 		conv.Reply(msg, "/code deploy/      Contributors-Guide/ image_server/     sheep_porn/     streambed/\nstreamhead/  README.md")
 
+	} else if msg.ContainsAny([]string{"that's really cool", "that is really cool", "really happy"}) {
+
+		conv.Reply(msg, "http://media.giphy.com/media/BlVnrxJgTGsUw/giphy.gif")
+
 	}
 
 	return
