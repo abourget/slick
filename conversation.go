@@ -7,58 +7,123 @@ import (
 )
 
 type Conversation struct {
-	ListenUntil     time.Time
-	ListenDuration  time.Duration
-	WithUser        *User
-	InRoom          *Room
-	PrivateOnly     bool
-	PublicOnly      bool
-	Contains        string
-	ContainsAny     []string
-	MentionsOnly    bool
+	// ListenUntil sets an absolute date at which this Conversation
+	// expires and stops listening.  ListenUntil and ListenDuration
+	// are optional and mutually exclusive.
+	ListenUntil time.Time
+	// ListenDuration sets a timeout Duration, after which this
+	// Conversation stops listening and is garbage collected.  A call
+	// to `ResetTimeout()` restarts the listening period for another
+	// `ListenDuration`.
+	ListenDuration time.Duration
+
+	// WithUser filters out incoming messages that are not with
+	// `*User` (publicly or privately)
+	WithUser *User
+	// InRoom filters messages that are sent to a different room than
+	// `Room`. This can be mixed and matched with `WithUser`
+	InRoom *Room
+
+	// PrivateOnly filters out public messages.
+	PrivateOnly bool
+	// PublicOnly filters out private messages.  Mutually exclusive
+	// with `PrivateOnly`.
+	PublicOnly bool
+
+	// Contains checks whether the `string` is in the message body
+	// (after lower-casing both components).
+	Contains string
+
+	// ContainsAny checks that any one of the specified strings exist
+	// as substrings in the message body.  Mutually exclusive with
+	// `Contains`.
+	ContainsAny []string
+
+	// MentionsMe filters out messages that do not mention the Bot's
+	// `bot.Config.MentionName`
+	MentionsMeOnly bool
+
+	// MatchMyMessages equal to false filters out messages that the bot
+	// himself sent.
 	MatchMyMessages bool
-	FilterFunc      func(*Conversation, *Message) bool
-	HandlerFunc     func(*Conversation, *Message)
-	Bot             *Bot
+
+	// FilterFunc is run with each message to verify whether to call
+	// `HandlerFunc` with the message.  See `defaultFilterFunc`
+	FilterFunc func(*Conversation, *Message) bool
+
+	// HandlerFunc is the main handling function, which receives messages
+	// to handle.
+	HandlerFunc func(*Conversation, *Message)
+
+	// TimeoutFunc is called when a conversation expires after
+	// `ListenDuration` or `ListenUntil` delays.  It is *not* called
+	// if you explicitly call `Close()` on the conversation, or if
+	// you did not set `ListenDuration` nor `ListenUntil`.
+	TimeoutFunc func(*Conversation)
+
+	// Ref to the bot instance.  Populated for you when `ListenFor`-ing the
+	// Conversation.
+	Bot *Bot
 
 	resetCh chan bool
 	doneCh  chan bool
 }
 
 func (conv *Conversation) Reply(msg *Message, reply string) {
-	log.Println("Replying:", reply)
-	conv.Bot.replySink <- msg.Reply(reply)
+	conv.Bot.Reply(msg, reply)
 }
+
 func (conv *Conversation) ReplyMention(msg *Message, reply string) {
-	if msg.IsPrivate() {
-		conv.Reply(msg, reply)
-	} else {
-		prefix := ""
-		if msg.FromUser != nil {
-			prefix = fmt.Sprintf("@%s ", msg.FromUser.MentionName)
-		}
-		conv.Reply(msg, fmt.Sprintf("%s%s", prefix, reply))
+	conv.Bot.ReplyMention(msg, reply)
+}
+
+func (conv *Conversation) ReplyPrivately(msg *Message, reply string) {
+	conv.Bot.ReplyPrivately(msg, reply)
+}
+
+// Close terminates the Conversation management goroutine, and stops
+// any further listening and message handling
+func (conv *Conversation) Close() {
+	conv.Bot.delConversationCh <- conv
+	conv.doneCh <- true
+}
+
+// ResetDuration re-initializes the timeout set by
+// `Conversation.ListenDuration`, and continues listening for another
+// such duration.
+func (conv *Conversation) ResetDuration() error {
+	if int64(conv.ListenDuration) == 0 {
+		msg := "Conversation has no ListenDuration"
+		log.Println("ResetDuration() error: ", msg)
+		return fmt.Errorf(msg)
 	}
 
+	conv.resetCh <- true
+
+	return nil
 }
-func (conv *Conversation) ReplyPrivately(msg *Message, reply string) {
-	log.Println("Replying privately:", reply)
-	conv.Bot.replySink <- msg.ReplyPrivate(reply)
-}
-func (conv *Conversation) Close() {
-}
-func (conv *Conversation) ResetDuration() {
-}
+
 func (conv *Conversation) isManaged() bool {
 	timeout := conv.timeoutDuration()
 	return int64(timeout) != 0
 }
+
 func (conv *Conversation) launchManager() {
-	timeout := conv.timeoutDuration()
-	if int64(timeout) == 0 {
-		return
+	for {
+		timeout := conv.timeoutDuration()
+
+		select {
+		case <-time.After(timeout):
+			if conv.TimeoutFunc != nil {
+				conv.TimeoutFunc(conv)
+			}
+			return
+		case <-conv.resetCh:
+			continue
+		case <-conv.doneCh:
+			return
+		}
 	}
-	fmt.Println("BOO", timeout)
 }
 func (conv *Conversation) timeoutDuration() (timeout time.Duration) {
 	if !conv.ListenUntil.IsZero() {
@@ -100,7 +165,7 @@ func (conv *Conversation) setupChannels() {
 }
 
 func defaultFilterFunc(conv *Conversation, msg *Message) bool {
-	if conv.MentionsOnly && !msg.MentionedMe {
+	if conv.MentionsMeOnly && !msg.MentionsMe {
 		return false
 	}
 
@@ -120,12 +185,17 @@ func defaultFilterFunc(conv *Conversation, msg *Message) bool {
 		return false
 	}
 
-	if conv.WithUser != nil && msg.FromUser != conv.WithUser {
+	if conv.WithUser != nil && msg.FromUser.JID != conv.WithUser.JID {
 		return false
 	}
 
-	if conv.InRoom != nil && msg.FromRoom != conv.InRoom {
-		return false
+	if conv.InRoom != nil {
+		if msg.FromRoom == nil {
+			return false
+		}
+		if msg.FromRoom.JID != conv.InRoom.JID {
+			return false
+		}
 	}
 
 	if !conv.MatchMyMessages && msg.FromMe {

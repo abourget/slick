@@ -2,6 +2,7 @@ package funny
 
 import (
 	"fmt"
+	"time"
 
 	"github.com/plotly/plotbot"
 )
@@ -40,7 +41,7 @@ func (funny *Funny) InitChatPlugin(bot *plotbot.Bot) {
 
 func (funny *Funny) ChatHandler(conv *plotbot.Conversation, msg *plotbot.Message) {
 	bot := conv.Bot
-	if msg.MentionedMe {
+	if msg.MentionsMe {
 		if msg.Contains("you're funny") {
 
 			conv.Reply(msg, bot.WithMood("/me blushes", "buzz off"))
@@ -56,6 +57,21 @@ func (funny *Funny) ChatHandler(conv *plotbot.Conversation, msg *plotbot.Message
 				fmt.Println("Ok, in here")
 				bot.Rewarder.LogEvent(msg.FromUser, "thanks", nil)
 			}
+		} else if msg.Contains("how are you") && msg.MentionsMe {
+			conv.ReplyMention(msg, bot.WithMood("good, and you ?", "awful, and you ?"))
+			bot.ListenFor(&plotbot.Conversation{
+				ListenDuration: 60 * time.Second,
+				WithUser: msg.FromUser,
+				InRoom: msg.FromRoom,
+				MentionsMeOnly: true,
+				HandlerFunc: func(conv *plotbot.Conversation, msg *plotbot.Message) {
+					conv.ReplyMention(msg, bot.WithMood("glad to hear it!", "awwhh, enough!"))
+					conv.Close()
+				},
+				TimeoutFunc: func(conv *plotbot.Conversation) {
+					conv.ReplyMention(msg, "well, we can catch up later")
+				},
+			})
 		}
 	}
 

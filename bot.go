@@ -28,9 +28,9 @@ type Bot struct {
 	client *hipchat.Client
 
 	// Conversations handling
-	conversations   []*Conversation
-	addConversation chan *Conversation
-	delConversation chan *Conversation
+	conversations     []*Conversation
+	addConversationCh chan *Conversation
+	delConversationCh chan *Conversation
 
 	// replySink sends messages to Hipchat rooms or users
 	disconnected chan bool
@@ -50,10 +50,10 @@ type Bot struct {
 
 func NewHipbot(configFile string) *Bot {
 	bot := &Bot{
-		configFile:      configFile,
-		replySink:       make(chan *BotReply, 10),
-		addConversation: make(chan *Conversation, 100),
-		delConversation: make(chan *Conversation, 100),
+		configFile:        configFile,
+		replySink:         make(chan *BotReply, 10),
+		addConversationCh: make(chan *Conversation, 100),
+		delConversationCh: make(chan *Conversation, 100),
 	}
 
 	return bot
@@ -136,7 +136,7 @@ func (bot *Bot) ListenFor(conv *Conversation) error {
 		go conv.launchManager()
 	}
 
-	bot.addConversation <- conv
+	bot.addConversationCh <- conv
 
 	return nil
 }
@@ -159,9 +159,9 @@ func (bot *Bot) ReplyMention(msg *Message, reply string) {
 	}
 }
 
-func (bot *Bot) ReplyPrivate(msg *Message, reply string) {
+func (bot *Bot) ReplyPrivately(msg *Message, reply string) {
 	log.Println("Replying privately:", reply)
-	bot.replySink <- msg.ReplyPrivate(reply)
+	bot.replySink <- msg.ReplyPrivately(reply)
 }
 
 func (bot *Bot) Notify(room, color, format, msg string, notify bool) (*napping.Request, error) {
@@ -320,6 +320,22 @@ func (bot *Bot) replyHandler() {
 	}
 }
 
+func (bot *Bot) removeConversation(conv *Conversation) {
+	for i, element := range bot.conversations {
+		if element == conv {
+			// following: https://code.google.com/p/go-wiki/wiki/SliceTricks
+			copy(bot.conversations[i:], bot.conversations[i+1:])
+			bot.conversations[len(bot.conversations)-1] = nil
+			bot.conversations = bot.conversations[:len(bot.conversations)-1]
+			return
+		}
+	}
+
+	return
+	bot.conversations = append(bot.conversations, conv)
+
+}
+
 func (bot *Bot) messageHandler() {
 	msgs := bot.client.Messages()
 	for {
@@ -327,13 +343,11 @@ func (bot *Bot) messageHandler() {
 		case <-bot.disconnected:
 			return
 
-		case conv := <-bot.addConversation:
+		case conv := <-bot.addConversationCh:
 			bot.conversations = append(bot.conversations, conv)
 
-		case conv := <-bot.delConversation:
-			// TODO: remove from Conversations
-			fmt.Println("BOO", conv)
-			continue
+		case conv := <-bot.delConversationCh:
+			bot.removeConversation(conv)
 
 		case rawMsg := <-msgs:
 			fromUser := bot.GetUser(rawMsg.From)
@@ -346,7 +360,7 @@ func (bot *Bot) messageHandler() {
 			msg := &Message{Message: rawMsg}
 			msg.FromUser = fromUser
 			msg.FromRoom = bot.GetRoom(rawMsg.From)
-			msg.applyMentionedMe(bot)
+			msg.applyMentionsMe(bot)
 			msg.applyFromMe(bot)
 
 			log.Printf("Incoming message: %s\n", msg)
@@ -361,26 +375,14 @@ func (bot *Bot) messageHandler() {
 					conv.HandlerFunc(conv, msg)
 				}
 			}
+		}
 
-			// for _, p := range registeredPlugins {
-			// 	chatPlugin, ok := p.(ChatPlugin)
-			// 	if !ok {
-			// 		continue
-			// 	}
-
-			// 	pluginConf := chatPlugin.ChatConfig()
-
-			// 	if !pluginConf.EchoMessages && fromMyself {
-			// 		//log.Printf("no echo but I just messaged myself")
-			// 		continue
-			// 	}
-			// 	if pluginConf.OnlyMentions && !msg.MentionedMe {
-			// 		//log.Printf("only mentions but not BotMentioned")
-			// 		continue
-			// 	}
-
-			// 	chatPlugin.ChatHandler(bot, msg)
-			// }
+		// Always flush conversations deletions between messages, so a
+		// Close()'d Conversation never processes another message.
+		select {
+		case conv := <-bot.delConversationCh:
+			bot.removeConversation(conv)
+		default:
 		}
 	}
 }

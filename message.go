@@ -14,7 +14,7 @@ type BotReply struct {
 
 type Message struct {
 	*hipchat.Message
-	MentionedMe bool
+	MentionsMe bool
 	FromMe      bool
 	FromUser    *User
 	FromRoom    *Room
@@ -63,7 +63,7 @@ func (msg *Message) Reply(s string) *BotReply {
 	}
 }
 
-func (msg *Message) ReplyPrivate(s string) *BotReply {
+func (msg *Message) ReplyPrivately(s string) *BotReply {
 	return &BotReply{
 		To:      msg.FromUser.JID,
 		Message: s,
@@ -79,15 +79,15 @@ func (msg *Message) String() string {
 	if msg.FromRoom != nil {
 		fromRoom = msg.FromRoom.Name
 	}
-	return fmt.Sprintf(`Message{"%s", from_user=%s, from_room=%s, mentioned=%v, private=%v}`, msg.Body, fromUser, fromRoom, msg.MentionedMe, msg.IsPrivate())
+	return fmt.Sprintf(`Message{"%s", from_user=%s, from_room=%s, mentioned=%v, private=%v}`, msg.Body, fromUser, fromRoom, msg.MentionsMe, msg.IsPrivate())
 }
 
-func (msg *Message) applyMentionedMe(bot *Bot) {
+func (msg *Message) applyMentionsMe(bot *Bot) {
 	atMention := "@" + bot.Config.Mention
 	mentionColon := bot.Config.Mention + ":"
 	mentionComma := bot.Config.Mention + ","
 
-	msg.MentionedMe = (strings.Contains(msg.Body, atMention) ||
+	msg.MentionsMe = (strings.Contains(msg.Body, atMention) ||
 		strings.HasPrefix(msg.Body, mentionColon) ||
 		strings.HasPrefix(msg.Body, mentionComma) ||
 		msg.IsPrivate())

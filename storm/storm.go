@@ -85,7 +85,7 @@ var stormTakerMsg = "IS THE STORM TAKER! \n" +
 
 // Handler
 func (storm *Storm) ChatHandler(conv *plotbot.Conversation, msg *plotbot.Message) {
-	if msg.MentionedMe && msg.Contains("stormy day") {
+	if msg.MentionsMe && msg.Contains("stormy day") {
 
 		if storm.stormActive {
 			conv.Reply(msg, "We're in the middle of a storm, can't you feel it ?")

@@ -16,5 +16,5 @@ func TestConversationCheckParams(t *testing.T) {
 	}
 }
 
-//func Test(t *testing.T) {
-//}
+func TestDefeaultFilter(t *testing.T) {
+}
