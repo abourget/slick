@@ -20,7 +20,7 @@ func (rew *Rewarder) InitRewarder(bot *plotbot.Bot) {
 	rew.badges = make([]*Badge, 0)
 	rew.logs = make(map[string][]*Event)
 	rew.RegisterBadge("small_mentioner", "Small Mentioner", `This badge is awarded when you mention Plotbot's name for the first time.`)
-	rew.RegisterBadge("intimate_mentioner", "Intimave Mentioner", `This badge is awarded when you talk to Plotbot privately for the first time`)
+	rew.RegisterBadge("intimate_mentioner", "Intimate Mentioner", `This badge is awarded when you talk to Plotbot privately for the first time`)
 	rew.RegisterBadge("great_mentioner", "Great Mentioner", `This badge is awarded when you have mentioned Plotbot's name at least 10 times in the past week`)
 }
 

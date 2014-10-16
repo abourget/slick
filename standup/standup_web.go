@@ -10,7 +10,7 @@ import (
 )
 
 func (standup *Standup) InitWebPlugin(bot *plotbot.Bot, privRouter *mux.Router, pubRouter *mux.Router) {
-	pubRouter.HandleFunc("/public/plugins/standup.json", func(w http.ResponseWriter, r *http.Request) {
+	privRouter.HandleFunc("/plugins/standup.json", func(w http.ResponseWriter, r *http.Request) {
 		data := struct {
 			Users []*UserData
 		}{
