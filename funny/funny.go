@@ -101,10 +101,10 @@ func (funny *Funny) ChatHandler(conv *plotbot.Conversation, msg *plotbot.Message
 		conv.Reply(msg, "https://i.chzbgr.com/maxW250/4496881920/h9C58F860.gif")
 		return
 
-	} else if msg.Contains("cookies") {
+	} else if msg.Contains("ice cream") {
 
-		conv.Reply(msg, "http://www.pbh2.com/wordpress/wp-content/uploads/2013/06/funny-gif-cookie-monster.gif")
-		conv.Reply(msg, "Cookies ??")
+		conv.Reply(msg, "http://giphy.com/gifs/IGyLuFXIGSJj2.gif")
+		conv.Reply(msg, "I love ice cream too")
 		return
 
 	} else if msg.ContainsAny([]string{"lot of tension", "some tension", " tensed"}) {
