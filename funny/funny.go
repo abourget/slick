@@ -103,7 +103,7 @@ func (funny *Funny) ChatHandler(conv *plotbot.Conversation, msg *plotbot.Message
 
 	} else if msg.Contains("ice cream") {
 
-		conv.Reply(msg, "http://giphy.com/gifs/IGyLuFXIGSJj2.gif")
+		conv.Reply(msg, "http://i.giphy.com/IGyLuFXIGSJj2.gif")
 		conv.Reply(msg, "I love ice cream too")
 		return
 
