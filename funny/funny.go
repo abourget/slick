@@ -34,6 +34,14 @@ func (funny *Funny) InitChatPlugin(bot *plotbot.Bot) {
 		"http://img2.wikia.nocookie.net/__cb20131117184206/halo/images/2/2a/Xt0rt3r.gif",
 	})
 
+	plotbot.RegisterStringList("robot jokes", []string{
+		"http://timmybeanbrain.files.wordpress.com/2012/05/05242012_02-01.jpg",
+		"http://timmybeanbrain.files.wordpress.com/2012/05/05242012_01-01.jpg",
+		"http://timmybeanbrain.files.wordpress.com/2012/05/05232012_01-01.jpg",
+		"http://timmybeanbrain.files.wordpress.com/2012/05/05017012_01-01.jpg",
+		"http://timmybeanbrain.files.wordpress.com/2012/07/07022012_04-01.jpg",
+	})
+
 	bot.ListenFor(&plotbot.Conversation{
 		HandlerFunc: funny.ChatHandler,
 	})
@@ -44,28 +52,33 @@ func (funny *Funny) ChatHandler(conv *plotbot.Conversation, msg *plotbot.Message
 	if msg.MentionsMe {
 		if msg.Contains("you're funny") {
 
-			conv.Reply(msg, bot.WithMood("/me blushes", "buzz off"))
+			if bot.Mood == plotbot.Happy {
+				conv.Reply(msg, "/me blushes")
+			} else {
+				conv.Reply(msg, "here's another one")
+				conv.Reply(msg, plotbot.RandomString("robot jokes"))
+			}
 
 		} else if msg.ContainsAny([]string{"dumb ass", "dumbass"}) {
 
-			conv.Reply(msg, bot.WithMood("don't say such things", "you stink"))
+			conv.Reply(msg, "don't say such things")
 
 		} else if msg.ContainsAny([]string{"thanks", "thank you", "thx", "thnks"}) {
-			conv.Reply(msg, bot.WithMood("my pleasure", "get a life"))
+			conv.Reply(msg, bot.WithMood("my pleasure", "any time, just ask, I'm here for you, ffiieeewww!get a life"))
 
 			if bot.Rewarder != nil {
 				fmt.Println("Ok, in here")
 				bot.Rewarder.LogEvent(msg.FromUser, "thanks", nil)
 			}
 		} else if msg.Contains("how are you") && msg.MentionsMe {
-			conv.ReplyMention(msg, bot.WithMood("good, and you ?", "awful, and you ?"))
+			conv.ReplyMention(msg, bot.WithMood("good, and you ?", "I'm wild today!! wadabout you ?"))
 			bot.ListenFor(&plotbot.Conversation{
 				ListenDuration: 60 * time.Second,
-				WithUser: msg.FromUser,
-				InRoom: msg.FromRoom,
+				WithUser:       msg.FromUser,
+				InRoom:         msg.FromRoom,
 				MentionsMeOnly: true,
 				HandlerFunc: func(conv *plotbot.Conversation, msg *plotbot.Message) {
-					conv.ReplyMention(msg, bot.WithMood("glad to hear it!", "awwhh, enough!"))
+					conv.ReplyMention(msg, bot.WithMood("glad to hear it!", "zwweeeeeeeeet !"))
 					conv.Close()
 				},
 				TimeoutFunc: func(conv *plotbot.Conversation) {

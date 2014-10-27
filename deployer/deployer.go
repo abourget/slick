@@ -175,7 +175,7 @@ func (dep *Deployer) handleDeploy(params *DeployParams) {
 
 	bot := dep.bot
 	bot.Notify("Plotly", "purple", "text", fmt.Sprintf("[deployer] Launching: %s", params), true)
-	dep.replyPersonnally(params, bot.WithMood("deploying, my friend", "deploying, ... again ... *sigh*"))
+	dep.replyPersonnally(params, bot.WithMood("deploying, my friend", "deploying, yyaaahhhOooOOO!"))
 
 	if params.Environment == "prod" {
 		url := dep.getCompareUrl(params.Environment, params.Branch)
