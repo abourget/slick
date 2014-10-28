@@ -24,7 +24,11 @@ func NewSession(authToken string) *Session {
 func (sess *Session) Send(req *napping.Request) (res *napping.Response, err error) {
 	res, err = sess.session.Send(req)
 	if err != nil {
-		return nil, fmt.Errorf("Error while sending request: %s %#v", err, res.RawText())
+		content := "[unavailable]"
+		if res != nil {
+			content = res.RawText()
+		}
+		return nil, fmt.Errorf("Error while sending request: %s %#v", err, content)
 	}
 
 	if res.Status() >= 300 {
