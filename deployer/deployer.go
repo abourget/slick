@@ -99,7 +99,7 @@ type DeployJob struct {
 	killing bool
 }
 
-var deployFormat = regexp.MustCompile(`deploy( ([a-zA-Z0-9_\.-]+))? to ([a-z_-]+)((,| with)? tags?:? ?(.+))?`)
+var deployFormat = regexp.MustCompile(`deploy( ([a-zA-Z0-9_\.-]+))? to ([a-z_-]+)( using ([a-z_-]+))?((,| with)? tags?:? ?(.+))?`)
 
 func (dep *Deployer) ChatHandler(conv *plotbot.Conversation, msg *plotbot.Message) {
 	bot := conv.Bot
@@ -115,7 +115,15 @@ func (dep *Deployer) ChatHandler(conv *plotbot.Conversation, msg *plotbot.Messag
 			conv.Reply(msg, fmt.Sprintf("@%s Deploy currently running: %s", msg.FromUser.MentionName, params))
 			return
 		} else {
-			params := &DeployParams{Environment: match[3], Branch: match[2], Tags: match[6], InitiatedBy: msg.FromNick(), From: "chat", initiatedByChat: msg}
+			params := &DeployParams{
+				Environment: match[3],
+				Branch: match[2],
+				Tags: match[8],
+				DeploymentBranch: match[5],
+				InitiatedBy: msg.FromNick(),
+				From: "chat",
+				initiatedByChat: msg,
+			}
 			go dep.handleDeploy(params)
 		}
 		return
@@ -144,11 +152,14 @@ func (dep *Deployer) ChatHandler(conv *plotbot.Conversation, msg *plotbot.Messag
 			conv.Reply(msg, fmt.Sprintf("@%s couldn't get current revision on prod", mention))
 		}
 
+	} else if msg.Contains("deploy") {
+		conv.Reply(msg, "Usage: plot, [please] deploy <branch-name> to <environment>[ using <deployment-branch>][, tags: <ansible-playbook tags>, ..., ...]")
 	}
 }
 
 func (dep *Deployer) handleDeploy(params *DeployParams) {
-	if err := dep.pullDeployRepo(); err != nil {
+	deploymentBranch := params.ParsedDeploymentBranch()
+	if err := dep.pullDeployRepo(deploymentBranch); err != nil {
 		dep.pubLine(fmt.Sprintf("[deployer] Unable to pull from deploy/ repo: %s. Aborting.", err))
 		return
 	} else {
@@ -216,8 +227,15 @@ func (dep *Deployer) handleDeploy(params *DeployParams) {
 	dep.runningJob = nil
 }
 
-func (dep *Deployer) pullDeployRepo() error {
-	cmd := exec.Command("git", "pull")
+func (dep *Deployer) pullDeployRepo(deploymentBranch string) error {
+	cmd := exec.Command("git", "fetch")
+	cmd.Dir = dep.config.RepositoryPath
+	err := cmd.Run()
+	if err != nil {
+		return fmt.Errorf("Error executing git fetch: %s", err)
+	}
+
+	cmd = exec.Command("git", "checkout", fmt.Sprintf("origin/%s", deploymentBranch))
 	cmd.Dir = dep.config.RepositoryPath
 	return cmd.Run()
 }
