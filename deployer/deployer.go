@@ -152,15 +152,17 @@ func (dep *Deployer) ChatHandler(conv *plotbot.Conversation, msg *plotbot.Messag
 			conv.Reply(msg, fmt.Sprintf("@%s couldn't get current revision on prod", mention))
 		}
 
-	} else if msg.Contains("deploy") {
-		conv.Reply(msg, "Usage: plot, [please] deploy <branch-name> to <environment>[ using <deployment-branch>][, tags: <ansible-playbook tags>, ..., ...]")
+	} else if msg.Contains("deploy") || msg.Contains("push to") {
+		conv.Reply(msg, "Usage: plot, [please|insert reverence] deploy[ <branch-name>] to <environment>[ using <deployment-branch>][, tags: <ansible-playbook tags>, ..., ...]")
 	}
 }
 
 func (dep *Deployer) handleDeploy(params *DeployParams) {
 	deploymentBranch := params.ParsedDeploymentBranch()
 	if err := dep.pullDeployRepo(deploymentBranch); err != nil {
-		dep.pubLine(fmt.Sprintf("[deployer] Unable to pull from deploy/ repo: %s. Aborting.", err))
+		errorMsg := fmt.Sprintf("Unable to pull from deploy/ repo: %s. Aborting.", err)
+		dep.pubLine(fmt.Sprintf("[deployer] %s", errorMsg))
+		dep.replyPersonnally(params, errorMsg)
 		return
 	} else {
 		dep.pubLine(`[deployer] Using latest deploy/ revision`)
@@ -220,7 +222,7 @@ func (dep *Deployer) handleDeploy(params *DeployParams) {
 		dep.replyPersonnally(params, fmt.Sprintf("your deploy failed: %s", err))
 	} else {
 		dep.pubLine("[deployer] terminated successfully")
-		dep.replyPersonnally(params, "your deploy was successful")
+		dep.replyPersonnally(params, bot.WithMood("your deploy was successful", "your deploy was GREAT, you're great !"))
 	}
 
 	dep.runningJob.quit <- true

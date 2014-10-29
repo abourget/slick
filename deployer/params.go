@@ -42,12 +42,13 @@ func (p *DeployParams) String() string {
 		branch = "[default]"
 	}
 
-	str := fmt.Sprintf("env=%s branch=%s tags=%s by=%s", p.Environment, branch,
-		p.ParsedTags(), p.InitiatedBy, p.From)
+	str := fmt.Sprintf("env=%s branch=%s tags=%s", p.Environment, branch, p.ParsedTags())
 
 	if p.DeploymentBranch != "" {
 		str = fmt.Sprintf("%s deploy_branch=%s", str, p.DeploymentBranch)
 	}
+
+	str = fmt.Sprintf("%s by %s", str, p.InitiatedBy)
 
 	return str
 }
