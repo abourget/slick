@@ -1,6 +1,7 @@
 package webutils
 
 import (
+	"encoding/json"
 	"fmt"
 	"net/http"
 
@@ -20,6 +21,9 @@ func init() {
 func (utils *Utils) InitWebPlugin(bot *plotbot.Bot, privRouter *mux.Router, pubRouter *mux.Router) {
 	utils.bot = bot
 	privRouter.HandleFunc("/send_notif", utils.handleNotif)
+	privRouter.HandleFunc("/send_message", utils.handleSendMessage)
+	privRouter.HandleFunc("/hipchat/rooms", utils.handleGetRooms)
+	privRouter.HandleFunc("/hipchat/users", utils.handleGetUsers)
 }
 
 func (utils *Utils) handleNotif(w http.ResponseWriter, r *http.Request) {
@@ -28,51 +32,73 @@ func (utils *Utils) handleNotif(w http.ResponseWriter, r *http.Request) {
 	http.Error(w, "OK", 200)
 }
 
-// func handleGetUsers(w http.ResponseWriter, r *http.Request) {
-// 	users, err := hipchatv2.GetUsers(bot.Config.HipchatApiToken)
-// 	if err != nil {
-// 		webReportError(w, "Error fetching users", err)
-// 		return
-// 	}
+func (utils *Utils) handleSendMessage(w http.ResponseWriter, r *http.Request) {
+	var data struct {
+		Room    string
+		Message string
+	}
+	err := json.NewDecoder(r.Body).Decode(&data)
+	if err != nil {
+		http.Error(w, "Couldn't decode message", 500)
+		return
+	}
 
-// 	w.Header().Set("Content-Type", "application/json")
-// 	enc := json.NewEncoder(w)
-// 	out := struct {
-// 		Users []hipchatv2.User `json:"users"`
-// 	}{
-// 		Users: users,
-// 	}
+	room := utils.bot.GetRoom(data.Room)
+	if room == nil {
+		http.Error(w, "No such room", 400)
+		return
+	}
 
-// 	err = enc.Encode(out)
-// 	if err != nil {
-// 		webReportError(w, "Error encoding JSON", err)
-// 		return
-// 	}
-// 	return
-// }
+	utils.bot.SendToRoom(room.JID, data.Message)
 
-// func handleGetRooms(w http.ResponseWriter, r *http.Request) {
-// 	rooms, err := hipchatv2.GetRooms(bot.Config.HipchatApiToken)
-// 	if err != nil {
-// 		webReportError(w, "Error fetching rooms", err)
-// 		return
-// 	}
+	http.Error(w, "OK", 200)
+}
 
-// 	w.Header().Set("Content-Type", "application/json")
-// 	enc := json.NewEncoder(w)
-// 	out := struct {
-// 		Rooms []hipchatv2.Room `json:"rooms"`
-// 	}{
-// 		Rooms: rooms,
-// 	}
+func (utils *Utils) handleGetUsers(w http.ResponseWriter, r *http.Request) {
+	users, err := hipchatv2.GetUsers(utils.bot.Config.HipchatApiToken)
+	if err != nil {
+		webReportError(w, "Error fetching users", err)
+		return
+	}
 
-// 	err = enc.Encode(out)
-// 	if err != nil {
-// 		webReportError(w, "Error encoding JSON", err)
-// 		return
-// 	}
-// 	return
-// }
+	w.Header().Set("Content-Type", "application/json")
+	enc := json.NewEncoder(w)
+	out := struct {
+		Users []hipchatv2.User `json:"users"`
+	}{
+		Users: users,
+	}
+
+	err = enc.Encode(out)
+	if err != nil {
+		webReportError(w, "Error encoding JSON", err)
+		return
+	}
+	return
+}
+
+func (utils *Utils) handleGetRooms(w http.ResponseWriter, r *http.Request) {
+	rooms, err := hipchatv2.GetRooms(utils.bot.Config.HipchatApiToken)
+	if err != nil {
+		webReportError(w, "Error fetching rooms", err)
+		return
+	}
+
+	w.Header().Set("Content-Type", "application/json")
+	enc := json.NewEncoder(w)
+	out := struct {
+		Rooms []hipchatv2.Room `json:"rooms"`
+	}{
+		Rooms: rooms,
+	}
+
+	err = enc.Encode(out)
+	if err != nil {
+		webReportError(w, "Error encoding JSON", err)
+		return
+	}
+	return
+}
 
 func webReportError(w http.ResponseWriter, msg string, err error) {
 	w.WriteHeader(http.StatusInternalServerError)

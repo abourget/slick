@@ -24,8 +24,16 @@ angular.module('plotbot', ['ui.router.state', 'ui.router'])
 })
 
 .controller('HomeCtrl', function($scope, $http) {
+    $scope.show_all = false;
+
     $scope.send_notif = function() {
         $http.post('/send_notif');
+    };
+
+    $scope.send_message = function() {
+        $http.post('/send_message', {room: $scope.room, message: $scope.message});
+        $scope.room = '';
+        $scope.message = '';
     };
 
     $scope.tabularasa = function() {

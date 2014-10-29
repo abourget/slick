@@ -6,22 +6,41 @@
   <pre ng-show="standup">{{ standup | json }}</pre>
 </div>
 
-<!--p>
-  <h2>Notify</h2>
-  <button ng-click="send_notif()">NOTIFY!</button>
-</p>
+<div ng-show="show_all">
+  <div>
+    <h2>Send message</h2>
+    <div>Room: <input type="text" ng-model="room"></div>
+    <div>Message: <input type="text" ng-model="message"></div>
+    <div><button ng-click="send_message()">Send message</button></div>
+  </div>
 
-<div>
-  <h2>Tabula Rasa</h2>
-  <button ng-click="tabularasa()">Tabula Rasa</button>
-  <span>Unassign ALL uncompleted asana Tasks</span>
+  <div>
+    <button ng-click="load_users()">Load Hipchat Users</button>
+    <ul>
+      <li ng-repeat="user in users">{{ user | json }}</li>
+    </ul>
+  </div>
+
+  <div>
+    <button ng-click="load_rooms()">Load Hipchat Rooms</button>
+    <ul>
+      <li ng-repeat="room in rooms">{{ room | json }}</li>
+    </ul>
+  </div>
+
+  <div>
+    <h2>Tabula Rasa</h2>
+    <button ng-click="tabularasa()">Tabula Rasa</button>
+    <span>Unassign ALL uncompleted asana Tasks</span>
+  </div>
+
+  <div>
+    <h2>Badges</h2>
+    <button ng-click="load_badges()">Get badges</button>
+    <pre ng-show="badges">{{ badges | json }}</pre>
+  </div>
 </div>
 
-<div>
-  <h2>Badges</h2>
-  <button ng-click="load_badges()">Get badges</button>
-  <pre ng-show="badges">{{ badges | json }}</pre>
-</div-->
 
 <div>
   <h2>Deployer</h2>
