@@ -25,9 +25,10 @@
 
 * Run "npm install":
 
-    ```cd $GOPATH/src/github.com/plotly/plotbot/web
-
-    npm install```
+    ```
+cd $GOPATH/src/github.com/plotly/plotbot/web
+npm install
+```
 
 ## Local build and install
 
