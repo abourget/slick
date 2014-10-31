@@ -13,19 +13,20 @@
 
 * Install Ubuntu dependencies needed by various steps in this document:
 
-    sudo apt-get install mercurial zip
+    ```sudo apt-get install mercurial zip```
 
 * Pull the bot and its dependencies:
 
-    go get github.com/plotly/plotbot/plotbot
+    ```go get github.com/plotly/plotbot/plotbot```
 
 * Install rice:
 
-    go get github.com/GeertJohan/go.rice/rice
+    ```go get github.com/GeertJohan/go.rice/rice```
 
 * Run "npm install":
-    cd $GOPATH/src/github.com/plotly/plotbot/web
-    npm install
+
+    ```cd $GOPATH/src/github.com/plotly/plotbot/web
+    npm install```
 
 ## Local build and install
 
@@ -33,13 +34,13 @@
 
 * Build with:
 
-    cd $GOPATH/src/github.com/plotly/plotbot/plotbot
-    go build && ./plotbot
+    ```cd $GOPATH/src/github.com/plotly/plotbot/plotbot
+    go build && ./plotbot```
 
 * Inject static stuff in the binary with:
 
-    cd $GOPATH/src/github.com/plotly/plotbot/web
-    rice append --exec=../plotbot/plotbot
+    ```cd $GOPATH/src/github.com/plotly/plotbot/web
+    rice append --exec=../plotbot/plotbot```
 
 * Enjoy! You can deploy the binary and it has all the assets in itself now.
 
