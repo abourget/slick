@@ -12,6 +12,7 @@
 * Pull the bot and its dependencies:
 
     go get github.com/plotly/plotbot/plotbot
+    go install github.com/GeertJohan/go.rice/rice
 
 * Copy the `plotbot.sample.conf` file to `$HOME/.plotbot` and tweak at will.
 
