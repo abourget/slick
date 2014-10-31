@@ -5,13 +5,29 @@
 
 ## Configuration
 
+(Must be done to run Plotbot locally as well as to deploy it via Ansible.)
+
 * Install your Go environment, under Ubuntu, use this method:
 
     http://blog.labix.org/2013/06/15/in-flight-deb-packages-of-go
 
+* Install Ubuntu dependencies needed by various steps in this document:
+
+    sudo apt-get install mercurial zip
+
 * Pull the bot and its dependencies:
 
     go get github.com/plotly/plotbot/plotbot
+
+* Install rice:
+
+    go get github.com/GeertJohan/go.rice/rice
+
+* Run "npm install":
+    cd $GOPATH/src/github.com/plotly/plotbot/web
+    npm install
+
+## Local build and install
 
 * Copy the `plotbot.sample.conf` file to `$HOME/.plotbot` and tweak at will.
 
