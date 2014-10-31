@@ -25,7 +25,7 @@
 
 * Run "npm install":
 
-```
+   ```
 cd $GOPATH/src/github.com/plotly/plotbot/web
 npm install
 ```
@@ -36,14 +36,14 @@ npm install
 
 * Build with:
 
-```
+   ```
 cd $GOPATH/src/github.com/plotly/plotbot/plotbot
 go build && ./plotbot
 ```
 
 * Inject static stuff in the binary with:
 
-```
+   ```
 cd $GOPATH/src/github.com/plotly/plotbot/web
 rice append --exec=../plotbot/plotbot
 ```
