@@ -99,7 +99,7 @@ type DeployJob struct {
 	killing bool
 }
 
-var deployFormat = regexp.MustCompile(`deploy( ([a-zA-Z0-9_\.-]+))? to ([a-z_-]+)( using ([a-z_-]+))?((,| with)? tags?:? ?(.+))?`)
+var deployFormat = regexp.MustCompile(`deploy( ([a-zA-Z0-9_\.-]+))? to ([a-z_-]+)( using ([a-zA-Z0-9_\.-]+))?((,| with)? tags?:? ?(.+))?`)
 
 func (dep *Deployer) ChatHandler(conv *plotbot.Conversation, msg *plotbot.Message) {
 	bot := conv.Bot
