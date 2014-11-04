@@ -189,6 +189,9 @@ func (funny *Funny) ChatHandler(conv *plotbot.Conversation, msg *plotbot.Message
 
 		conv.Reply(msg, "naming things, cache invalidation and off-by-1 errors are the two most difficult computer science problems")
 
+	} else if msg.Contains("in theory") {
+
+		conv.Reply(msg, "yeah, theory and practice perfectly match... in theory.")
 	}
 
 	return
