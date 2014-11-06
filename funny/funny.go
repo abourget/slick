@@ -42,6 +42,12 @@ func (funny *Funny) InitChatPlugin(bot *plotbot.Bot) {
 		"http://timmybeanbrain.files.wordpress.com/2012/07/07022012_04-01.jpg",
 	})
 
+	plotbot.RegisterStringList("dishes", []string{
+		"http://stream1.gifsoup.com/view6/4703823/monkey-doing-dishes-o.gif",
+		"http://s3-ec.buzzfed.com/static/enhanced/webdr06/2013/6/24/16/anigif_enhanced-buzz-9769-1372104764-13.gif",
+		"http://i.imgur.com/WIL27Br.gif",
+	})
+
 	bot.ListenFor(&plotbot.Conversation{
 		HandlerFunc: funny.ChatHandler,
 	})
@@ -192,6 +198,22 @@ func (funny *Funny) ChatHandler(conv *plotbot.Conversation, msg *plotbot.Message
 	} else if msg.Contains("in theory") {
 
 		conv.Reply(msg, "yeah, theory and practice perfectly match... in theory.")
+	} else if msg.Contains("dishes") {
+
+		conv.Reply(msg, plotbot.RandomString("dishes"))
+
+	} else if msg.Contains(" bean") {
+
+		conv.Reply(msg, "http://media3.giphy.com/media/c35RMDO6luMaQ/500w.gif")
+
+	} else if msg.Contains("steak") {
+
+		conv.Reply(msg, "http://media.tumblr.com/tumblr_me6r52h1md1r6nno1.gif")
+
+	} else if msg.ContainsAny([]string{"booze", "alcohol", "martini", " dog "}) {
+
+		conv.Reply(msg, "http://media2.giphy.com/media/ZmJBjPdd44gXS/200w.gif")
+
 	}
 
 	return
