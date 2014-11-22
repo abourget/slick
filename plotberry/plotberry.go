@@ -44,7 +44,7 @@ func (plotberry *PlotBerry) InitChatPlugin(bot *plotbot.Bot) {
 }
 
 func (plotberry *PlotBerry) ChatHandler(conv *plotbot.Conversation, msg *plotbot.Message) {
-	if msg.MentionsMe && msg.Contains("how many users") {
+	if msg.MentionsMe && msg.Contains("how many user") {
 		conv.Reply(msg, fmt.Sprintf("We got %d users!", plotberry.totalUsers))
 	}
 	return
