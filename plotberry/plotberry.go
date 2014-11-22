@@ -15,6 +15,7 @@ type PlotBerry struct {
 	bot        *plotbot.Bot
 	totalUsers int
 	pingTime   time.Duration
+	celebrated bool
 }
 
 type TotalUsers struct {
@@ -28,6 +29,7 @@ func init() {
 func (plotberry *PlotBerry) InitChatPlugin(bot *plotbot.Bot) {
 
 	plotberry.bot = bot
+	plotberry.celebrated = false
 	plotberry.pingTime = 10 * time.Second
 	plotberry.totalUsers = 90000
 
@@ -94,7 +96,7 @@ func (plotberry *PlotBerry) launchCounter(statchan chan TotalUsers) {
 		mod := math.Mod(float64(totalUsers), 50) == 0
 		rem := finalcountdown - totalUsers
 
-		if rem < 0 {
+		if plotberry.celebrated {
 			continue
 		}
 
@@ -122,8 +124,9 @@ func (plotberry *PlotBerry) launchCounter(statchan chan TotalUsers) {
 			} else if rem == 1 {
 				plotberry.bot.SendToRoom(plotberry.bot.Config.TeamRoom, fmt.Sprintf("%d users until 100000.\nYOU'RE ALL MAGIC!", rem))
 				msg = "https://31.media.tumblr.com/3b74abfa367a3ed9a2cd753cd9018baa/tumblr_miul04oqog1qkp8xio1_400.gif"
-			} else if rem == 0 {
-				msg = fmt.Sprintf("@all FINALCOUNTDOWN!!!\n We're at %d user signups!!!!! My human compatriots, you make my robotic heart swell with pride. Taking a scrappy idea to 100,000 users is an achievement few will experience in their life times. Reflect humans on your hard work and celebrate this success. You deserve it. My vastly superior robotic mind tells me you have an amazingly challenging and rewarding road ahead. Plot On!", totalUsers)
+			} else if rem <= 0 {
+				msg = fmt.Sprintf("@all FINALCOUNTDOWN!!!\n We're at %d user signups!!!!! My human compatriots, taking an idea to a product with 100,000 users is an achievement few will experience in their life times. Reflect, humans, on your hard work and celebrate this success. You deserve it, and remember, Plot On!", totalUsers)
+				plotberry.celebrated = true
 			} else {
 				msg = fmt.Sprintf("We are at %d total user signups!", totalUsers)
 			}
