@@ -118,7 +118,7 @@ func (plotberry *PlotBerry) launchCounter(statchan chan TotalUsers) {
 			} else if rem == 3 {
 				msg = fmt.Sprintf("%d... \n", rem)
 			} else if rem == 2 {
-				msg = fmt.Sprintf("%d humpa humpa\n", rem)
+				msg = fmt.Sprintf("%d more! humpa humpa\n", rem)
 			} else if rem == 1 {
 				plotberry.bot.SendToRoom(plotberry.bot.Config.TeamRoom, fmt.Sprintf("%d users until 100000.\nYOU'RE ALL MAGIC!", rem))
 				msg = "https://31.media.tumblr.com/3b74abfa367a3ed9a2cd753cd9018baa/tumblr_miul04oqog1qkp8xio1_400.gif"
