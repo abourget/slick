@@ -120,7 +120,8 @@ func (plotberry *PlotBerry) launchCounter(statchan chan TotalUsers) {
 			} else if rem == 2 {
 				msg = fmt.Sprintf("%d humpa humpa\n", rem)
 			} else if rem == 1 {
-				msg = fmt.Sprintf("%d users until 100000.\nYOU'RE ALL MAGIC!\n https://31.media.tumblr.com/3b74abfa367a3ed9a2cd753cd9018baa/tumblr_miul04oqog1qkp8xio1_400.gif", rem)
+				plotberry.bot.SendToRoom(plotberry.bot.Config.TeamRoom, fmt.Sprintf("%d users until 100000.\nYOU'RE ALL MAGIC!", rem))
+				msg = "https://31.media.tumblr.com/3b74abfa367a3ed9a2cd753cd9018baa/tumblr_miul04oqog1qkp8xio1_400.gif"
 			} else if rem == 0 {
 				msg = fmt.Sprintf("@all FINALCOUNTDOWN!!!\n We're at %d user signups!!!!! My human compatriots, you make my robotic heart swell with pride. Taking a scrappy idea to 100,000 users is an achievement few will experience in their life times. Reflect humans on your hard work and celebrate this success. You deserve it. My vastly superior robotic mind tells me you have an amazingly challenging and rewarding ahead. Plot On!", totalUsers)
 			} else {
