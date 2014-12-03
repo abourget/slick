@@ -76,6 +76,15 @@
    cd $GOPATH/src/github.com/plotly/plotbot/plotbot
    go build && ./plotbot
    ```
+   
+   If you are getting an error e.g. `../web/auth.go:11:2:` , try:
+   
+   ```
+   cd $GOPATH/src/github.com/golang/oauth2
+   git checkout 49f48241375b4e
+   ```
+   
+   
 
 * Inject static stuff in the binary with:
 
