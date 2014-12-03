@@ -26,9 +26,40 @@
 * Run "npm install":
 
    ```
-cd $GOPATH/src/github.com/plotly/plotbot/web
-npm install
-```
+   cd $GOPATH/src/github.com/plotly/plotbot/web
+   npm install
+   ```
+
+* Run "npm run build":
+
+   ```
+   cd $GOPATH/src/github.com/plotly/plotbot/web
+   npm run build
+   ```
+
+* Patch "https://github.com/tkawachi/hipchat":
+  > This is an unfortunate step --- someone will have to make a PR on
+  > tkawachi's module or fork it.
+
+   ```
+   cd $GOPATH/src/github.com/tkawachi/hipchat/xmpp
+   ```
+   Open `xmpp.go` and find the codeblock that looks like:
+   ```go
+   func (c *Conn) UseTLS() {
+       c.outgoing = tls.Client(c.outgoing, nil)
+       c.incoming = xml.NewDecoder(c.outgoing)
+    }
+   ```
+   and make it look like:
+   ```go
+   func (c *Conn) UseTLS() {
+       c.outgoing = tls.Client(c.outgoing, &tls.Config{ServerName: "chat.hipchat.com"})
+       c.incoming = xml.NewDecoder(c.outgoing)
+    }
+   ```
+
+
 
 ## Local build and install
 
@@ -37,16 +68,16 @@ npm install
 * Build with:
 
    ```
-cd $GOPATH/src/github.com/plotly/plotbot/plotbot
-go build && ./plotbot
-```
+   cd $GOPATH/src/github.com/plotly/plotbot/plotbot
+   go build && ./plotbot
+   ```
 
 * Inject static stuff in the binary with:
 
    ```
-cd $GOPATH/src/github.com/plotly/plotbot/web
-rice append --exec=../plotbot/plotbot
-```
+   cd $GOPATH/src/github.com/plotly/plotbot/web
+   rice append --exec=../plotbot/plotbot
+   ```
 
 * Enjoy! You can deploy the binary and it has all the assets in itself now.
 
