@@ -84,6 +84,7 @@
    git checkout 49f48241375b4e
    ```
    
+   and build again.
    
 
 * Inject static stuff in the binary with:
