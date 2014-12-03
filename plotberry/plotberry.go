@@ -29,9 +29,9 @@ func init() {
 func (plotberry *PlotBerry) InitChatPlugin(bot *plotbot.Bot) {
 
 	plotberry.bot = bot
-	plotberry.celebrated = false
+	plotberry.celebrated = true
 	plotberry.pingTime = 10 * time.Second
-	plotberry.totalUsers = 90000
+	plotberry.totalUsers = 100001
 
 	statchan := make(chan TotalUsers, 100)
 
@@ -49,7 +49,6 @@ func (plotberry *PlotBerry) ChatHandler(conv *plotbot.Conversation, msg *plotbot
 	}
 	return
 }
-
 
 func getplotberry () (*TotalUsers, error) {
 
