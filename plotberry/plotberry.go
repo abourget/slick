@@ -29,9 +29,9 @@ func init() {
 func (plotberry *PlotBerry) InitChatPlugin(bot *plotbot.Bot) {
 
 	plotberry.bot = bot
-	plotberry.celebrated = false
+	plotberry.celebrated = true
 	plotberry.pingTime = 10 * time.Second
-	plotberry.totalUsers = 90000
+	plotberry.totalUsers = 100001
 
 	statchan := make(chan TotalUsers, 100)
 
@@ -50,35 +50,44 @@ func (plotberry *PlotBerry) ChatHandler(conv *plotbot.Conversation, msg *plotbot
 	return
 }
 
+func getplotberry () (*TotalUsers, error) {
+
+	var data TotalUsers
+
+	resp, err := http.Get("https://plot.ly/v0/plotberries")
+	defer resp.Body.Close()
+
+	if err != nil {
+		return nil, err
+	}
+
+	body, err := ioutil.ReadAll(resp.Body)
+	if err != nil {
+		return nil, err
+	}
+
+	err = json.Unmarshal(body, &data)
+	if err != nil {
+		return nil, err
+	}
+
+	return &data, nil
+}
+
 func (plotberry *PlotBerry) launchWatcher(statchan chan TotalUsers) {
 
 	for {
-		var data TotalUsers
-
 		time.Sleep(plotberry.pingTime)
 
-		resp, err := http.Get("https://plot.ly/v0/plotberries")
-		defer resp.Body.Close()
+		data, err := getplotberry()
 
 		if err != nil {
-			log.Fatalf("could not fetch: %v", err)
-			continue
-		}
-
-		body, err := ioutil.ReadAll(resp.Body)
-		if err != nil {
-			log.Fatalf("could not parse plotberry response body")
-			continue
-		}
-
-		err = json.Unmarshal(body, &data)
-		if err != nil {
-			log.Fatalf("could not parse plotberry return json")
+			log.Print(err)
 			continue
 		}
 
 		if data.Plotberries != plotberry.totalUsers {
-			statchan <- data
+			statchan <- *data
 		}
 
 		plotberry.totalUsers = data.Plotberries
