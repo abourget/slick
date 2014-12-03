@@ -11,6 +11,11 @@
 
     http://blog.labix.org/2013/06/15/in-flight-deb-packages-of-go
 
+* Set your `GOPATH`:
+
+    On Ubuntu see [here](http://stackoverflow.com/questions/21001387/how-do-i-set-the-gopath-environment-variable-on-ubuntu-what-file-must-i-edit/21012349#21012349)
+
+
 * Install Ubuntu dependencies needed by various steps in this document:
 
     ```sudo apt-get install mercurial zip```
