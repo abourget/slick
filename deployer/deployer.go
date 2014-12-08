@@ -39,6 +39,8 @@ type Deployer struct {
 
 type DeployerConfig struct {
 	RepositoryPath string `json:"repository_path"`
+	AnnounceRoom string `json:"announce_room"`
+	ProgressRoom string `json:"progress_room"`
 }
 
 func init() {
@@ -187,7 +189,7 @@ func (dep *Deployer) handleDeploy(params *DeployParams) {
 	//
 
 	bot := dep.bot
-	bot.Notify("Plotly", "purple", "text", fmt.Sprintf("[deployer] Launching: %s", params), true)
+	bot.Notify(dep.config.AnnounceRoom, "purple", "text", fmt.Sprintf("[deployer] Launching: %s", params), true)
 	dep.replyPersonnally(params, bot.WithMood("deploying, my friend", "deploying, yyaaahhhOooOOO!"))
 
 	if params.Environment == "prod" {
@@ -263,7 +265,7 @@ func (dep *Deployer) manageKillProcess(pty *os.File) {
 func (dep *Deployer) pubsubForwardReply() {
 	for msg := range dep.pubsub.Sub("ansible-line") {
 		line := msg.(string)
-		dep.bot.SendToRoom("123823_devops", line)
+		dep.bot.SendToRoom(dep.config.ProgressRoom, line)
 	}
 }
 
