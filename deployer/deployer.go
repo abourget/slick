@@ -1,15 +1,5 @@
 package deployer
 
-/*
-  TODO:
-  * hook "git pull" on the "deploy/" repo before doing anything
-    * report any error
-  * start by having something that runs on prod
-  * report on "Plotly" that someone runs deploy
-  * report to "Devops" the full log
-    * also, to any listening Websocket
-*/
-
 import (
 	"bufio"
 	"fmt"
