@@ -32,6 +32,8 @@ type DeployerConfig struct {
 	AnnounceRoom string `json:"announce_room"`
 	ProgressRoom string `json:"progress_room"`
 	DefaultDeploymentBranch string `json:"default_deployment_branch"`
+	DefaultStreambedBranch string `json:"default_streambed_branch"`
+	AllowedProdBranches []string `json:"allowed_prod_branches"`
 }
 
 func init() {
@@ -137,10 +139,10 @@ func (dep *Deployer) ChatHandler(conv *plotbot.Conversation, msg *plotbot.Messag
 		}
 		return
 	} else if msg.Contains("in the pipe") {
-		url := dep.getCompareUrl("prod", "master")
+		url := dep.getCompareUrl("prod", dep.config.DefaultStreambedBranch)
 		mention := msg.FromUser.MentionName
 		if url != "" {
-			conv.Reply(msg, fmt.Sprintf("@%s in master, waiting to reach prod: %s", mention, url))
+			conv.Reply(msg, fmt.Sprintf("@%s in %s branch, waiting to reach prod: %s", mention, dep.config.DefaultStreambedBranch, url))
 		} else {
 			conv.Reply(msg, fmt.Sprintf("@%s couldn't get current revision on prod", mention))
 		}
@@ -165,14 +167,25 @@ func (dep *Deployer) handleDeploy(params *DeployParams) {
 	tags := params.ParsedTags()
 	cmdArgs := []string{"ansible-playbook", "-i", hostsFile, playbookFile, "--tags", tags}
 
-	if params.Environment == "prod" {
-		if params.Branch != "" {
-			dep.pubLine(fmt.Sprintf(`[deployer] WARN: Branch specified (%s).  Ignoring while pushing to "prod"`, params.Branch))
+	if params.Branch != "" {
+		if params.Environment == "prod" {
+			ok := false
+			for _, branch := range dep.config.AllowedProdBranches {
+				if branch == params.Branch {
+					ok = true
+					break
+				}
+			}
+			if !ok {
+				errorMsg := fmt.Sprintf("%s is not a legal streambed branch for prod.  Aborting.", params.Branch)
+				dep.pubLine(fmt.Sprintf("[deployer] %s", errorMsg))
+				dep.replyPersonnally(params, errorMsg)
+				return
+			}
 		}
+		cmdArgs = append(cmdArgs, "-e", fmt.Sprintf("streambed_pull_revision=origin/%s", params.Branch))
 	} else {
-		if params.Branch != "" {
-			cmdArgs = append(cmdArgs, "-e", fmt.Sprintf("streambed_pull_revision=origin/%s", params.Branch))
-		}
+		params.Branch = dep.config.DefaultStreambedBranch
 	}
 
 	//
