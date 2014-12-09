@@ -25,6 +25,7 @@ type Deployer struct {
 	config     *DeployerConfig
 	pubsub     *pubsub.PubSub
 	internal   *internal.InternalAPI
+	lockedBy   string
 }
 
 type DeployerConfig struct {
@@ -105,6 +106,10 @@ func (dep *Deployer) ChatHandler(conv *plotbot.Conversation, msg *plotbot.Messag
 	}
 
 	if match := deployFormat.FindStringSubmatch(msg.Body); match != nil {
+		if dep.lockedBy != "" {
+			conv.Reply(msg, fmt.Sprintf("Deployment was locked by %s.  Unlock with '%s, unlock deployment' if they're OK with it.", dep.lockedBy, dep.bot.Config.Mention))
+			return
+		}
 		if dep.runningJob != nil {
 			params := dep.runningJob.params
 			conv.Reply(msg, fmt.Sprintf("@%s Deploy currently running: %s", msg.FromUser.MentionName, params))
@@ -146,7 +151,14 @@ func (dep *Deployer) ChatHandler(conv *plotbot.Conversation, msg *plotbot.Messag
 		} else {
 			conv.Reply(msg, fmt.Sprintf("@%s couldn't get current revision on prod", mention))
 		}
-
+	} else if msg.Contains("unlock deploy") {
+		dep.lockedBy = ""
+		conv.Reply(msg, fmt.Sprintf("Deployment is now unlocked."))
+		bot.Notify(dep.config.AnnounceRoom, "purple", "text", fmt.Sprintf("%s has unlocked deployment", msg.FromUser.Name), true)
+	} else if msg.Contains("lock deploy") {
+		dep.lockedBy = msg.FromUser.Name
+		conv.Reply(msg, fmt.Sprintf("Deployment is now locked.  Unlock with '%s, unlock deployment' ASAP!", dep.bot.Config.Mention))
+		bot.Notify(dep.config.AnnounceRoom, "purple", "text", fmt.Sprintf("%s has locked deployment", dep.lockedBy), true)
 	} else if msg.Contains("deploy") || msg.Contains("push to") {
 		conv.Reply(msg, "Usage: plot, [please|insert reverence] deploy[ <branch-name>] to <environment>[ using <deployment-branch>][, tags: <ansible-playbook tags>, ..., ...]")
 	}
