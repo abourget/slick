@@ -163,12 +163,12 @@ func (dep *Deployer) ChatHandler(conv *plotbot.Conversation, msg *plotbot.Messag
 func (dep *Deployer) handleDeploy(params *DeployParams) {
 	deploymentBranch := params.ParsedDeploymentBranch(dep.config.DefaultDeploymentBranch)
 	if err := dep.pullDeployRepo(deploymentBranch); err != nil {
-		errorMsg := fmt.Sprintf("Unable to pull from deploy/ repo: %s. Aborting.", err)
+		errorMsg := fmt.Sprintf("Unable to pull from deployment/ repo: %s. Aborting.", err)
 		dep.pubLine(fmt.Sprintf("[deployer] %s", errorMsg))
 		dep.replyPersonnally(params, errorMsg)
 		return
 	} else {
-		dep.pubLine(fmt.Sprintf("[deployer] Using %s deploy/ branch (latest revision)", deploymentBranch))
+		dep.pubLine(fmt.Sprintf("[deployer] Using %s deployment/ branch (latest revision)", deploymentBranch))
 	}
 	hostsFile := fmt.Sprintf("hosts_%s", params.Environment)
 	playbookFile := fmt.Sprintf("playbook_%s.yml", params.Environment)
