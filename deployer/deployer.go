@@ -160,7 +160,7 @@ func (dep *Deployer) ChatHandler(conv *plotbot.Conversation, msg *plotbot.Messag
 		conv.Reply(msg, fmt.Sprintf("Deployment is now locked.  Unlock with '%s, unlock deployment' ASAP!", dep.bot.Config.Mention))
 		bot.Notify(dep.config.AnnounceRoom, "purple", "text", fmt.Sprintf("%s has locked deployment", dep.lockedBy), true)
 	} else if msg.Contains("deploy") || msg.Contains("push to") {
-		conv.Reply(msg, "Usage: plot, [please|insert reverence] deploy[ <branch-name>] to <environment>[ using <deployment-branch>][, tags: <ansible-playbook tags>, ..., ...]")
+		conv.Reply(msg, fmt.Sprintf("Usage: %s, [please|insert reverence] deploy[ <branch-name>] to <environment>[ using <deployment-branch>][, tags: <ansible-playbook tags>, ..., ...]", dep.bot.Config.Mention))
 	}
 }
 
