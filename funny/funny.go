@@ -167,12 +167,6 @@ func (funny *Funny) ChatHandler(conv *plotbot.Conversation, msg *plotbot.Message
 		conv.Reply(msg, "https://i.chzbgr.com/maxW500/6696664320/hFC69678C.gif")
 		return
 
-	} else if msg.ContainsAny([]string{"gotta go", "have to go", "uroclub"}) {
-
-		conv.Reply(msg, "When you gotta go, you gotta go")
-		conv.Reply(msg, "https://i.chzbgr.com/maxW250/7159139072/hB63619C4.gif")
-		return
-
 	} else if msg.ContainsAny([]string{"it's odd", "it is odd", "that's odd", "that is odd", "it's awkward", "it is awkward", "that's awkward", "that is awkward"}) {
 
 		term := "awkward"
@@ -213,6 +207,10 @@ func (funny *Funny) ChatHandler(conv *plotbot.Conversation, msg *plotbot.Message
 	} else if msg.ContainsAny([]string{"booze", "alcohol", "martini", " dog "}) {
 
 		conv.Reply(msg, "http://media2.giphy.com/media/ZmJBjPdd44gXS/200w.gif")
+
+	} else if msg.ContainsAny([]string{"internet", " tube "}) {
+
+		conv.Reply(msg, "https://pbs.twimg.com/media/By0J3YHCcAA4UBo.jpg:large")
 
 	}
 
