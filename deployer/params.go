@@ -28,9 +28,9 @@ func (p *DeployParams) ParsedTags() string {
 
 // ParsedDeploymentBranch returns the default, or a user-specified branch name
 // used in the `deployment/` repo.
-func (p *DeployParams) ParsedDeploymentBranch() string {
+func (p *DeployParams) ParsedDeploymentBranch(default_branch string) string {
 	if p.DeploymentBranch == "" {
-		return "ansible"
+		return default_branch
 	} else {
 		return p.DeploymentBranch
 	}
