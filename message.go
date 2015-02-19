@@ -4,7 +4,7 @@ import (
 	"fmt"
 	"strings"
 
-	"github.com/tkawachi/hipchat"
+	"github.com/plotly/hipchat"
 )
 
 type BotReply struct {
@@ -15,9 +15,9 @@ type BotReply struct {
 type Message struct {
 	*hipchat.Message
 	MentionsMe bool
-	FromMe      bool
-	FromUser    *User
-	FromRoom    *Room
+	FromMe     bool
+	FromUser   *User
+	FromRoom   *Room
 }
 
 func (msg *Message) IsPrivate() bool {
