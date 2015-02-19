@@ -12,8 +12,8 @@ import (
 
 	"github.com/garyburd/redigo/redis"
 	"github.com/jmcvetta/napping"
+	"github.com/plotly/hipchat"
 	"github.com/plotly/plotbot/hipchatv2"
-	"github.com/tkawachi/hipchat"
 )
 
 const (

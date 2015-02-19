@@ -4,7 +4,7 @@ import (
 	"testing"
 	"time"
 
-	"github.com/tkawachi/hipchat"
+	"github.com/plotly/hipchat"
 )
 
 func TestConversationCheckParams(t *testing.T) {
@@ -49,7 +49,6 @@ func TestDefeaultFilter(t *testing.T) {
 		El{&Conversation{
 			WithUser: &User{JID: "another_user"},
 		}, false},
-
 	}
 
 	for i, el := range tests {
