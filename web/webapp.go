@@ -93,19 +93,15 @@ func (webapp *Webapp) ServeWebRequests() {
 // }
 
 func configureWebapp(conf *WebappConfig) {
-	var err error
-	oauthCfg, err = oauth2.NewConfig(
-		&oauth2.Options{
-			ClientID:     conf.ClientID,
-			ClientSecret: conf.ClientSecret,
-			RedirectURL:  conf.OAuthBaseURL + "/oauth2callback",
-			Scopes:       []string{"openid", "profile", "email", "https://www.googleapis.com/auth/userinfo.profile"},
+	oauthCfg = &oauth2.Config{
+		ClientID:     conf.ClientID,
+		ClientSecret: conf.ClientSecret,
+		RedirectURL:  conf.OAuthBaseURL + "/oauth2callback",
+		Scopes:       []string{"openid", "profile", "email", "https://www.googleapis.com/auth/userinfo.profile"},
+		Endpoint: oauth2.Endpoint{
+			AuthURL:  "https://accounts.google.com/o/oauth2/auth",
+			TokenURL: "https://accounts.google.com/o/oauth2/token",
 		},
-		"https://accounts.google.com/o/oauth2/auth",
-		"https://accounts.google.com/o/oauth2/token",
-	)
-	if err != nil {
-		log.Fatal("oauth2.NewConfig error: ", err)
 	}
 }
 
