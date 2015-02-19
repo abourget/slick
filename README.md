@@ -58,15 +58,14 @@
         
         * Install godep: 
         
-           ```go get github.com/tools/godep```
+           go get github.com/tools/godep
            
         * Now build using the godep tool as follows:
         
-           ```
            cd $GOPATH/src/github.com/plotly/plotbot/plotbot
            godep go build && ./plotbot
-           ```
-           
+              
+                   
 * Inject static stuff (for the web app) in the binary with:
 
    ```
