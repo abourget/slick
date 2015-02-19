@@ -158,14 +158,7 @@ gulp.task('git-rev', function(cb) {
 
 // Defaults
 
-gulp.task('default', ['watch']);
-
-gulp.task('watch', ['build'], function() {
-    gulp.watch(['src/index.html'], ['index'])
-    gulp.watch(['src/scss/**/*.scss'], ['sass', 'index'])
-    gulp.watch(['src/js/*.js'], ['app', 'index'])
-    gulp.watch(['src/tpl/*.html'], ['template_cache', 'index'])
-});
+gulp.task('default', ['build']);
 
 // Helpers
 
