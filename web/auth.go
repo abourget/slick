@@ -33,7 +33,7 @@ func (mw *OAuthMiddlware) ServeHTTP(w http.ResponseWriter, r *http.Request) {
 	if err != nil {
 		if r.URL.Path == "/" {
 			log.Println("Not logged in", err)
-			url := oauthCfg.AuthCodeURL("", "online", "auto")
+			url := oauthCfg.AuthCodeURL("", oauth2.AccessTypeOnline, oauth2.ApprovalForce)
 			http.Redirect(w, r, url, http.StatusFound)
 		} else {
 			w.WriteHeader(http.StatusForbidden)
@@ -62,14 +62,14 @@ func handleOAuth2Callback(w http.ResponseWriter, r *http.Request) {
 func doOAuth2Roundtrip(w http.ResponseWriter, r *http.Request) (*GoogleUserProfile, error) {
 	code := r.FormValue("code")
 
-	t, err := oauthCfg.NewTransportWithCode(code)
+	t, err := oauthCfg.Exchange(oauth2.NoContext, code)
 	if err != nil {
 		log.Println("OAuth2: ", err)
 		return nil, fmt.Errorf("Error processing token.  Did you try to refresh ?")
 	}
 
 	//now get user data based on the Transport which has the token
-	client := http.Client{Transport: t}
+	client := oauthCfg.Client(oauth2.NoContext, t)
 	resp, err := client.Get(oauthProfileInfoURL)
 	if err != nil {
 		log.Fatal("Fatal error After OAuth2: ", err)
