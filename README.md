@@ -5,8 +5,6 @@
 
 ## Configuration
 
-(Must be done to run Plotbot locally as well as to deploy it via Ansible.)
-
 * Install your Go environment, under Ubuntu, use this method:
 
     http://blog.labix.org/2013/06/15/in-flight-deb-packages-of-go
@@ -56,11 +54,11 @@
 * Note: It is also possible to build plotbot using the stable dependencies found
         within the Godeps directory. This can be done as follows: 
         
-        * Install godep: 
+        Install godep: 
         
            go get github.com/tools/godep
            
-        * Now build using the godep tool as follows:
+        Now build using the godep tool as follows:
         
            cd $GOPATH/src/github.com/plotly/plotbot/plotbot
            godep go build && ./plotbot
