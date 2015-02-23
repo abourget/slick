@@ -3,7 +3,9 @@ package main
 import (
 	"flag"
 	"github.com/plotly/plotbot"
+	"io/ioutil"
 	"os"
+	"strconv"
 
 	_ "github.com/plotly/plotbot/rewarder"
 
@@ -28,5 +30,17 @@ func main() {
 	flag.Parse()
 
 	bot := plotbot.NewHipbot(*configFile)
+
+	var serverConf struct {
+		Server struct {
+			Pidfile string `json:"pid_file"`
+		}
+	}
+
+	bot.LoadConfig(&serverConf)
+	pid := os.Getpid()
+	pidb := []byte(strconv.Itoa(pid))
+	ioutil.WriteFile(serverConf.Server.Pidfile, pidb, 0755)
+
 	bot.Run()
 }
