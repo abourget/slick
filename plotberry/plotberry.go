@@ -55,11 +55,11 @@ func getplotberry () (*TotalUsers, error) {
 	var data TotalUsers
 
 	resp, err := http.Get("https://plot.ly/v0/plotberries")
-	defer resp.Body.Close()
-
 	if err != nil {
 		return nil, err
 	}
+	
+	defer resp.Body.Close()
 
 	body, err := ioutil.ReadAll(resp.Body)
 	if err != nil {
