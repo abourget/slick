@@ -105,7 +105,7 @@ func (bot *Bot) Run() {
 		log.Println("Connecting client...")
 		err := bot.connectClient()
 		if err != nil {
-			log.Println("  `- Failed: ", err)
+			log.Println("Error in connectClient(): ", err)
 			time.Sleep(3 * time.Second)
 			continue
 		}
@@ -202,7 +202,6 @@ func (bot *Bot) connectClient() (err error) {
 	bot.client, err = hipchat.NewClient(
 		bot.Config.Username, bot.Config.Password, resource)
 	if err != nil {
-		log.Println("Error in connectClient(): ", err)
 		return
 	}
 
