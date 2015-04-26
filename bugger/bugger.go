@@ -54,7 +54,7 @@ func (r *bugReporter) printReport(days int) (report string) {
 func (r *bugReporter) printCount(days int) (count string) {
 
 	dayheader := fmt.Sprintf(" BUG COUNT FOR LAST %d DAYS ", days) // 20 spaces
-	bar := "********************"
+	bar := "*************"
 
 	count = fmt.Sprintf("/quote " + bar + dayheader + bar + "\n")
 	count += fmt.Sprintf("|%-30s|%-20s|\n", "team member", "number squashed")
