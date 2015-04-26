@@ -125,13 +125,13 @@ func (ghclient *Client) DoSearchQuery(query SearchQuery) ([]IssueItem, error) {
 	return payload.Items, nil
 }
 
-func (ghclient *Client) DoEventQuery(issueList []IssueItem, issueChan chan IssueItem) {
+func (ghclient *Client) DoEventQuery(issueList []IssueItem, repo string, issueChan chan IssueItem) {
 
 	defer close(issueChan)
 
 	for _, issue := range issueList {
 
-		url := "https://api.github.com/repos/plotly/streambed/issues/" + strconv.Itoa(issue.Number) + "/events"
+		url := "https://api.github.com/repos/" + repo + "/issues/" + strconv.Itoa(issue.Number) + "/events"
 		body, err := ghclient.Get(url)
 		if err != nil {
 			log.Print(err)

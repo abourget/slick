@@ -69,7 +69,7 @@ func (bugger *Bugger) getBugReport(days int) string {
 	 * Get an array of issues matching Filters
 	 */
 	issueChan := make(chan github.IssueItem, 1)
-	go bugger.ghclient.DoEventQuery(issueList, issueChan)
+	go bugger.ghclient.DoEventQuery(issueList, repo, issueChan)
 
 	reporter := bugReport{}
 
