@@ -107,7 +107,7 @@ func (bugger *Bugger) ChatHandler(conv *plotbot.Conversation, msg *plotbot.Messa
 
 	if msg.MentionsMe && msg.Contains("bug report") {
 
-		re := regexp.MustCompile(".*last (\\d+)?\\s?(day|week).*")
+		re := regexp.MustCompile(".*(?:last|past) (\\d+)?\\s?(day|week).*")
 		hits := re.FindStringSubmatch(msg.Body)
 
 		var days, weeks int
