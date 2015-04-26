@@ -44,9 +44,9 @@ type IssueEvent struct {
 }
 
 type Conf struct {
-	Authtoken  string
-	Repos      []string
-	GitHipName map[string]string
+	Authtoken      string
+	Repos          []string
+	Github2Hipchat map[string]string
 }
 
 type Client struct {
