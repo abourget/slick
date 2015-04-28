@@ -182,7 +182,7 @@ func (bugger *Bugger) messageReport(days int, msg *plotbot.Message, conv *plotbo
 		return
 	}
 
-	conv.Reply(msg, bugger.bot.WithMood("Buildng report - one moment please", "Whaooo! Pinging those githubbers - Let's do this!"))
+	conv.Reply(msg, bugger.bot.WithMood("Building report - one moment please", "Whaooo! Pinging those githubbers - Let's do this!"))
 
 	conv.Reply(msg, genReport())
 
