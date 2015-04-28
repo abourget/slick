@@ -1,3 +1,4 @@
+// pulled from this anonymous playground http://play.golang.org/p/x4CoUsJ5tK
 package util
 
 import "sort"
