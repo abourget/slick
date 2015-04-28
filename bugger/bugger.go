@@ -54,10 +54,10 @@ func (r *bugReporter) printReport(days int) (report string) {
 func (r *bugReporter) printCount(days int) (count string) {
 
 	dayheader := fmt.Sprintf(" BUG COUNT FOR LAST %d DAYS ", days) // 20 spaces
-	bar := "*************"
+	bar := "***"
 
 	count = fmt.Sprintf("/quote " + bar + dayheader + bar + "\n")
-	count += fmt.Sprintf("|%-30s|%-20s|\n", "team member", "number squashed")
+	count += fmt.Sprintf("|%-20s|%-10s|\n", "team member", "# squashed")
 
 	bugcount := make(map[string]int)
 
@@ -66,7 +66,7 @@ func (r *bugReporter) printCount(days int) (count string) {
 	}
 
 	for _, ghname := range util.SortedKeys(bugcount) {
-		count += fmt.Sprintf("|%-30s|%-20d|\n", ghname, bugcount[ghname])
+		count += fmt.Sprintf("|%-20s|%-10d|\n", ghname, bugcount[ghname])
 	}
 
 	total := 0
@@ -74,7 +74,7 @@ func (r *bugReporter) printCount(days int) (count string) {
 		total += value
 	}
 
-	count += fmt.Sprintf("|%-30s|%-20d|\n", "TOTAL", total)
+	count += fmt.Sprintf("|%-20s|%-10d|\n", "TOTAL", total)
 
 	return
 
