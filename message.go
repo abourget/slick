@@ -46,6 +46,20 @@ func (msg *Message) ContainsAny(strs []string) bool {
 	return false
 }
 
+func (msg *Message) ContainsAll(strs []string) bool {
+
+	lowerStr := strings.ToLower(msg.Body)
+
+	for _, s := range strs {
+		lowerInput := strings.ToLower(s)
+
+		if !strings.Contains(lowerStr, lowerInput) {
+			return false
+		}
+	}
+	return true
+}
+
 func (msg *Message) Contains(s string) bool {
 	lowerStr := strings.ToLower(msg.Body)
 	lowerInput := strings.ToLower(s)
