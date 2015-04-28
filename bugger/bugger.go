@@ -69,6 +69,13 @@ func (r *bugReporter) printCount(days int) (count string) {
 		count += fmt.Sprintf("|%-30s|%-20d|\n", ghname, bugcount[ghname])
 	}
 
+	total := 0
+	for _, value := range bugcount {
+		total += value
+	}
+
+	count += fmt.Sprintf("|%-30s|%-20d|\n", "TOTAL", total)
+
 	return
 
 }
