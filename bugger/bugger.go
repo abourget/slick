@@ -129,37 +129,62 @@ func (bugger *Bugger) InitChatPlugin(bot *plotbot.Bot) {
 
 func (bugger *Bugger) ChatHandler(conv *plotbot.Conversation, msg *plotbot.Message) {
 
-	if msg.MentionsMe && msg.Contains("bug report") {
+	if !msg.MentionsMe {
+		return
+	}
+
+	if msg.ContainsAny([]string{"bug report", "bug count"}) && msg.ContainsAny([]string{"how", "help"}) {
+
+		var report string
+
+		if msg.Contains("bug report") {
+			report = "bug report"
+		} else {
+			report = "bug count"
+		}
+		mention := bugger.bot.Config.Mention
+
+		conv.Reply(msg, fmt.Sprintf(
+			`Usage: %s, [give me a | insert demand]  <%s>  [from the | syntax filler] [last | past] [n] [days | weeks]
+examples: %s, please give me a %s over the last 5 days
+%s, produce a %s   (7 day default)
+%s, I want a %s from the past 2 weeks
+%s, %s from the past week`, mention, report, mention, report, mention, report, mention, report, mention, report))
+
+	} else if msg.Contains("bug report") {
 
 		days := getDaysFromQuery(msg.Body)
 
-		if days > 31 {
-			conv.Reply(msg, fmt.Sprintf("Whaoz, %d is too much data to compile - well maybe not, I am just scared", days))
-			return
-		}
+		bugger.messageReport(days, msg, conv, func() string {
+			reporter := bugger.makeBugReporter(days)
+			return reporter.printReport(days)
+		})
 
-		conv.Reply(msg, fmt.Sprintf("hang on - let me ping those github kids"))
-
-		reporter := bugger.makeBugReporter(days)
-		conv.Reply(msg, reporter.printReport(days))
-
-	} else if msg.MentionsMe && msg.Contains("bug count") {
+	} else if msg.Contains("bug count") {
 
 		days := getDaysFromQuery(msg.Body)
 
-		if days > 31 {
-			conv.Reply(msg, fmt.Sprintf("Whaoz, %d is too much data to compile - well maybe not, I am just scared", days))
-			return
-		}
+		bugger.messageReport(days, msg, conv, func() string {
+			reporter := bugger.makeBugReporter(days)
+			return reporter.printCount(days)
+		})
 
-		conv.Reply(msg, fmt.Sprintf("hang on - let me ping those github kids"))
-
-		reporter := bugger.makeBugReporter(days)
-
-		conv.Reply(msg, reporter.printCount(days))
 	}
 
 	return
+
+}
+
+func (bugger *Bugger) messageReport(days int, msg *plotbot.Message, conv *plotbot.Conversation, genReport func() string) {
+
+	if days > 31 {
+		conv.Reply(msg, fmt.Sprintf("Whaoz, %d is too much data to compile - well maybe not, I am just scared", days))
+		return
+	}
+
+	conv.Reply(msg, bugger.bot.WithMood("Buildng report - one moment please", "Whaooo! Pinging those githubbers - Let's do this!"))
+
+	conv.Reply(msg, genReport())
 
 }
 
