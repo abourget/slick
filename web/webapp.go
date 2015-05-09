@@ -9,11 +9,11 @@ import (
 
 	"github.com/GeertJohan/go.rice"
 	"github.com/codegangsta/negroni"
-	"github.com/golang/oauth2"
 	"github.com/gorilla/context"
 	"github.com/gorilla/mux"
 	"github.com/gorilla/sessions"
 	"github.com/plotly/plotbot"
+	"golang.org/x/oauth2"
 )
 
 var web *Webapp
@@ -30,7 +30,7 @@ type Webapp struct {
 
 type WebappConfig struct {
 	Listen            string `json:"listen"`
-	OAuthBaseURL      string `json:"oauth_base_url"`
+	RedirectURL       string `json:"oauth_base_url"`
 	ClientID          string `json:"client_id"`
 	ClientSecret      string `json:"client_secret"`
 	RestrictDomain    string `json:"restrict_domain"`
@@ -96,7 +96,7 @@ func configureWebapp(conf *WebappConfig) {
 	oauthCfg = &oauth2.Config{
 		ClientID:     conf.ClientID,
 		ClientSecret: conf.ClientSecret,
-		RedirectURL:  conf.OAuthBaseURL + "/oauth2callback",
+		RedirectURL:  conf.RedirectURL + "/oauth2callback",
 		Scopes:       []string{"openid", "profile", "email", "https://www.googleapis.com/auth/userinfo.profile"},
 		Endpoint: oauth2.Endpoint{
 			AuthURL:  "https://accounts.google.com/o/oauth2/auth",
