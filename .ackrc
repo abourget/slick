@@ -1,0 +1,16 @@
+--type-set=golang=.go
+
+# ack config, see http://beyondgrep.com/documentation/ack-2.12-man.html
+--ignore-file=ext:orig
+--ignore-file=ext:log
+--ignore-file=ext:svg
+--ignore-file=is:.coverage
+--ignore-file=match:/-bundle.js$/
+--ignore-directory=is:dist
+--ignore-directory=is:htmlcov
+--ignore-directory=is:build
+--ignore-directory=is:plugins
+--ignore-directory=is:bower
+--ignore-directory=is:jwplayer
+--ignore-directory=is:site-packages
+--ignore-directory=is:Godeps

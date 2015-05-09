@@ -1,6 +1,6 @@
 {
 	"ImportPath": "github.com/plotly/plotbot/plotbot",
-	"GoVersion": "go1.3.3",
+	"GoVersion": "go1.4",
 	"Deps": [
 		{
 			"ImportPath": "bitbucket.org/kardianos/osext",
@@ -26,16 +26,8 @@
 			"Rev": "4de5c18ca1fc5294fee64721094ca90c46d26405"
 		},
 		{
-			"ImportPath": "github.com/garyburd/redigo/internal",
-			"Rev": "785e0ca9319196b94fd61abd4c9eab5c11777377"
-		},
-		{
 			"ImportPath": "github.com/garyburd/redigo/redis",
 			"Rev": "785e0ca9319196b94fd61abd4c9eab5c11777377"
-		},
-		{
-			"ImportPath": "github.com/golang/oauth2",
-			"Rev": "36fb42e1e88262b05ae676ce0085dd73fd66abfd"
 		},
 		{
 			"ImportPath": "github.com/gorilla/context",
@@ -75,6 +67,10 @@
 		{
 			"ImportPath": "golang.org/x/net/context",
 			"Rev": "947224908606a5aa6af4427c3a2cea51387aa38a"
+		},
+		{
+			"ImportPath": "golang.org/x/oauth2",
+			"Rev": "2159a4568433098650737847e3b175db37178b7d"
 		}
 	]
 }
