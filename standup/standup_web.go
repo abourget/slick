@@ -1,7 +1,6 @@
 package standup
 
 import (
-	"encoding/json"
 	"fmt"
 	"net/http"
 
@@ -10,23 +9,23 @@ import (
 )
 
 func (standup *Standup) InitWebPlugin(bot *plotbot.Bot, privRouter *mux.Router, pubRouter *mux.Router) {
-	privRouter.HandleFunc("/plugins/standup.json", func(w http.ResponseWriter, r *http.Request) {
-		data := struct {
-			Users []*UserData
-		}{
-			Users: make([]*UserData, 0),
-		}
-		for _, value := range *standup.data {
-			data.Users = append(data.Users, value)
-		}
+	// privRouter.HandleFunc("/plugins/standup.json", func(w http.ResponseWriter, r *http.Request) {
+	// 	data := struct {
+	// 		Users []*StandupUser
+	// 	}{
+	// 		Users: make([]*StandupUser, 0),
+	// 	}
+	// 	for _, value := range *standup.data {
+	// 		data.Users = append(data.Users, value)
+	// 	}
 
-		w.Header().Set("Content-Type", "application/json")
+	// 	w.Header().Set("Content-Type", "application/json")
 
-		err := json.NewEncoder(w).Encode(data)
-		if err != nil {
-			webReportError(w, "Error encoding data", err)
-		}
-	})
+	// 	err := json.NewEncoder(w).Encode(data)
+	// 	if err != nil {
+	// 		webReportError(w, "Error encoding data", err)
+	// 	}
+	// })
 }
 
 func webReportError(w http.ResponseWriter, msg string, err error) {

@@ -1,7 +1,7 @@
 *~
 *.sw*
 /plotbot/plotbot
-
+/plotbot/levdb/*
 *.orig
 \#*\#
 
