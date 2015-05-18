@@ -8,7 +8,7 @@ import (
 	"net/http"
 	"strings"
 
-	"github.com/golang/oauth2"
+	"golang.org/x/oauth2"
 )
 
 const oauthProfileInfoURL = "https://www.googleapis.com/oauth2/v1/userinfo?alt=json"
