@@ -26,6 +26,10 @@
 			"Rev": "4de5c18ca1fc5294fee64721094ca90c46d26405"
 		},
 		{
+			"ImportPath": "github.com/garyburd/redigo/redis",
+			"Rev": "785e0ca9319196b94fd61abd4c9eab5c11777377"
+		},
+		{
 			"ImportPath": "github.com/gorilla/context",
 			"Rev": "215affda49addc4c8ef7e2534915df2c8c35c6cd"
 		},
@@ -55,14 +59,6 @@
 			"ImportPath": "github.com/plotly/hipchat",
 			"Comment": "0.1.0-5-g3e015a0",
 			"Rev": "3e015a0eb9c449b3be69f1f8dcfe3738e9ad7280"
-		},
-		{
-			"ImportPath": "github.com/syndtr/goleveldb/leveldb",
-			"Rev": "97e257099d2ab9578151ba85e2641e2cd14d3ca8"
-		},
-		{
-			"ImportPath": "github.com/syndtr/gosnappy/snappy",
-			"Rev": "ce8acff4829e0c2458a67ead32390ac0a381c862"
 		},
 		{
 			"ImportPath": "github.com/tuxychandru/pubsub",
