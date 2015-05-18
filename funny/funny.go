@@ -4,19 +4,19 @@ import (
 	"fmt"
 	"time"
 
-	"github.com/plotly/plotbot"
+	"github.com/abourget/slick"
 )
 
 type Funny struct {
 }
 
 func init() {
-	plotbot.RegisterPlugin(&Funny{})
+	slick.RegisterPlugin(&Funny{})
 }
 
-func (funny *Funny) InitChatPlugin(bot *plotbot.Bot) {
+func (funny *Funny) InitChatPlugin(bot *slick.Bot) {
 
-	plotbot.RegisterStringList("forcePush", []string{
+	slick.RegisterStringList("forcePush", []string{
 		"http://www.gifcrap.com/g2data/albums/TV/Star%20Wars%20-%20Force%20Push%20-%20Goats%20fall%20over.gif",
 		"http://i.imgur.com/ZvZR6Ff.jpg",
 		"http://i3.kym-cdn.com/photos/images/original/000/014/538/5FCNWPLR2O3TKTTMGSGJIXFERQTAEY2K.gif",
@@ -34,7 +34,7 @@ func (funny *Funny) InitChatPlugin(bot *plotbot.Bot) {
 		"http://img2.wikia.nocookie.net/__cb20131117184206/halo/images/2/2a/Xt0rt3r.gif",
 	})
 
-	plotbot.RegisterStringList("robot jokes", []string{
+	slick.RegisterStringList("robot jokes", []string{
 		"http://timmybeanbrain.files.wordpress.com/2012/05/05242012_02-01.jpg",
 		"http://timmybeanbrain.files.wordpress.com/2012/05/05242012_01-01.jpg",
 		"http://timmybeanbrain.files.wordpress.com/2012/05/05232012_01-01.jpg",
@@ -42,27 +42,27 @@ func (funny *Funny) InitChatPlugin(bot *plotbot.Bot) {
 		"http://timmybeanbrain.files.wordpress.com/2012/07/07022012_04-01.jpg",
 	})
 
-	plotbot.RegisterStringList("dishes", []string{
+	slick.RegisterStringList("dishes", []string{
 		"http://stream1.gifsoup.com/view6/4703823/monkey-doing-dishes-o.gif",
 		"http://s3-ec.buzzfed.com/static/enhanced/webdr06/2013/6/24/16/anigif_enhanced-buzz-9769-1372104764-13.gif",
 		"http://i.imgur.com/WIL27Br.gif",
 	})
 
-	bot.ListenFor(&plotbot.Conversation{
+	bot.ListenFor(&slick.Conversation{
 		HandlerFunc: funny.ChatHandler,
 	})
 }
 
-func (funny *Funny) ChatHandler(conv *plotbot.Conversation, msg *plotbot.Message) {
+func (funny *Funny) ChatHandler(conv *slick.Conversation, msg *slick.Message) {
 	bot := conv.Bot
 	if msg.MentionsMe {
 		if msg.Contains("you're funny") {
 
-			if bot.Mood == plotbot.Happy {
+			if bot.Mood == slick.Happy {
 				conv.Reply(msg, "/me blushes")
 			} else {
 				conv.Reply(msg, "here's another one")
-				conv.Reply(msg, plotbot.RandomString("robot jokes"))
+				conv.Reply(msg, slick.RandomString("robot jokes"))
 			}
 
 		} else if msg.ContainsAny([]string{"dumb ass", "dumbass"}) {
@@ -78,16 +78,16 @@ func (funny *Funny) ChatHandler(conv *plotbot.Conversation, msg *plotbot.Message
 			}
 		} else if msg.Contains("how are you") && msg.MentionsMe {
 			conv.ReplyMention(msg, bot.WithMood("good, and you ?", "I'm wild today!! wadabout you ?"))
-			bot.ListenFor(&plotbot.Conversation{
+			bot.ListenFor(&slick.Conversation{
 				ListenDuration: 60 * time.Second,
 				WithUser:       msg.FromUser,
 				InRoom:         msg.FromRoom,
 				MentionsMeOnly: true,
-				HandlerFunc: func(conv *plotbot.Conversation, msg *plotbot.Message) {
+				HandlerFunc: func(conv *slick.Conversation, msg *slick.Message) {
 					conv.ReplyMention(msg, bot.WithMood("glad to hear it!", "zwweeeeeeeeet !"))
 					conv.Close()
 				},
-				TimeoutFunc: func(conv *plotbot.Conversation) {
+				TimeoutFunc: func(conv *slick.Conversation) {
 					conv.ReplyMention(msg, "well, we can catch up later")
 				},
 			})
@@ -106,7 +106,7 @@ func (funny *Funny) ChatHandler(conv *plotbot.Conversation, msg *plotbot.Message
 
 	} else if msg.Contains("force push") {
 
-		url := plotbot.RandomString("forcePush")
+		url := slick.RandomString("forcePush")
 		conv.Reply(msg, url)
 		return
 
@@ -194,7 +194,7 @@ func (funny *Funny) ChatHandler(conv *plotbot.Conversation, msg *plotbot.Message
 		conv.Reply(msg, "yeah, theory and practice perfectly match... in theory.")
 	} else if msg.Contains("dishes") {
 
-		conv.Reply(msg, plotbot.RandomString("dishes"))
+		conv.Reply(msg, slick.RandomString("dishes"))
 
 	} else if msg.Contains(" bean") {
 

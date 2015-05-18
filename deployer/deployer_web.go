@@ -6,10 +6,10 @@ import (
 	"code.google.com/p/go.net/websocket"
 
 	"github.com/gorilla/mux"
-	"github.com/plotly/plotbot"
+	"github.com/abourget/slick"
 )
 
-func (dep *Deployer) InitWebPlugin(bot *plotbot.Bot, privRouter *mux.Router, pubRouter *mux.Router) {
+func (dep *Deployer) InitWebPlugin(bot *slick.Bot, privRouter *mux.Router, pubRouter *mux.Router) {
 	privRouter.Handle("/plugins/deployer.ws", websocket.Handler(dep.websocketManager))
 }
 

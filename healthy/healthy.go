@@ -6,21 +6,21 @@ import (
 	"net/http"
 	"strings"
 
-	"github.com/plotly/plotbot"
+	"github.com/abourget/slick"
 )
 
 // Hipbot Plugin
 type Healthy struct {
 	urls   []string
-	config *plotbot.ChatPluginConfig
+	config *slick.ChatPluginConfig
 }
 
 func init() {
-	plotbot.RegisterPlugin(&Healthy{})
+	slick.RegisterPlugin(&Healthy{})
 }
 
-func (healthy *Healthy) InitChatPlugin(bot *plotbot.Bot) {
-	healthy.config = &plotbot.ChatPluginConfig{
+func (healthy *Healthy) InitChatPlugin(bot *slick.Bot) {
+	healthy.config = &slick.ChatPluginConfig{
 		EchoMessages: false,
 		OnlyMentions: true,
 	}
@@ -34,14 +34,14 @@ func (healthy *Healthy) InitChatPlugin(bot *plotbot.Bot) {
 
 	healthy.urls = conf.HealthCheck.Urls
 
-	bot.ListenFor(&plotbot.Conversation{
+	bot.ListenFor(&slick.Conversation{
 		ContainsAny: []string{"health", "healthy?", "health_check"},
 		HandlerFunc: healthy.ChatHandler,
 	})
 }
 
 // Handler
-func (healthy *Healthy) ChatHandler(conv *plotbot.Conversation, msg *plotbot.Message) {
+func (healthy *Healthy) ChatHandler(conv *slick.Conversation, msg *slick.Message) {
 	log.Println("Health check. Requested by", msg.From)
 	conv.Reply(msg, healthy.CheckAll())
 }

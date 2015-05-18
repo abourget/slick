@@ -3,7 +3,7 @@ package plotberry
 import (
 	"encoding/json"
 	"fmt"
-	"github.com/plotly/plotbot"
+	"github.com/abourget/slick"
 	"io/ioutil"
 	"log"
 	"math"
@@ -12,7 +12,7 @@ import (
 )
 
 type PlotBerry struct {
-	bot        *plotbot.Bot
+	bot        *slick.Bot
 	totalUsers int
 	pingTime   time.Duration
 	celebrated bool
@@ -23,10 +23,10 @@ type TotalUsers struct {
 }
 
 func init() {
-	plotbot.RegisterPlugin(&PlotBerry{})
+	slick.RegisterPlugin(&PlotBerry{})
 }
 
-func (plotberry *PlotBerry) InitChatPlugin(bot *plotbot.Bot) {
+func (plotberry *PlotBerry) InitChatPlugin(bot *slick.Bot) {
 
 	plotberry.bot = bot
 	plotberry.celebrated = true
@@ -38,12 +38,12 @@ func (plotberry *PlotBerry) InitChatPlugin(bot *plotbot.Bot) {
 	go plotberry.launchWatcher(statchan)
 	go plotberry.launchCounter(statchan)
 
-	bot.ListenFor(&plotbot.Conversation{
+	bot.ListenFor(&slick.Conversation{
 		HandlerFunc: plotberry.ChatHandler,
 	})
 }
 
-func (plotberry *PlotBerry) ChatHandler(conv *plotbot.Conversation, msg *plotbot.Message) {
+func (plotberry *PlotBerry) ChatHandler(conv *slick.Conversation, msg *slick.Message) {
 	if msg.MentionsMe && msg.Contains("how many user") {
 		conv.Reply(msg, fmt.Sprintf("We got %d users!", plotberry.totalUsers))
 	}
@@ -58,7 +58,7 @@ func getplotberry () (*TotalUsers, error) {
 	if err != nil {
 		return nil, err
 	}
-	
+
 	defer resp.Body.Close()
 
 	body, err := ioutil.ReadAll(resp.Body)

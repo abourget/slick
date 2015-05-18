@@ -1,4 +1,4 @@
-package plotbot
+package slick
 
 type Mood int
 

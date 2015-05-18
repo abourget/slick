@@ -6,7 +6,7 @@ import (
 	"strings"
 	"time"
 
-	"github.com/plotly/plotbot"
+	"github.com/abourget/slick"
 )
 
 var sectionRegexp = regexp.MustCompile(`(?mi)^!(yesterday|today|blocking)`)
@@ -39,7 +39,7 @@ func extractSectionAndText(input string, res [][]int) []sectionMatch {
 	return out
 }
 
-func (standup *Standup) StoreLine(msg *plotbot.Message, section string, line string) {
+func (standup *Standup) StoreLine(msg *slick.Message, section string, line string) {
 	dataMap := *standup.data
 	user := standup.bot.GetUser(msg.From)
 	userData, ok := dataMap[user.ID]
@@ -61,7 +61,7 @@ func (standup *Standup) StoreLine(msg *plotbot.Message, section string, line str
 	standup.FlushData()
 }
 
-func (standup *Standup) TriggerReminders(msg *plotbot.Message, section string) {
+func (standup *Standup) TriggerReminders(msg *slick.Message, section string) {
 	standup.sectionUpdates <- sectionUpdate{section, msg}
 }
 
@@ -70,8 +70,8 @@ func (standup *Standup) TriggerReminders(msg *plotbot.Message, section string) {
 //
 
 func (standup *Standup) manageUpdatesInteraction() {
-	remindCh := make(chan *plotbot.Message)
-	resetCh := make(chan *plotbot.Message)
+	remindCh := make(chan *slick.Message)
+	resetCh := make(chan *slick.Message)
 
 	for {
 		select {
@@ -139,7 +139,7 @@ func (standup *Standup) manageUpdatesInteraction() {
 
 type sectionUpdate struct {
 	section string
-	msg     *plotbot.Message
+	msg     *slick.Message
 }
 
 var userProgressMap = make(map[string]*userProgress)
@@ -149,7 +149,7 @@ type userProgress struct {
 	cancelTimer  chan bool
 }
 
-func (up *userProgress) waitAndCheckProgress(msg *plotbot.Message, remindCh chan *plotbot.Message) {
+func (up *userProgress) waitAndCheckProgress(msg *slick.Message, remindCh chan *slick.Message) {
 	select {
 	case <-time.After(90 * time.Second):
 		remindCh <- msg
@@ -159,7 +159,7 @@ func (up *userProgress) waitAndCheckProgress(msg *plotbot.Message, remindCh chan
 }
 
 // waitForReset waits a couple of minutes and stops listening to that user altogether.  We want to poke the user once or twice if he's slow.. but not eternally.
-func (up *userProgress) waitForReset(msg *plotbot.Message, resetCh chan *plotbot.Message) {
+func (up *userProgress) waitForReset(msg *slick.Message, resetCh chan *slick.Message) {
 	<-time.After(15 * time.Minute)
 	resetCh <- msg
 }

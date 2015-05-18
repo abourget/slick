@@ -6,11 +6,11 @@ import (
 	"strings"
 	"time"
 
-	"github.com/plotly/plotbot"
+	"github.com/abourget/slick"
 )
 
 type Standup struct {
-	bot            *plotbot.Bot
+	bot            *slick.Bot
 	sectionUpdates chan sectionUpdate
 
 	// Map's Hipchat ID to UserData
@@ -35,10 +35,10 @@ func (ud *UserData) FirstName() string {
 
 func init() {
 	gob.Register(&UserData{})
-	plotbot.RegisterPlugin(&Standup{})
+	slick.RegisterPlugin(&Standup{})
 }
 
-func (standup *Standup) InitChatPlugin(bot *plotbot.Bot) {
+func (standup *Standup) InitChatPlugin(bot *slick.Bot) {
 	dataMap := make(DataMap)
 	standup.bot = bot
 	standup.data = &dataMap
@@ -47,12 +47,12 @@ func (standup *Standup) InitChatPlugin(bot *plotbot.Bot) {
 	go standup.manageUpdatesInteraction()
 	standup.LoadData()
 
-	bot.ListenFor(&plotbot.Conversation{
+	bot.ListenFor(&slick.Conversation{
 		HandlerFunc: standup.ChatHandler,
 	})
 }
 
-func (standup *Standup) ChatHandler(conv *plotbot.Conversation, msg *plotbot.Message) {
+func (standup *Standup) ChatHandler(conv *slick.Conversation, msg *slick.Message) {
 	res := sectionRegexp.FindAllStringSubmatchIndex(msg.Body, -1)
 	if res != nil {
 		for _, section := range extractSectionAndText(msg.Body, res) {

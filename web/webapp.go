@@ -12,7 +12,7 @@ import (
 	"github.com/gorilla/context"
 	"github.com/gorilla/mux"
 	"github.com/gorilla/sessions"
-	"github.com/plotly/plotbot"
+	"github.com/abourget/slick"
 	"golang.org/x/oauth2"
 )
 
@@ -21,7 +21,7 @@ var web *Webapp
 type Webapp struct {
 	config         *WebappConfig
 	store          *sessions.CookieStore
-	bot            *plotbot.Bot
+	bot            *slick.Bot
 	handler        *negroni.Negroni
 	privateRouter  *mux.Router
 	publicRouter   *mux.Router
@@ -39,10 +39,10 @@ type WebappConfig struct {
 }
 
 func init() {
-	plotbot.RegisterPlugin(&Webapp{})
+	slick.RegisterPlugin(&Webapp{})
 }
 
-func (webapp *Webapp) InitWebServer(bot *plotbot.Bot, enabledPlugins []string) {
+func (webapp *Webapp) InitWebServer(bot *slick.Bot, enabledPlugins []string) {
 	var conf struct {
 		Webapp WebappConfig
 	}
@@ -83,7 +83,7 @@ func (webapp *Webapp) ServeWebRequests() {
 	webapp.handler.Run(webapp.config.Listen)
 }
 
-// func LaunchWebapp(b *plotbot.Bot) {
+// func LaunchWebapp(b *slick.Bot) {
 
 // 	rt.HandleFunc("/send_notif", handleNotif)
 // 	rt.HandleFunc("/hipchat/users", handleGetUsers)

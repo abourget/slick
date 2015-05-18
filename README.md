@@ -1,6 +1,6 @@
-# The Plotly Bot -- A simple bot written in Go
+# Slick Slack - A golang Slack bot
 
-[![Build Status](https://drone.io/github.com/plotly/plotbot/status.png)](https://drone.io/github.com/plotly/plotbot/latest)
+[![Build Status](https://drone.io/github.com/abourget/slick/status.png)](https://drone.io/github.com/abourget/slick/latest)
 
 
 ## Configuration
@@ -20,7 +20,7 @@
 
 * Pull the bot and its dependencies:
 
-    ```go get github.com/plotly/plotbot/plotbot```
+    ```go get github.com/abourget/slick/example-bot```
 
 * Install rice:
 
@@ -29,46 +29,46 @@
 * Run "npm install":
 
    ```
-   cd $GOPATH/src/github.com/plotly/plotbot/web
+   cd $GOPATH/src/github.com/abourget/slick/web
    npm install
    ```
 
 * Run "npm run build":
 
    ```
-   cd $GOPATH/src/github.com/plotly/plotbot/web
+   cd $GOPATH/src/github.com/abourget/slick/web
    npm run build
    ```
 
 ## Local build and install
 
-* Copy the `plotbot.sample.conf` file to `$HOME/.plotbot` and tweak at will.
+* Copy the `slick.sample.conf` file to `$HOME/.slick` and tweak at will.
 
 * Build with:
 
    ```
-   cd $GOPATH/src/github.com/plotly/plotbot/plotbot
-   go build && ./plotbot
+   cd $GOPATH/src/github.com/abourget/slick/example-bot
+   go build && ./example-bot
    ```
-   
-* Note: It is also possible to build plotbot using the stable dependencies found
-        within the Godeps directory. This can be done as follows: 
-        
-        Install godep: 
-        
+
+* Note: It is also possible to build your bot using the stable dependencies found
+        within the Godeps directory. This can be done as follows:
+
+        Install godep:
+
            go get github.com/tools/godep
-           
+
         Now build using the godep tool as follows:
-        
-           cd $GOPATH/src/github.com/plotly/plotbot/plotbot
-           godep go build && ./plotbot
-              
-                   
+
+           cd $GOPATH/src/github.com/abourget/slick/example-bot
+           godep go build && ./example-bot
+
+
 * Inject static stuff (for the web app) in the binary with:
 
    ```
-   cd $GOPATH/src/github.com/plotly/plotbot/web
-   rice append --exec=../plotbot/plotbot
+   cd $GOPATH/src/github.com/abourget/slick/web
+   rice append --exec=../example-bot/example-bot
    ```
 
 * Enjoy! You can deploy the binary and it has all the assets in itself now.
@@ -78,4 +78,4 @@
 
 Take inspiration by looking at the different plugins, like `Funny`,
 `Healthy`, `Storm`, `Deployer`, etc..  Don't forget to update your
-bot's plugins list, like `plotbot/main.go`
+bot's plugins list, like `example-bot/main.go`

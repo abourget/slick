@@ -1,4 +1,4 @@
-package plotbot
+package slick
 
 import (
 	"math/rand"

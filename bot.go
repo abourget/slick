@@ -1,4 +1,4 @@
-package plotbot
+package slick
 
 import (
 	"encoding/json"
@@ -14,7 +14,7 @@ import (
 
 	"github.com/jmcvetta/napping"
 	"github.com/plotly/hipchat"
-	"github.com/plotly/plotbot/hipchatv2"
+	"github.com/abourget/slick/hipchatv2"
 )
 
 const (
@@ -40,7 +40,7 @@ type Bot struct {
 	Rooms        []Room
 
 	redisConfig RedisConfig
-	// RedisPool holds a connection to Redis.  NOTE: Prefix all your keys with "plotbot:" please.
+	// RedisPool holds a connection to Redis.  NOTE: Prefix all your keys with "slick:" please.
 	RedisPool *redis.Pool
 
 	// Features from the heart
@@ -49,7 +49,7 @@ type Bot struct {
 	Mood      Mood
 }
 
-func NewHipbot(configFile string) *Bot {
+func New(configFile string) *Bot {
 	bot := &Bot{
 		configFile:        configFile,
 		replySink:         make(chan *BotReply, 10),

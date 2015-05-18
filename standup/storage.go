@@ -16,7 +16,7 @@ func (standup *Standup) LoadData() {
 		standup.data = &dataMap
 	}
 
-	res, err := redis.Do("GET", "plotbot:standup")
+	res, err := redis.Do("GET", "slick:standup")
 	if err != nil {
 		log.Println("Standup: Couldn't load data from redis. Using fresh data.")
 		fixup()
@@ -41,7 +41,7 @@ func (standup *Standup) FlushData() {
 	enc := gob.NewEncoder(buf)
 	enc.Encode(standup.data)
 
-	_, err := redis.Do("SET", "plotbot:standup", buf.String())
+	_, err := redis.Do("SET", "slick:standup", buf.String())
 	if err != nil {
 		log.Println("ERROR: Couldn't redis FlushData()")
 	}

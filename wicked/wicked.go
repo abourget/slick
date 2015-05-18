@@ -17,21 +17,21 @@ import (
 	"strings"
 	"time"
 
-	"github.com/plotly/plotbot"
+	"github.com/abourget/slick"
 )
 
 type Wicked struct {
-	bot          *plotbot.Bot
+	bot          *slick.Bot
 	confRooms    []string
 	meetings     map[string]*Meeting
 	pastMeetings []*Meeting
 }
 
 func init() {
-	plotbot.RegisterPlugin(&Wicked{})
+	slick.RegisterPlugin(&Wicked{})
 }
 
-func (wicked *Wicked) InitChatPlugin(bot *plotbot.Bot) {
+func (wicked *Wicked) InitChatPlugin(bot *slick.Bot) {
 	wicked.bot = bot
 	wicked.meetings = make(map[string]*Meeting)
 
@@ -42,15 +42,15 @@ func (wicked *Wicked) InitChatPlugin(bot *plotbot.Bot) {
 	}
 	bot.LoadConfig(&conf)
 	for _, confroom := range conf.Wicked.Confrooms {
-		wicked.confRooms = append(wicked.confRooms, plotbot.CanonicalRoom(confroom))
+		wicked.confRooms = append(wicked.confRooms, slick.CanonicalRoom(confroom))
 	}
 
-	bot.ListenFor(&plotbot.Conversation{
+	bot.ListenFor(&slick.Conversation{
 		HandlerFunc: wicked.ChatHandler,
 	})
 }
 
-func (wicked *Wicked) ChatHandler(conv *plotbot.Conversation, msg *plotbot.Message) {
+func (wicked *Wicked) ChatHandler(conv *slick.Conversation, msg *slick.Message) {
 	bot := conv.Bot
 	uuidNow := time.Now()
 
@@ -154,7 +154,7 @@ continueLogging:
 	meeting.Logs = append(meeting.Logs, newMessage)
 }
 
-func (wicked *Wicked) FindAvailableRoom(fromRoom string) *plotbot.Room {
+func (wicked *Wicked) FindAvailableRoom(fromRoom string) *slick.Room {
 	nextFree := ""
 	for _, confRoom := range wicked.confRooms {
 		_, occupied := wicked.meetings[confRoom]

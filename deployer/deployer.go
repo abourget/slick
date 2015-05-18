@@ -14,13 +14,13 @@ import (
 	"github.com/kr/pty"
 	"github.com/tuxychandru/pubsub"
 
-	"github.com/plotly/plotbot"
-	"github.com/plotly/plotbot/internal"
+	"github.com/abourget/slick"
+	"github.com/abourget/slick/internal"
 )
 
 type Deployer struct {
 	runningJob *DeployJob
-	bot        *plotbot.Bot
+	bot        *slick.Bot
 	env        string
 	config     *DeployerConfig
 	pubsub     *pubsub.PubSub
@@ -38,10 +38,10 @@ type DeployerConfig struct {
 }
 
 func init() {
-	plotbot.RegisterPlugin(&Deployer{})
+	slick.RegisterPlugin(&Deployer{})
 }
 
-func (dep *Deployer) InitChatPlugin(bot *plotbot.Bot) {
+func (dep *Deployer) InitChatPlugin(bot *slick.Bot) {
 	var conf struct {
 		Deployer DeployerConfig
 	}
@@ -60,7 +60,7 @@ func (dep *Deployer) InitChatPlugin(bot *plotbot.Bot) {
 
 	go dep.pubsubForwardReply()
 
-	bot.ListenFor(&plotbot.Conversation{
+	bot.ListenFor(&slick.Conversation{
 		HandlerFunc: dep.ChatHandler,
 	})
 }
@@ -69,8 +69,8 @@ func (dep *Deployer) loadInternalAPI() {
 	dep.internal = internal.New(dep.bot.LoadConfig)
 }
 
-func (dep *Deployer) ChatConfig() *plotbot.ChatPluginConfig {
-	return &plotbot.ChatPluginConfig{
+func (dep *Deployer) ChatConfig() *slick.ChatPluginConfig {
+	return &slick.ChatPluginConfig{
 		OnlyMentions: true,
 	}
 }
@@ -97,7 +97,7 @@ type DeployJob struct {
 
 var deployFormat = regexp.MustCompile(`deploy( ([a-zA-Z0-9_\.-]+))? to ([a-z_-]+)( using ([a-zA-Z0-9_\.-]+))?((,| with)? tags?:? ?(.+))?`)
 
-func (dep *Deployer) ChatHandler(conv *plotbot.Conversation, msg *plotbot.Message) {
+func (dep *Deployer) ChatHandler(conv *slick.Conversation, msg *slick.Message) {
 	bot := conv.Bot
 
 	// Discard non "mention_name, " prefixed messages

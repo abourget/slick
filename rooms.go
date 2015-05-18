@@ -1,9 +1,9 @@
-package plotbot
+package slick
 
 import (
 	"strings"
 
-	"github.com/plotly/plotbot/hipchatv2"
+	"github.com/abourget/slick/hipchatv2"
 )
 
 type Room struct {

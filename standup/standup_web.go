@@ -6,10 +6,10 @@ import (
 	"net/http"
 
 	"github.com/gorilla/mux"
-	"github.com/plotly/plotbot"
+	"github.com/abourget/slick"
 )
 
-func (standup *Standup) InitWebPlugin(bot *plotbot.Bot, privRouter *mux.Router, pubRouter *mux.Router) {
+func (standup *Standup) InitWebPlugin(bot *slick.Bot, privRouter *mux.Router, pubRouter *mux.Router) {
 	privRouter.HandleFunc("/plugins/standup.json", func(w http.ResponseWriter, r *http.Request) {
 		data := struct {
 			Users []*UserData

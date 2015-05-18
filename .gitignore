@@ -1,8 +1,14 @@
 *~
 *.sw*
+
+# Our bots!
 /plotbot/plotbot
+/example-bot/example-bot
+/slick/slick
+
 
 *.orig
+*.test
 \#*\#
 
 node_modules

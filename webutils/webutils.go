@@ -6,19 +6,19 @@ import (
 	"net/http"
 
 	"github.com/gorilla/mux"
-	"github.com/plotly/plotbot"
-	"github.com/plotly/plotbot/hipchatv2"
+	"github.com/abourget/slick"
+	"github.com/abourget/slick/hipchatv2"
 )
 
 type Utils struct {
-	bot *plotbot.Bot
+	bot *slick.Bot
 }
 
 func init() {
-	plotbot.RegisterPlugin(&Utils{})
+	slick.RegisterPlugin(&Utils{})
 }
 
-func (utils *Utils) InitWebPlugin(bot *plotbot.Bot, privRouter *mux.Router, pubRouter *mux.Router) {
+func (utils *Utils) InitWebPlugin(bot *slick.Bot, privRouter *mux.Router, pubRouter *mux.Router) {
 	utils.bot = bot
 	privRouter.HandleFunc("/send_notif", utils.handleNotif)
 	privRouter.HandleFunc("/send_message", utils.handleSendMessage)

@@ -7,17 +7,17 @@ import (
 	"strconv"
 	"time"
 
-	"github.com/plotly/plotbot"
-	"github.com/plotly/plotbot/github"
-	"github.com/plotly/plotbot/utils"
+	"github.com/abourget/slick"
+	"github.com/abourget/slick/github"
+	"github.com/abourget/slick/utils"
 )
 
 func init() {
-	plotbot.RegisterPlugin(&Bugger{})
+	slick.RegisterPlugin(&Bugger{})
 }
 
 type Bugger struct {
-	bot      *plotbot.Bot
+	bot      *slick.Bot
 	ghclient github.Client
 }
 
@@ -111,7 +111,7 @@ func (bugger *Bugger) makeBugReporter(days int) (reporter bugReporter) {
 	return
 }
 
-func (bugger *Bugger) InitChatPlugin(bot *plotbot.Bot) {
+func (bugger *Bugger) InitChatPlugin(bot *slick.Bot) {
 
 	/*
 	 * Get an array of issues matching Filters
@@ -128,13 +128,13 @@ func (bugger *Bugger) InitChatPlugin(bot *plotbot.Bot) {
 		Conf: conf.Github,
 	}
 
-	bot.ListenFor(&plotbot.Conversation{
+	bot.ListenFor(&slick.Conversation{
 		HandlerFunc: bugger.ChatHandler,
 	})
 
 }
 
-func (bugger *Bugger) ChatHandler(conv *plotbot.Conversation, msg *plotbot.Message) {
+func (bugger *Bugger) ChatHandler(conv *slick.Conversation, msg *slick.Message) {
 
 	if !msg.MentionsMe {
 		return
@@ -182,7 +182,7 @@ examples: %s, please give me a %s over the last 5 days
 
 }
 
-func (bugger *Bugger) messageReport(days int, msg *plotbot.Message, conv *plotbot.Conversation, genReport func() string) {
+func (bugger *Bugger) messageReport(days int, msg *slick.Message, conv *slick.Conversation, genReport func() string) {
 
 	if days > 31 {
 		conv.Reply(msg, fmt.Sprintf("Whaoz, %d is too much data to compile - well maybe not, I am just scared", days))

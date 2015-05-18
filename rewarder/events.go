@@ -4,7 +4,7 @@ import (
 	"encoding/json"
 	"time"
 
-	"github.com/plotly/plotbot"
+	"github.com/abourget/slick"
 )
 
 type Event struct {
@@ -14,7 +14,7 @@ type Event struct {
 	Data      string
 }
 
-func (rew *Rewarder) LogEvent(user *plotbot.User, event string, data interface{}) error {
+func (rew *Rewarder) LogEvent(user *slick.User, event string, data interface{}) error {
 	userLogs, ok := rew.logs[user.Email]
 	if !ok {
 		userLogs = make([]*Event, 0)
@@ -47,14 +47,14 @@ func (rew *Rewarder) unserializeData(data string, v interface{}) error {
 	return json.Unmarshal([]byte(data), v)
 }
 
-func (rew *Rewarder) FetchEventsSince(user *plotbot.User, since time.Time, event string, data interface{}) error {
+func (rew *Rewarder) FetchEventsSince(user *slick.User, since time.Time, event string, data interface{}) error {
 	return nil
 }
 
-func (rew *Rewarder) FetchLastEvent(user *plotbot.User, event string, data interface{}) error {
+func (rew *Rewarder) FetchLastEvent(user *slick.User, event string, data interface{}) error {
 	return nil
 }
 
-func (rew *Rewarder) FetchLastNEvents(user *plotbot.User, num int, event string, data interface{}) error {
+func (rew *Rewarder) FetchLastNEvents(user *slick.User, num int, event string, data interface{}) error {
 	return nil
 }

@@ -3,14 +3,14 @@ package wicked
 import (
 	"testing"
 
-	"github.com/plotly/plotbot"
+	"github.com/abourget/slick"
 )
 
 func TestFindNextRoom(t *testing.T) {
 	w := &Wicked{
-		bot: &plotbot.Bot{Rooms: []plotbot.Room{
-			plotbot.Room{JID: "room2"},
-			plotbot.Room{JID: "room3"},
+		bot: &slick.Bot{Rooms: []slick.Room{
+			slick.Room{JID: "room2"},
+			slick.Room{JID: "room3"},
 		}},
 		meetings: map[string]*Meeting{
 			"room1": &Meeting{},
@@ -43,8 +43,8 @@ func TestFindNextRoom(t *testing.T) {
 
 func TestFindNextRoomNilFromRoom(t *testing.T) {
 	w := &Wicked{
-		bot: &plotbot.Bot{Rooms: []plotbot.Room{
-			plotbot.Room{JID: "room1"},
+		bot: &slick.Bot{Rooms: []slick.Room{
+			slick.Room{JID: "room1"},
 		}},
 		meetings:  map[string]*Meeting{},
 		confRooms: []string{"room1"},
@@ -62,7 +62,7 @@ func TestFindNextRoomNilFromRoom(t *testing.T) {
 
 func TestFindNextRoomAllTake(t *testing.T) {
 	w := &Wicked{
-		bot: &plotbot.Bot{Rooms: []plotbot.Room{}},
+		bot: &slick.Bot{Rooms: []slick.Room{}},
 		meetings: map[string]*Meeting{
 			"room1": &Meeting{},
 		},

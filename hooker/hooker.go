@@ -8,15 +8,15 @@ import (
 	"net/http"
 
 	"github.com/gorilla/mux"
-	"github.com/plotly/plotbot"
+	"github.com/abourget/slick"
 )
 
 func init() {
-	plotbot.RegisterPlugin(&Hooker{})
+	slick.RegisterPlugin(&Hooker{})
 }
 
 type Hooker struct {
-	bot    *plotbot.Bot
+	bot    *slick.Bot
 	config HookerConfig
 }
 
@@ -32,7 +32,7 @@ type MonitAlert struct {
 	Alert   string `json:"alert"`
 }
 
-func (hooker *Hooker) InitWebPlugin(bot *plotbot.Bot, privRouter *mux.Router, pubRouter *mux.Router) {
+func (hooker *Hooker) InitWebPlugin(bot *slick.Bot, privRouter *mux.Router, pubRouter *mux.Router) {
 	hooker.bot = bot
 
 	var conf struct {
@@ -41,7 +41,7 @@ func (hooker *Hooker) InitWebPlugin(bot *plotbot.Bot, privRouter *mux.Router, pu
 	bot.LoadConfig(&conf)
 	hooker.config = conf.Hooker
 
-	pubRouter.HandleFunc("/public/updated_plotbot_repo", hooker.updatedPlotbotRepo)
+	pubRouter.HandleFunc("/public/updated_slick_repo", hooker.updatedSlickRepo)
 
 	stripeUrl := fmt.Sprintf("/public/stripehook/%s", hooker.config.StripeSecret)
 	pubRouter.HandleFunc(stripeUrl, hooker.onPayingUser)
@@ -57,7 +57,7 @@ func (hooker *Hooker) InitWebPlugin(bot *plotbot.Bot, privRouter *mux.Router, pu
 	})
 }
 
-func (hooker *Hooker) updatedPlotbotRepo(w http.ResponseWriter, r *http.Request) {
+func (hooker *Hooker) updatedSlickRepo(w http.ResponseWriter, r *http.Request) {
 	if r.Method != "POST" {
 		http.Error(w, "Method not accepted", 405)
 		return

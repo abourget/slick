@@ -9,10 +9,10 @@ import (
 	"time"
 
 	"github.com/gorilla/mux"
-	"github.com/plotly/plotbot"
+	"github.com/abourget/slick"
 )
 
-func (wicked *Wicked) InitWebPlugin(bot *plotbot.Bot, privRouter *mux.Router, pubRouter *mux.Router) {
+func (wicked *Wicked) InitWebPlugin(bot *slick.Bot, privRouter *mux.Router, pubRouter *mux.Router) {
 	privRouter.HandleFunc("/wicked/{id}.json", wicked.renderMeetingJson)
 	privRouter.HandleFunc("/wicked/{id}.html", wicked.renderMeetingHtml)
 }

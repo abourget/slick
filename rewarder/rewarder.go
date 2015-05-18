@@ -1,6 +1,6 @@
 package rewarder
 
-import "github.com/plotly/plotbot"
+import "github.com/abourget/slick"
 
 /**
  * This package implements the Rewards, Archievements, Badges and Events
@@ -13,15 +13,15 @@ type Rewarder struct {
 }
 
 func init() {
-	plotbot.RegisterPlugin(&Rewarder{})
+	slick.RegisterPlugin(&Rewarder{})
 }
 
-func (rew *Rewarder) InitRewarder(bot *plotbot.Bot) {
+func (rew *Rewarder) InitRewarder(bot *slick.Bot) {
 	rew.badges = make([]*Badge, 0)
 	rew.logs = make(map[string][]*Event)
-	rew.RegisterBadge("small_mentioner", "Small Mentioner", `This badge is awarded when you mention Plotbot's name for the first time.`)
-	rew.RegisterBadge("intimate_mentioner", "Intimate Mentioner", `This badge is awarded when you talk to Plotbot privately for the first time`)
-	rew.RegisterBadge("great_mentioner", "Great Mentioner", `This badge is awarded when you have mentioned Plotbot's name at least 10 times in the past week`)
+	rew.RegisterBadge("small_mentioner", "Small Mentioner", `This badge is awarded when you mention Slick's name for the first time.`)
+	rew.RegisterBadge("intimate_mentioner", "Intimate Mentioner", `This badge is awarded when you talk to Slick privately for the first time`)
+	rew.RegisterBadge("great_mentioner", "Great Mentioner", `This badge is awarded when you have mentioned Slick's name at least 10 times in the past week`)
 }
 
 func (rew *Rewarder) RegisterBadge(shortName, title, description string) {
@@ -37,6 +37,6 @@ func (rew *Rewarder) Badges() []*Badge {
 	return rew.badges
 }
 
-func (rew *Rewarder) AwardBadge(bot *plotbot.Bot, user *plotbot.User, shortName string) error {
+func (rew *Rewarder) AwardBadge(bot *slick.Bot, user *slick.User, shortName string) error {
 	return nil
 }

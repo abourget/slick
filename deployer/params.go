@@ -4,7 +4,7 @@ import (
 	"fmt"
 	"strings"
 
-	"github.com/plotly/plotbot"
+	"github.com/abourget/slick"
 )
 
 type DeployParams struct {
@@ -14,7 +14,7 @@ type DeployParams struct {
 	DeploymentBranch string
 	InitiatedBy      string
 	From             string
-	initiatedByChat  *plotbot.Message
+	initiatedByChat  *slick.Message
 }
 
 // ParsedTags returns *default* or user-specified tags

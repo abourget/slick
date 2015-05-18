@@ -5,19 +5,19 @@ import (
 	"strings"
 	"time"
 
-	"github.com/plotly/plotbot"
+	"github.com/abourget/slick"
 )
 
 type Totw struct {
-	bot *plotbot.Bot
+	bot *slick.Bot
 }
 
 func init() {
-	plotbot.RegisterPlugin(&Totw{})
+	slick.RegisterPlugin(&Totw{})
 }
 
-func (totw *Totw) InitChatPlugin(bot *plotbot.Bot) {
-	plotbot.RegisterStringList("useless techs", []string{
+func (totw *Totw) InitChatPlugin(bot *slick.Bot) {
+	slick.RegisterStringList("useless techs", []string{
 		"http://i.minus.com/ib2bUNs2W1CI1V.gif",
 		"http://media.giphy.com/media/anl0wydLNhKus/giphy.gif",
 		"http://www.ptc.dcs.edu/Moody/comphistory/cavemanwriting.gif",
@@ -30,7 +30,7 @@ func (totw *Totw) InitChatPlugin(bot *plotbot.Bot) {
 		"http://i3.kym-cdn.com/photos/images/original/000/495/044/9b8.gif",
 		"http://uproxx.files.wordpress.com/2012/09/iron.gif",
 	})
-	plotbot.RegisterStringList("tech adept", []string{
+	slick.RegisterStringList("tech adept", []string{
 		"you're a real tech adept",
 		"what an investigator",
 		"such deep search!",
@@ -47,25 +47,25 @@ func (totw *Totw) InitChatPlugin(bot *plotbot.Bot) {
 
 	go totw.ScheduleAlerts(bot.Config.TeamRoom, time.Thursday, 16, 0)
 
-	bot.ListenFor(&plotbot.Conversation{
+	bot.ListenFor(&slick.Conversation{
 		HandlerFunc: totw.ChatHandler,
 	})
 }
 
-func (totw *Totw) ChatHandler(conv *plotbot.Conversation, msg *plotbot.Message) {
+func (totw *Totw) ChatHandler(conv *slick.Conversation, msg *slick.Message) {
 	if strings.HasPrefix(msg.Body, "!totw") || strings.HasPrefix(msg.Body, "!techoftheweek") {
-		conv.ReplyMention(msg, plotbot.RandomString("tech adept"))
+		conv.ReplyMention(msg, slick.RandomString("tech adept"))
 	}
 }
 
 func (totw *Totw) ScheduleAlerts(room string, w time.Weekday, hour, min int) {
 	for {
-		next, when := plotbot.NextWeekdayTime(w, hour, min)
+		next, when := slick.NextWeekdayTime(w, hour, min)
 		log.Println("TOTW: Next occurrence: ", next)
 
 		<-time.After(when)
 
-		totw.bot.SendToRoom(room, plotbot.RandomString("useless techs"))
+		totw.bot.SendToRoom(room, slick.RandomString("useless techs"))
 		totw.bot.SendToRoom(room, `Time for some Tech of the Week! What's your pick ?  Start your line with "!techoftheweek"`)
 	}
 }

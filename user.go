@@ -1,6 +1,6 @@
-package plotbot
+package slick
 
-import "github.com/plotly/plotbot/hipchatv2"
+import "github.com/abourget/slick/hipchatv2"
 
 type User struct {
 	ID          int64  `json:"id"`

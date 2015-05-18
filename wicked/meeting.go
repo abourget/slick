@@ -5,12 +5,12 @@ import (
 	"strings"
 	"time"
 
-	"github.com/plotly/plotbot"
-	"github.com/plotly/plotbot/hipchatv2"
+	"github.com/abourget/slick"
+	"github.com/abourget/slick/hipchatv2"
 )
 
 func init() {
-	plotbot.RegisterStringList("wicked annoyments", []string{
+	slick.RegisterStringList("wicked annoyments", []string{
 		"friends, told you it was enough",
 		"can't you guys control yourselves!",
 		"I'm going to have to intervene!",
@@ -43,7 +43,7 @@ type Meeting struct {
 	doneCh     chan bool
 }
 
-func NewMeeting(id string, user *plotbot.User, goal string, bot *plotbot.Bot, room *plotbot.Room, uuidNow time.Time) *Meeting {
+func NewMeeting(id string, user *slick.User, goal string, bot *slick.Bot, room *slick.Room, uuidNow time.Time) *Meeting {
 	meeting := &Meeting{}
 	meeting.ID = id
 	meeting.Room = room.JID
@@ -67,7 +67,7 @@ func NewMeeting(id string, user *plotbot.User, goal string, bot *plotbot.Bot, ro
 	return meeting
 }
 
-func (meeting *Meeting) ImportUser(user *plotbot.User) *User {
+func (meeting *Meeting) ImportUser(user *slick.User) *User {
 	fromEmail := user.Email
 
 	for _, user := range meeting.Participants {

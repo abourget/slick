@@ -6,19 +6,19 @@ import (
 	"sync"
 
 	"github.com/gorilla/mux"
-	"github.com/plotly/plotbot"
-	"github.com/plotly/plotbot/asana"
+	"github.com/abourget/slick"
+	"github.com/abourget/slick/asana"
 )
 
 type TabulaRasa struct {
-	bot         *plotbot.Bot
+	bot         *slick.Bot
 	asanaClient *asana.Client
 }
 
 func init() {
-	plotbot.RegisterPlugin(&TabulaRasa{})
+	slick.RegisterPlugin(&TabulaRasa{})
 }
-func (tabula *TabulaRasa) InitWebPlugin(bot *plotbot.Bot, privRouter *mux.Router, pubRouter *mux.Router) {
+func (tabula *TabulaRasa) InitWebPlugin(bot *slick.Bot, privRouter *mux.Router, pubRouter *mux.Router) {
 	var asanaConf struct {
 		Asana struct {
 			APIKey    string `json:"api_key"`

@@ -5,10 +5,10 @@ import (
 	"net/http"
 
 	"github.com/gorilla/mux"
-	"github.com/plotly/plotbot"
+	"github.com/abourget/slick"
 )
 
-func (rew *Rewarder) InitWebPlugin(bot *plotbot.Bot, privRouter *mux.Router, pubRouter *mux.Router) {
+func (rew *Rewarder) InitWebPlugin(bot *slick.Bot, privRouter *mux.Router, pubRouter *mux.Router) {
 	privRouter.HandleFunc("/rewarder/badges.json", func(w http.ResponseWriter, r *http.Request) {
 		data := struct {
 			Badges []*Badge `json:"badges"`

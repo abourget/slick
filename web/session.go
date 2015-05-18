@@ -10,7 +10,7 @@ import (
 var store *sessions.CookieStore
 
 func GetSession(r *http.Request) *sessions.Session {
-	sess, err := web.store.Get(r, "plotbot")
+	sess, err := web.store.Get(r, "slick")
 	if err != nil {
 		log.Println("web/session: warn: unable to decode Session cookie: ", err)
 	}
