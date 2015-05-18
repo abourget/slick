@@ -1,4 +1,4 @@
-# Slick Slack - A golang Slack bot
+# Slick - A golang Slack bot
 
 [![Build Status](https://drone.io/github.com/abourget/slick/status.png)](https://drone.io/github.com/abourget/slick/latest)
 
