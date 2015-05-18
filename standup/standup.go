@@ -52,7 +52,7 @@ func (standup *Standup) ChatHandler(conv *plotbot.Conversation, msg *plotbot.Mes
 				"I am the eggman and the walrus ate your report - Fzaow!"))
 		} else {
 			if msg.Contains(" my ") {
-				conv.Reply(msg, "/quote "+smap.String())
+				conv.Reply(msg, "/quote "+smap.filterByEmail(msg.FromUser.Email).String())
 			} else {
 				conv.Reply(msg, "/quote "+smap.String())
 			}
@@ -62,6 +62,7 @@ func (standup *Standup) ChatHandler(conv *plotbot.Conversation, msg *plotbot.Mes
 
 func (standup *Standup) getRange(from, to standupDate) (standupMap, error) {
 	db := standup.bot.DB
+	// Range is [Start, Limit) - ie, limit is not inclusive, so we bump date one next.
 	srange := levelutil.Range{
 		Start: standupKey{date: from}.key(),
 		Limit: standupKey{date: to.next()}.key(),
@@ -70,7 +71,7 @@ func (standup *Standup) getRange(from, to standupDate) (standupMap, error) {
 
 	// keep a map of users so we don't ask plotbot to grab users from the chatapp
 	// that we have already loaded.
-	users := make(map[string]standupUser)
+	seenUsers := make(map[string]standupUser)
 
 	smap := make(standupMap)
 
@@ -83,7 +84,7 @@ func (standup *Standup) getRange(from, to standupDate) (standupMap, error) {
 
 		var user standupUser
 
-		if val, ok := users[email]; ok {
+		if val, ok := seenUsers[email]; ok {
 
 			// grab an existing user from the lookup
 			user = val
@@ -97,7 +98,7 @@ func (standup *Standup) getRange(from, to standupDate) (standupMap, error) {
 			user = standupUser{puser, standupData{}}
 
 			// store a copy of user (with blank data) inside map for later lookup
-			users[email] = user
+			seenUsers[email] = user
 		}
 		data := iter.Value()
 		err := json.Unmarshal(data, &user.data)
