@@ -1,14 +1,6 @@
 package standup
 
-import (
-	"fmt"
-	"testing"
-)
-
-func TestStandup(t *testing.T) {
-	su := &Standup{}
-	fmt.Println("Standup:", su)
-}
+import "testing"
 
 func TestRegexpMatch(t *testing.T) {
 	input := `!blocking this is good

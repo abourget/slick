@@ -3,14 +3,14 @@ package bugger
 import (
 	"fmt"
 	"log"
-	"regexp"
-	"strconv"
 	"time"
 
 	"github.com/plotly/plotbot"
 	"github.com/plotly/plotbot/github"
-	"github.com/plotly/plotbot/utils"
+	"github.com/plotly/plotbot/util"
 )
+
+const dfltReportLength = 7 // days
 
 func init() {
 	plotbot.RegisterPlugin(&Bugger{})
@@ -19,65 +19,6 @@ func init() {
 type Bugger struct {
 	bot      *plotbot.Bot
 	ghclient github.Client
-}
-
-type bugReporter struct {
-	bugs    []github.IssueItem
-	Git2Hip map[string]string
-}
-
-func (r *bugReporter) addBug(issue github.IssueItem) {
-	r.bugs = append(r.bugs, issue)
-}
-
-func (r *bugReporter) printReport(days int) (report string) {
-
-	dayheader := fmt.Sprintf(" BUG REPORT FOR LAST %d DAYS ", days) // 20 spaces
-	bar := "************************"
-
-	report = fmt.Sprintf("/quote " + bar + dayheader + bar + "\n")
-
-	report += fmt.Sprintf("|%-45s|%-7s|%-18s|\n", "bug title", "number", "squasher")
-	title := ""
-	for _, bug := range r.bugs {
-		if len(bug.Title) > 45 {
-			title = bug.Title[0:42] + "..."
-		} else {
-			title = bug.Title
-		}
-		report += fmt.Sprintf("|%-45s|%-7d|%-18s|\n", title, bug.Number, bug.LastClosedBy())
-	}
-
-	return
-}
-
-func (r *bugReporter) printCount(days int) (count string) {
-
-	dayheader := fmt.Sprintf(" BUG COUNT FOR LAST %d DAYS ", days) // 20 spaces
-	bar := "***"
-
-	count = fmt.Sprintf("/quote " + bar + dayheader + bar + "\n")
-	count += fmt.Sprintf("|%-20s|%-10s|\n", "team member", "# squashed")
-
-	bugcount := make(map[string]int)
-
-	for _, bug := range r.bugs {
-		bugcount[bug.LastClosedBy()]++
-	}
-
-	for _, ghname := range util.SortedKeys(bugcount) {
-		count += fmt.Sprintf("|%-20s|%-10d|\n", ghname, bugcount[ghname])
-	}
-
-	total := 0
-	for _, value := range bugcount {
-		total += value
-	}
-
-	count += fmt.Sprintf("|%-20s|%-10d|\n", "TOTAL", total)
-
-	return
-
 }
 
 func (bugger *Bugger) makeBugReporter(days int) (reporter bugReporter) {
@@ -160,8 +101,7 @@ examples: %s, please give me a %s over the last 5 days
 
 	} else if msg.Contains("bug report") {
 
-		days := getDaysFromQuery(msg.Body)
-
+		days := util.GetDaysFromQuery(msg.Body)
 		bugger.messageReport(days, msg, conv, func() string {
 			reporter := bugger.makeBugReporter(days)
 			return reporter.printReport(days)
@@ -169,8 +109,7 @@ examples: %s, please give me a %s over the last 5 days
 
 	} else if msg.Contains("bug count") {
 
-		days := getDaysFromQuery(msg.Body)
-
+		days := util.GetDaysFromQuery(msg.Body)
 		bugger.messageReport(days, msg, conv, func() string {
 			reporter := bugger.makeBugReporter(days)
 			return reporter.printCount(days)
@@ -189,48 +128,9 @@ func (bugger *Bugger) messageReport(days int, msg *plotbot.Message, conv *plotbo
 		return
 	}
 
-	conv.Reply(msg, bugger.bot.WithMood("Building report - one moment please", "Whaooo! Pinging those githubbers - Let's do this!"))
+	conv.Reply(msg, bugger.bot.WithMood("Building report - one moment please",
+		"Whaooo! Pinging those githubbers - Let's do this!"))
 
 	conv.Reply(msg, genReport())
 
-}
-
-func getDaysFromQuery(text string) (days int) {
-
-	re := regexp.MustCompile(".*(?:last|past) (\\d+)?\\s?(day|week).*")
-	hits := re.FindStringSubmatch(text)
-
-	var weeks int
-	var err error
-
-	if len(hits) == 3 {
-		howmany := hits[1]
-		dayOrWeek := hits[2]
-
-		if dayOrWeek == "day" {
-			if howmany == "" {
-				days = 7
-			} else {
-				days, err = strconv.Atoi(howmany)
-				if err != nil {
-					days = 7
-				}
-			}
-		} else {
-			if howmany == "" {
-				days = 7
-			} else {
-				weeks, err = strconv.Atoi(howmany)
-				if err != nil {
-					days = 7
-				} else {
-					days = 7 * weeks
-				}
-			}
-		}
-	} else {
-		days = 7
-	}
-
-	return
 }
