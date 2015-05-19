@@ -94,21 +94,21 @@ func (sm standupMap) String() (str string) {
 
 	// first pass detects if there are multiple users or a single user (email is used as unique ID)
 	seenUsers := make(map[string]standupUser)
+	var lastUser standupUser
 	singleUserReport := false
+
 	for _, sdate := range sorted {
 		users := sm[sdate]
 		for _, user := range users {
 			seenUsers[user.Email] = user
+			lastUser = user
 		}
 	}
 
 	// write header depending on single or multiple user case
 	if len(seenUsers) == 1 {
 		singleUserReport = true
-		// only one user in the map, write the header for this user
-		for _, user := range seenUsers {
-			str += fmt.Sprintf("Standup Report for %s\n", user.Name)
-		}
+		str += fmt.Sprintf("Standup Report for %s\n", lastUser.Name)
 	} else {
 		str += "Standup Report\n"
 	}
