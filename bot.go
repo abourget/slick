@@ -25,7 +25,7 @@ type Bot struct {
 	ws       *slack.SlackWS
 	Users    map[string]slack.User
 	Channels map[string]slack.Channel
-	Myself   slack.User
+	Myself   slack.UserDetails
 
 	// Internal handling
 	conversations     []*Conversation
@@ -229,24 +229,18 @@ func (bot *Bot) connectClient() (err error) {
 
 	bot.api = slack.New(bot.Config.ApiToken)
 	// TODO: take out when needed
-	bot.api.SetDebug(true)
-
-	err = bot.cacheUsers()
-	if err != nil {
-		return
-	}
-
-	err = bot.cacheChannels()
-	if err != nil {
-		return
-	}
+	//bot.api.SetDebug(true)
 
 	ws, err := bot.api.StartRTM("", "http://safeidentity.slack.com")
-
 	if err != nil {
 		return err
 	}
 	bot.ws = ws
+
+	infos := bot.api.GetInfo()
+	bot.Myself = infos.User
+	bot.cacheUsers(infos.Users)
+	bot.cacheChannels(infos.Channels, infos.Groups)
 
 	for _, channelName := range bot.Config.JoinChannels {
 		channel := bot.GetChannelByName(channelName)
@@ -267,41 +261,14 @@ func (bot *Bot) setupHandlers() {
 	log.Println("Bot ready")
 }
 
-func (bot *Bot) cacheUsers() error {
-	users, err := bot.api.GetUsers()
-	if err != nil {
-		return err
-	}
-
+func (bot *Bot) cacheUsers(users []slack.User) {
 	bot.Users = make(map[string]slack.User)
-	var myself slack.User
 	for _, user := range users {
-		if user.Name == bot.Config.Nickname && user.IsBot {
-			myself = user
-		}
 		bot.Users[user.Id] = user
-		//fmt.Printf("USER: %#v\n", user)
 	}
-
-	if myself.Id == "" {
-		return fmt.Errorf("Couldn't find myself amongst the list of users. Are you sure we have a bot registered in the Integrations ? Is it named %q ? ", bot.Config.Nickname)
-	}
-	bot.Myself = myself
-
-	return nil
 }
 
-func (bot *Bot) cacheChannels() error {
-	channels, err := bot.api.GetChannels(true)
-	if err != nil {
-		return err
-	}
-
-	groups, err := bot.api.GetGroups(true)
-	if err != nil {
-		return err
-	}
-
+func (bot *Bot) cacheChannels(channels []slack.Channel, groups []slack.Group) {
 	bot.Channels = make(map[string]slack.Channel)
 	for _, channel := range channels {
 		bot.Channels[channel.Id] = channel
@@ -323,8 +290,6 @@ func (bot *Bot) cacheChannels() error {
 			NumMembers:  group.NumMembers,
 		}
 	}
-
-	return nil
 }
 
 func keepaliveSlackWS(ws *slack.SlackWS) {
