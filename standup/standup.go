@@ -6,7 +6,7 @@ import (
 	"time"
 
 	"github.com/abourget/slick"
-	"github.com/plotly/plotbot/util"
+	"github.com/abourget/slick/util"
 	levelutil "github.com/syndtr/goleveldb/leveldb/util"
 )
 
@@ -93,7 +93,7 @@ func (standup *Standup) getRange(from, to standupDate) (standupMap, error) {
 			// initialize a new user from the messaging platform
 			puser := standup.bot.GetUser(email)
 			if puser == nil {
-				puser = &plotbot.User{}
+				puser = &slick.User{}
 			}
 			user = standupUser{puser, standupData{}}
 
@@ -139,7 +139,7 @@ func (standup *Standup) put(u standupUser, sd standupDate) (err error) {
 	return
 }
 
-func (standup *Standup) StoreLine(msg *plotbot.Message, section string, line string) error {
+func (standup *Standup) StoreLine(msg *slick.Message, section string, line string) error {
 
 	standupDate := getStandupDate(TODAY)
 	user := standupUser{standup.bot.GetUser(msg.From), standupData{}}

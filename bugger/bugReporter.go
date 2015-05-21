@@ -3,8 +3,8 @@ package bugger
 import (
 	"fmt"
 
-	"github.com/plotly/plotbot/github"
-	"github.com/plotly/plotbot/util"
+	"github.com/abourget/slick/github"
+	"github.com/abourget/slick/util"
 )
 
 type bugReporter struct {

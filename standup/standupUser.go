@@ -3,11 +3,11 @@ package standup
 import (
 	"strings"
 
-	"github.com/plotly/plotbot"
+	"github.com/abourget/slick"
 )
 
 type standupUser struct {
-	*plotbot.User
+	*slick.User
 	data standupData
 }
 

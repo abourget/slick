@@ -3,13 +3,13 @@ package standup
 import (
 	"testing"
 
-	"github.com/plotly/plotbot"
+	"github.com/abourget/slick"
 )
 
 func TestFilterByEmail(t *testing.T) {
 
 	uA := standupUser{
-		&plotbot.User{
+		&slick.User{
 			Name:  "A",
 			Email: "A@test.ly",
 		},
@@ -17,7 +17,7 @@ func TestFilterByEmail(t *testing.T) {
 	}
 
 	uB := standupUser{
-		&plotbot.User{
+		&slick.User{
 			Name:  "B",
 			Email: "B@test.ly",
 		},

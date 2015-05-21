@@ -5,7 +5,7 @@ import (
 	"strconv"
 	"testing"
 
-	"github.com/plotly/plotbot"
+	"github.com/abourget/slick"
 )
 
 func TestStandupDataString(t *testing.T) {
@@ -31,7 +31,7 @@ func getTestStandupMap() standupMap {
 	sm := make(standupMap)
 
 	uA := standupUser{
-		&plotbot.User{
+		&slick.User{
 			Name:  "A",
 			Email: "A@test.ly",
 		},
@@ -39,7 +39,7 @@ func getTestStandupMap() standupMap {
 	}
 
 	uB := standupUser{
-		&plotbot.User{
+		&slick.User{
 			Name:  "B",
 			Email: "B@test.ly",
 		},
