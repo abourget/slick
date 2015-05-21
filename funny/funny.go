@@ -72,10 +72,6 @@ func (funny *Funny) ChatHandler(conv *slick.Conversation, msg *slick.Message) {
 		} else if msg.ContainsAny([]string{"thanks", "thank you", "thx", "thnks"}) {
 			conv.Reply(msg, bot.WithMood("my pleasure", "any time, just ask, I'm here for you, ffiieeewww!get a life"))
 
-			if bot.Rewarder != nil {
-				fmt.Println("Ok, in here")
-				bot.Rewarder.LogEvent(msg.FromUser, "thanks", nil)
-			}
 		} else if msg.Contains("how are you") && msg.MentionsMe {
 			conv.ReplyMention(msg, bot.WithMood("good, and you ?", "I'm wild today!! wadabout you ?"))
 			bot.ListenFor(&slick.Conversation{

@@ -1,10 +1,6 @@
 package slick
 
-import (
-	"time"
-
-	"github.com/gorilla/mux"
-)
+import "github.com/gorilla/mux"
 
 //
 // Bot plugins
@@ -36,16 +32,6 @@ type WebServer interface {
 // WebPlugin initializes plugins with a `Bot` instance, a `privateRouter` and a `publicRouter`. All URLs handled by the `publicRouter` must start with `/public/`.
 type WebPlugin interface {
 	InitWebPlugin(*Bot, *mux.Router, *mux.Router)
-}
-
-type Rewarder interface {
-	InitRewarder(*Bot)
-	RegisterBadge(shortName, title, description string)
-	LogEvent(user *User, event string, data interface{}) error
-	FetchEventsSince(user *User, since time.Time, event string, data interface{}) error
-	FetchLastEvent(user *User, event string, data interface{}) error
-	FetchLastNEvents(user *User, num int, event string, data interface{}) error
-	AwardBadge(bot *Bot, user *User, shortName string) error
 }
 
 var registeredPlugins = make([]Plugin, 0)
@@ -83,17 +69,6 @@ func InitWebPlugins(bot *Bot) {
 		webPlugin, ok := plugin.(WebPlugin)
 		if ok {
 			webPlugin.InitWebPlugin(bot, bot.WebServer.PrivateRouter(), bot.WebServer.PublicRouter())
-		}
-	}
-}
-
-func InitRewarder(bot *Bot) {
-	for _, plugin := range registeredPlugins {
-		rewarder, ok := plugin.(Rewarder)
-		if ok {
-			rewarder.InitRewarder(bot)
-			bot.Rewarder = rewarder
-			return
 		}
 	}
 }

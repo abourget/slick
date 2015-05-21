@@ -60,12 +60,6 @@ angular.module('plotbot', ['ui.router.state', 'ui.router'])
         });
     };
 
-    $scope.load_badges = function() {
-        $http.get('/rewarder/badges.json').success(function(data, status) {
-            $scope.badges = data.badges;
-        });
-    };
-
 })
 
 .directive("deployer", function($timeout) {
