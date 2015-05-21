@@ -10,11 +10,10 @@ import (
 	"strings"
 	"time"
 
-	"github.com/garyburd/redigo/redis"
-
 	"github.com/jmcvetta/napping"
 	"github.com/plotly/hipchat"
 	"github.com/abourget/slick/hipchatv2"
+	"github.com/syndtr/goleveldb/leveldb"
 )
 
 const (
@@ -22,31 +21,21 @@ const (
 )
 
 type Bot struct {
-	configFile string
-	Config     HipchatConfig
-
-	// Hipchat XMPP client
-	client *hipchat.Client
-
-	// Conversations handling
+	configFile        string
+	Config            HipchatConfig
+	client            *hipchat.Client
 	conversations     []*Conversation
 	addConversationCh chan *Conversation
 	delConversationCh chan *Conversation
-
-	// replySink sends messages to Hipchat rooms or users
-	disconnected chan bool
-	replySink    chan *BotReply
-	Users        []User
-	Rooms        []Room
-
-	redisConfig RedisConfig
-	// RedisPool holds a connection to Redis.  NOTE: Prefix all your keys with "slick:" please.
-	RedisPool *redis.Pool
-
-	// Features from the heart
-	WebServer WebServer
-	Rewarder  Rewarder
-	Mood      Mood
+	disconnected      chan bool
+	replySink         chan *BotReply
+	Users             []User
+	Rooms             []Room
+	LevelConfig       LevelConfig
+	DB                *leveldb.DB
+	WebServer         WebServer
+	Rewarder          Rewarder
+	Mood              Mood
 }
 
 func New(configFile string) *Bot {
@@ -62,7 +51,16 @@ func New(configFile string) *Bot {
 
 func (bot *Bot) Run() {
 	bot.loadBaseConfig()
-	bot.setupStorage()
+
+	db, err := leveldb.OpenFile(bot.LevelConfig.Path, nil)
+	if err != nil {
+		log.Fatal("Could not initialize Leveldb key/value store")
+	}
+	defer func() {
+		log.Fatal("Database is closing")
+		db.Close()
+	}()
+	bot.DB = db
 
 	// Init all plugins
 	enabledPlugins := make([]string, 0)
@@ -98,9 +96,6 @@ func (bot *Bot) Run() {
 	if bot.WebServer != nil {
 		go bot.WebServer.ServeWebRequests()
 	}
-
-	//time.Sleep(5000 * time.Second)
-	//return
 
 	for {
 		log.Println("Connecting client...")
@@ -240,55 +235,14 @@ func (bot *Bot) loadBaseConfig() {
 	}
 
 	var config2 struct {
-		Redis RedisConfig
+		Leveldb LevelConfig
 	}
 	err = bot.LoadConfig(&config2)
 	if err != nil {
-		log.Fatalln("Error loading Redis config section: ", err)
+		log.Fatalln("Error loading LevelDB config section: ", err)
 	} else {
-		bot.redisConfig = config2.Redis
+		bot.LevelConfig = config2.Leveldb
 	}
-}
-
-func (bot *Bot) setupStorage() error {
-	server := bot.redisConfig.Host
-	if server == "" {
-		server = "127.0.0.1:6379"
-	}
-	bot.RedisPool = &redis.Pool{
-		MaxIdle:     3,
-		IdleTimeout: 240 * time.Second,
-		Dial: func() (redis.Conn, error) {
-			c, err := redis.Dial("tcp", server)
-			if err != nil {
-				return nil, err
-			}
-			if _, err := c.Do("SELECT", "3"); err != nil {
-				c.Close()
-				return nil, err
-			}
-			// if _, err := c.Do("AUTH", password); err != nil {
-			//  c.Close()
-			// 	return nil, err
-			// }
-			return c, err
-		},
-		TestOnBorrow: func(c redis.Conn, t time.Time) error {
-			_, err := c.Do("PING")
-			return err
-		},
-	}
-
-	// Test the config
-	conn := bot.RedisPool.Get()
-	defer conn.Close()
-	_, err := conn.Do("PING")
-	if err != nil {
-		log.Println("ERROR: PING to redis failed! ", err)
-	} else {
-		log.Println("Redis ping successful")
-	}
-	return err
 }
 
 func (bot *Bot) LoadConfig(config interface{}) (err error) {
@@ -332,8 +286,6 @@ func (bot *Bot) removeConversation(conv *Conversation) {
 	}
 
 	return
-	bot.conversations = append(bot.conversations, conv)
-
 }
 
 func (bot *Bot) messageHandler() {

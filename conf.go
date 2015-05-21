@@ -17,8 +17,8 @@ type HipchatConfig struct {
 	WebBaseURL      string `json:"web_base_url"`
 }
 
-type RedisConfig struct {
-	Host string
+type LevelConfig struct {
+	Path string
 }
 
 type ChatPluginConfig struct {

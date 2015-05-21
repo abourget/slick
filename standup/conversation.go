@@ -39,28 +39,6 @@ func extractSectionAndText(input string, res [][]int) []sectionMatch {
 	return out
 }
 
-func (standup *Standup) StoreLine(msg *slick.Message, section string, line string) {
-	dataMap := *standup.data
-	user := standup.bot.GetUser(msg.From)
-	userData, ok := dataMap[user.ID]
-	if !ok {
-		userData = &UserData{Email: user.Email, Name: user.Name, PhotoURL: user.PhotoURL}
-		dataMap[user.ID] = userData
-	}
-
-	if section == "yesterday" {
-		userData.Yesterday = line
-	} else if section == "today" {
-		userData.Today = line
-	} else if section == "blocking" {
-		userData.Blocking = line
-	}
-
-	userData.LastUpdate = time.Now().UTC()
-
-	standup.FlushData()
-}
-
 func (standup *Standup) TriggerReminders(msg *slick.Message, section string) {
 	standup.sectionUpdates <- sectionUpdate{section, msg}
 }
