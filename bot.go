@@ -5,36 +5,42 @@ import (
 	"fmt"
 	"io/ioutil"
 	"log"
+	"os"
 	"reflect"
 	"strconv"
 	"strings"
 	"time"
 
-	"github.com/jmcvetta/napping"
-	"github.com/plotly/hipchat"
-	"github.com/abourget/slick/hipchatv2"
+	"github.com/nlopes/slack"
 	"github.com/syndtr/goleveldb/leveldb"
 )
 
-const (
-	ConfDomain = "conf.hipchat.com"
-)
-
 type Bot struct {
-	configFile        string
-	Config            HipchatConfig
-	client            *hipchat.Client
+	// Global bot configuration
+	configFile string
+	Config     SlackConfig
+
+	// Slack connectivity
+	api      *slack.Slack
+	ws       *slack.SlackWS
+	Users    map[string]slack.User
+	Channels map[string]slack.Channel
+	Myself   slack.User
+
+	// Internal handling
 	conversations     []*Conversation
 	addConversationCh chan *Conversation
 	delConversationCh chan *Conversation
 	disconnected      chan bool
 	replySink         chan *BotReply
-	Users             []User
-	Rooms             []Room
-	LevelConfig       LevelConfig
-	DB                *leveldb.DB
-	WebServer         WebServer
-	Mood              Mood
+
+	// Storage
+	LevelConfig LevelConfig
+	DB          *leveldb.DB
+
+	// Other features
+	WebServer WebServer
+	Mood      Mood
 }
 
 func New(configFile string) *Bot {
@@ -43,6 +49,9 @@ func New(configFile string) *Bot {
 		replySink:         make(chan *BotReply, 10),
 		addConversationCh: make(chan *Conversation, 100),
 		delConversationCh: make(chan *Conversation, 100),
+
+		Users:    make(map[string]slack.User),
+		Channels: make(map[string]slack.Channel),
 	}
 
 	return bot
@@ -50,6 +59,12 @@ func New(configFile string) *Bot {
 
 func (bot *Bot) Run() {
 	bot.loadBaseConfig()
+
+	// Write PID
+	err := bot.writePID()
+	if err != nil {
+		log.Fatal("Couldn't write PID file:", err)
+	}
 
 	db, err := leveldb.OpenFile(bot.LevelConfig.Path, nil)
 	if err != nil {
@@ -112,6 +127,27 @@ func (bot *Bot) Run() {
 	}
 }
 
+func (bot *Bot) writePID() error {
+	var serverConf struct {
+		Server struct {
+			Pidfile string `json:"pid_file"`
+		}
+	}
+
+	err := bot.LoadConfig(&serverConf)
+	if err != nil {
+		return err
+	}
+
+	if serverConf.Server.Pidfile == "" {
+		return nil
+	}
+
+	pid := os.Getpid()
+	pidb := []byte(strconv.Itoa(pid))
+	return ioutil.WriteFile(serverConf.Server.Pidfile, pidb, 0755)
+}
+
 func (bot *Bot) ListenFor(conv *Conversation) error {
 	conv.Bot = bot
 
@@ -144,7 +180,7 @@ func (bot *Bot) ReplyMention(msg *Message, reply string) {
 	} else {
 		prefix := ""
 		if msg.FromUser != nil {
-			prefix = fmt.Sprintf("@%s ", msg.FromUser.MentionName)
+			prefix = fmt.Sprintf("<@%s> ", msg.FromUser.Name)
 		}
 		bot.Reply(msg, fmt.Sprintf("%s%s", prefix, reply))
 	}
@@ -155,33 +191,34 @@ func (bot *Bot) ReplyPrivately(msg *Message, reply string) {
 	bot.replySink <- msg.ReplyPrivately(reply)
 }
 
-func (bot *Bot) Notify(room, color, format, msg string, notify bool) (*napping.Request, error) {
-	log.Println("Notifying room ", room, ": ", msg)
-	return hipchatv2.SendNotification(bot.Config.HipchatApiToken, bot.GetRoomId(room), color, format, msg, notify)
+func (bot *Bot) Notify(room, color, format, msg string, notify bool) error {
+	log.Println("DEPRECATED. Please use the Slack API with .PostMessage")
+	// bot.api.PostMessage(room, msg, slack.PostMessageParameters{
+	// 	Attachments: []slack.Attachment{
+	// 		{
+	// 			Color: color,
+	// 			Text: msg,
+	// 		},
+	// 	},
+	// })
+	return nil
 }
 
-func (bot *Bot) SendToRoom(room string, message string) {
-	log.Println("Sending to room ", room, ": ", message)
+func (bot *Bot) SendToChannel(channelName string, message string) {
+	channel := bot.GetChannelByName(channelName)
 
-	room = CanonicalRoom(room)
+	if channel == nil {
+		log.Printf("Couldn't send message, channel %q not found: %q\n", channelName, message)
+		return
+	}
+	log.Printf("Sending to channel %q: %q\n", channelName, message)
 
 	reply := &BotReply{
-		To:      room,
-		Message: message,
+		To:   channel.Id,
+		Text: message,
 	}
 	bot.replySink <- reply
 	return
-}
-
-// GetRoomdId returns the numeric room ID as string for a given XMPP room JID
-func (bot *Bot) GetRoomId(room string) string {
-	roomName := CanonicalRoom(room)
-	for _, room := range bot.Rooms {
-		if roomName == room.JID {
-			return fmt.Sprintf("%v", room.ID)
-		}
-	}
-	return room
 }
 
 func (bot *Bot) connectClient() (err error) {
@@ -190,28 +227,116 @@ func (bot *Bot) connectClient() (err error) {
 		resource = "bot"
 	}
 
-	bot.client, err = hipchat.NewClient(
-		bot.Config.Username, bot.Config.Password, resource)
+	bot.api = slack.New(bot.Config.ApiToken)
+	// TODO: take out when needed
+	bot.api.SetDebug(true)
+
+	err = bot.cacheUsers()
 	if err != nil {
 		return
 	}
 
-	for _, room := range bot.Config.Rooms {
-		bot.client.Join(CanonicalRoom(room), bot.Config.Nickname)
+	err = bot.cacheChannels()
+	if err != nil {
+		return
+	}
+
+	ws, err := bot.api.StartRTM("", "http://safeidentity.slack.com")
+
+	if err != nil {
+		return err
+	}
+	bot.ws = ws
+
+	for _, channelName := range bot.Config.JoinChannels {
+		channel := bot.GetChannelByName(channelName)
+		if channel != nil {
+			bot.api.JoinChannel(channel.Id)
+		}
 	}
 
 	return
 }
 
 func (bot *Bot) setupHandlers() {
-	bot.client.Status("chat")
+	// TODO: mark as present, not away
 	bot.disconnected = make(chan bool)
-	go bot.client.KeepAlive()
+	go keepaliveSlackWS(bot.ws)
 	go bot.replyHandler()
 	go bot.messageHandler()
-	go bot.usersPolling()
-	go bot.roomsPolling()
 	log.Println("Bot ready")
+}
+
+func (bot *Bot) cacheUsers() error {
+	users, err := bot.api.GetUsers()
+	if err != nil {
+		return err
+	}
+
+	bot.Users = make(map[string]slack.User)
+	var myself slack.User
+	for _, user := range users {
+		if user.Name == bot.Config.Nickname && user.IsBot {
+			myself = user
+		}
+		bot.Users[user.Id] = user
+		//fmt.Printf("USER: %#v\n", user)
+	}
+
+	if myself.Id == "" {
+		return fmt.Errorf("Couldn't find myself amongst the list of users. Are you sure we have a bot registered in the Integrations ? Is it named %q ? ", bot.Config.Nickname)
+	}
+	bot.Myself = myself
+
+	return nil
+}
+
+func (bot *Bot) cacheChannels() error {
+	channels, err := bot.api.GetChannels(true)
+	if err != nil {
+		return err
+	}
+
+	groups, err := bot.api.GetGroups(true)
+	if err != nil {
+		return err
+	}
+
+	bot.Channels = make(map[string]slack.Channel)
+	for _, channel := range channels {
+		bot.Channels[channel.Id] = channel
+	}
+
+	for _, group := range groups {
+		bot.Channels[group.Id] = slack.Channel{
+			BaseChannel: group.BaseChannel,
+			Name:        group.Name,
+			IsChannel:   false,
+			Creator:     group.Creator,
+			IsArchived:  group.IsArchived,
+			IsGeneral:   group.IsGeneral,
+			IsGroup:     true,
+			Members:     group.Members,
+			Topic:       group.Topic,
+			Purpose:     group.Purpose,
+			IsMember:    true,
+			NumMembers:  group.NumMembers,
+		}
+	}
+
+	return nil
+}
+
+func keepaliveSlackWS(ws *slack.SlackWS) {
+	ticker := time.NewTicker(30 * time.Second)
+	defer ticker.Stop()
+
+	for {
+		<-ticker.C
+		if err := ws.Ping(); err != nil {
+			return
+		}
+	}
 }
 
 func (bot *Bot) loadBaseConfig() {
@@ -220,13 +345,13 @@ func (bot *Bot) loadBaseConfig() {
 	}
 
 	var config1 struct {
-		Hipchat HipchatConfig
+		Slack SlackConfig
 	}
 	err := bot.LoadConfig(&config1)
 	if err != nil {
 		log.Fatalln("Error loading Hipchat config section: ", err)
 	} else {
-		bot.Config = config1.Hipchat
+		bot.Config = config1.Slack
 	}
 
 	var config2 struct {
@@ -255,6 +380,7 @@ func (bot *Bot) LoadConfig(config interface{}) (err error) {
 }
 
 func (bot *Bot) replyHandler() {
+	count := 0
 	for {
 		select {
 		case <-bot.disconnected:
@@ -262,8 +388,18 @@ func (bot *Bot) replyHandler() {
 		case reply := <-bot.replySink:
 			if reply != nil {
 				//log.Println("REPLYING", reply.To, reply.Message)
-				bot.client.Say(reply.To, bot.Config.Nickname, reply.Message)
+				count += 1
+				err := bot.ws.SendMessage(&slack.OutgoingMessage{
+					Id:        count,
+					ChannelId: reply.To,
+					Type:      "message",
+					Text:      reply.Text,
+				})
+				if err != nil {
+					return
+				}
 				time.Sleep(50 * time.Millisecond)
+
 			}
 		}
 	}
@@ -284,7 +420,9 @@ func (bot *Bot) removeConversation(conv *Conversation) {
 }
 
 func (bot *Bot) messageHandler() {
-	msgs := bot.client.Messages()
+	events := make(chan slack.SlackEvent, 10)
+	go bot.ws.HandleIncomingEvents(events)
+
 	for {
 		select {
 		case <-bot.disconnected:
@@ -296,32 +434,8 @@ func (bot *Bot) messageHandler() {
 		case conv := <-bot.delConversationCh:
 			bot.removeConversation(conv)
 
-		case rawMsg := <-msgs:
-			fromUser := bot.GetUser(rawMsg.From)
-
-			if fromUser == nil {
-				log.Printf("Message from unknown user, skipping: %#v\n", rawMsg)
-				continue
-			}
-
-			msg := &Message{Message: rawMsg}
-			msg.FromUser = fromUser
-			msg.FromRoom = bot.GetRoom(rawMsg.From)
-			msg.applyMentionsMe(bot)
-			msg.applyFromMe(bot)
-
-			log.Printf("Incoming message: %s\n", msg)
-
-			for _, conv := range bot.conversations {
-				filterFunc := defaultFilterFunc
-				if conv.FilterFunc != nil {
-					filterFunc = conv.FilterFunc
-				}
-
-				if filterFunc(conv, msg) {
-					conv.HandlerFunc(conv, msg)
-				}
-			}
+		case event := <-events:
+			bot.handleRTMEvent(&event)
 		}
 
 		// Always flush conversations deletions between messages, so a
@@ -331,6 +445,137 @@ func (bot *Bot) messageHandler() {
 			bot.removeConversation(conv)
 		default:
 		}
+	}
+}
+
+func (bot *Bot) handleRTMEvent(event *slack.SlackEvent) {
+	switch ev := event.Data.(type) {
+	case slack.HelloEvent:
+		fmt.Println("Got a HELLO from websocket")
+
+	case *slack.MessageEvent:
+		fmt.Printf("Message: %v\n", ev)
+		msg := &Message{
+			Msg:        &ev.Msg,
+			SubMessage: &ev.SubMessage,
+		}
+
+		// TODO: handle messages that update the channels, groups and users.. so we keep
+		// our cache fresh and up-to-date.
+		user, ok := bot.Users[ev.UserId]
+		if ok {
+			msg.FromUser = &user
+		}
+		channel, ok := bot.Channels[ev.ChannelId]
+		if ok {
+			msg.FromChannel = &channel
+		}
+
+		msg.applyMentionsMe(bot)
+		msg.applyFromMe(bot)
+
+		log.Printf("Incoming message: %s\n", msg)
+
+		for _, conv := range bot.conversations {
+			filterFunc := defaultFilterFunc
+			if conv.FilterFunc != nil {
+				filterFunc = conv.FilterFunc
+			}
+
+			if filterFunc(conv, msg) {
+				conv.HandlerFunc(conv, msg)
+			}
+		}
+
+	case *slack.PresenceChangeEvent:
+		user := bot.Users[ev.UserId]
+		log.Printf("User %q is now %q\n", user.Name, ev.Presence)
+		user.Presence = ev.Presence
+
+	/**
+	 * Mama
+	 */
+	case slack.LatencyReport:
+		fmt.Printf("Current latency: %v\n", ev)
+	case *slack.SlackWSError:
+		fmt.Printf("Error: %d - %s\n", ev.Code, ev.Msg)
+
+	// TODO: manage im_open, im_close, and im_created ?
+
+	/**
+	 * User changes
+	 */
+	case *slack.UserChangeEvent:
+		bot.Users[ev.User.Id] = ev.User
+
+	/**
+	 * Handle channel changes
+	 */
+	case *slack.ChannelRenameEvent:
+		channel := bot.Channels[ev.Channel.Id]
+		channel.Name = ev.Channel.Name
+
+	case *slack.ChannelJoinedEvent:
+		bot.Channels[ev.Channel.Id] = ev.Channel
+
+	case *slack.ChannelCreatedEvent:
+		bot.Channels[ev.Channel.Id] = slack.Channel{
+			BaseChannel: slack.BaseChannel{
+				Id: ev.Channel.Id,
+			},
+			Name:    ev.Channel.Name,
+			Creator: ev.Channel.Creator,
+		}
+		// NICE: poll the API to get a full Channel object ? many
+		// things are missing here
+
+	case *slack.ChannelDeletedEvent:
+		delete(bot.Channels, ev.ChannelId)
+
+	case *slack.ChannelArchiveEvent:
+		channel := bot.Channels[ev.ChannelId]
+		channel.IsArchived = true
+
+	case *slack.ChannelUnarchiveEvent:
+		channel := bot.Channels[ev.ChannelId]
+		channel.IsArchived = false
+
+	/**
+	 * Handle group changes
+	 */
+	case *slack.GroupRenameEvent:
+		group := bot.Channels[ev.Channel.Id]
+		group.Name = ev.Channel.Name
+
+	case *slack.GroupJoinedEvent:
+		bot.Channels[ev.Channel.Id] = ev.Channel
+
+	case *slack.GroupCreatedEvent:
+		bot.Channels[ev.Channel.Id] = slack.Channel{
+			BaseChannel: slack.BaseChannel{
+				Id: ev.Channel.Id,
+			},
+			Name:    ev.Channel.Name,
+			Creator: ev.Channel.Creator,
+		}
+		// NICE: poll the API to get a full Group object ? many
+		// things are missing here
+
+	case *slack.GroupCloseEvent:
+		// TODO: when a group is "closed"... does that mean removed ?
+		// TODO: how do we even manage groups ?!?!
+		delete(bot.Channels, ev.ChannelId)
+
+	case *slack.GroupArchiveEvent:
+		group := bot.Channels[ev.ChannelId]
+		group.IsArchived = true
+
+	case *slack.GroupUnarchiveEvent:
+		group := bot.Channels[ev.ChannelId]
+		group.IsArchived = false
+
+	default:
+		fmt.Printf("Unexpected: %v\n", ev)
 	}
 }
 
@@ -345,91 +590,23 @@ func (bot *Bot) Disconnect() {
 	}
 }
 
-func (bot *Bot) usersPolling() {
-	timeout := time.After(0)
-	for {
-		select {
-		case <-bot.disconnected:
-			return
-		case <-timeout:
-			hcUsers, err := hipchatv2.GetUsers(bot.Config.HipchatApiToken)
-
-			if err != nil {
-				log.Printf("GetUsers error: %s", err)
-				timeout = time.After(5 * time.Second)
-				continue
-			}
-
-			users := []User{}
-			for _, user := range hcUsers {
-				users = append(users, UserFromHipchatv2(user))
-			}
-			bot.Users = users
-		}
-		timeout = time.After(3 * time.Minute)
-	}
-}
-
-func (bot *Bot) roomsPolling() {
-	timeout := time.After(0)
-	for {
-		select {
-		case <-bot.disconnected:
-			return
-		case <-timeout:
-			hcRooms, err := hipchatv2.GetRooms(bot.Config.HipchatApiToken)
-
-			if err != nil {
-				log.Printf("GetRooms error: %s", err)
-				timeout = time.After(5 * time.Second)
-				continue
-			}
-
-			rooms := []Room{}
-			for _, room := range hcRooms {
-				rooms = append(rooms, RoomFromHipchatv2(room))
-			}
-
-			bot.Rooms = rooms
-		}
-		timeout = time.After(3 * time.Minute)
-	}
-}
-
-// GetUser returns a User by JID, ID, Name or Email
-func (bot *Bot) GetUser(find string) *User {
-	if strings.Contains(find, "/") {
-		parts := strings.Split(find, "/")
-		jid := parts[0]
-		resource := parts[1]
-		if strings.Contains(jid, "@chat.hipchat.com") {
-			find = jid
-		} else {
-			find = resource
-		}
-	}
+// GetUser returns a *slack.User by ID, Name, RealName or Email
+func (bot *Bot) GetUser(find string) *slack.User {
 	for _, user := range bot.Users {
 		//log.Printf("Hmmmm, %#v\n", user)
-		if user.Email == find || user.JID == find || strconv.FormatInt(user.ID, 10) == find || user.Name == find {
+		if user.Profile.Email == find || user.Id == find || user.Name == find || user.RealName == find {
 			return &user
 		}
 	}
 	return nil
 }
 
-// GetUser returns a User by JID, ID or Name
-func (bot *Bot) GetRoom(q string) *Room {
-	if strings.Contains(q, "@chat.hipchat.com") {
-		return nil
-	}
-	if strings.Contains(q, "/") {
-		q = strings.Split(q, "/")[0]
-		// assert: strings.Contains(jid, "@conf.hipchat.com")
-	}
-	for _, room := range bot.Rooms {
-		//log.Printf("Hmmmm, %#v\n", room)
-		if room.JID == q || strconv.FormatInt(room.ID, 10) == q || room.Name == q {
-			return &room
+// GetChannelByName returns a *slack.Channel by Name
+func (bot *Bot) GetChannelByName(name string) *slack.Channel {
+	name = strings.TrimLeft(name, "#")
+	for _, channel := range bot.Channels {
+		if channel.Name == name {
+			return &channel
 		}
 	}
 	return nil

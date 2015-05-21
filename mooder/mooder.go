@@ -35,7 +35,7 @@ func (mooder *Mooder) SetupMoodChanger() {
 
 		bot.Mood = newMood
 
-		bot.SendToRoom(bot.Config.TeamRoom, bot.WithMood("I'm quite happy today.", "I can haz!! It's going to be a great one today!!"))
+		bot.SendToChannel(bot.Config.GeneralChannel, bot.WithMood("I'm quite happy today.", "I can haz!! It's going to be a great one today!!"))
 
 		select {
 		case <-slick.AfterNextWeekdayTime(time.Monday, 12, 0):
@@ -45,5 +45,4 @@ func (mooder *Mooder) SetupMoodChanger() {
 		case <-slick.AfterNextWeekdayTime(time.Friday, 12, 0):
 		}
 	}
-
 }

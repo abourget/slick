@@ -6,7 +6,7 @@ import (
 	"time"
 
 	"github.com/abourget/slick"
-	"github.com/abourget/slick/hipchatv2"
+	"github.com/nlopes/slack"
 )
 
 func init() {
@@ -28,7 +28,8 @@ func init() {
 type Meeting struct {
 	ID           string
 	CreatedBy    *User
-	Room         string
+	Channel      string
+	ChannelID    string
 	Goal         string
 	TimeLimit    time.Duration
 	StartTime    time.Time
@@ -43,10 +44,11 @@ type Meeting struct {
 	doneCh     chan bool
 }
 
-func NewMeeting(id string, user *slick.User, goal string, bot *slick.Bot, room *slick.Room, uuidNow time.Time) *Meeting {
+func NewMeeting(id string, user *slack.User, goal string, bot *slick.Bot, channel *slack.Channel, uuidNow time.Time) *Meeting {
 	meeting := &Meeting{}
 	meeting.ID = id
-	meeting.Room = room.JID
+	meeting.Channel = channel.Name
+	meeting.ChannelID = channel.Id
 	meeting.Goal = strings.TrimSpace(goal)
 	meeting.StartTime = uuidNow
 	meeting.Decisions = []*Decision{}
@@ -54,11 +56,11 @@ func NewMeeting(id string, user *slick.User, goal string, bot *slick.Bot, room *
 	meeting.Logs = []*Message{}
 	meeting.Participants = []*User{}
 	meeting.sendToRoom = func(msg string) {
-		bot.SendToRoom(room.JID, msg)
+		bot.SendToChannel(meeting.ChannelID, msg)
 	}
 	meeting.setTopic = func(topic string) {
-		roomId := fmt.Sprintf("%v", room.ID)
-		hipchatv2.SetTopic(bot.Config.HipchatApiToken, roomId, topic)
+		// TODO: set a topic with Slack.
+		//hipchatv2.SetTopic(bot.Config.HipchatApiToken, roomId, topic)
 	}
 
 	newUser := meeting.ImportUser(user)
@@ -67,8 +69,8 @@ func NewMeeting(id string, user *slick.User, goal string, bot *slick.Bot, room *
 	return meeting
 }
 
-func (meeting *Meeting) ImportUser(user *slick.User) *User {
-	fromEmail := user.Email
+func (meeting *Meeting) ImportUser(user *slack.User) *User {
+	fromEmail := user.Profile.Email
 
 	for _, user := range meeting.Participants {
 		if user.Email == fromEmail {
@@ -77,9 +79,9 @@ func (meeting *Meeting) ImportUser(user *slick.User) *User {
 	}
 
 	newUser := &User{
-		Email:    user.Email,
+		Email:    user.Profile.Email,
 		Fullname: user.Name,
-		PhotoURL: user.PhotoURL,
+		PhotoURL: user.Profile.Image48,
 	}
 
 	meeting.Participants = append(meeting.Participants, newUser)

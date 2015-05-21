@@ -2,31 +2,33 @@ package slick
 
 import (
 	"fmt"
+	"regexp"
 	"strings"
 
-	"github.com/plotly/hipchat"
+	"github.com/nlopes/slack"
 )
 
 type BotReply struct {
-	To      string
-	Message string
+	To   string
+	Text string
 }
 
 type Message struct {
-	*hipchat.Message
-	MentionsMe bool
-	FromMe     bool
-	FromUser   *User
-	FromRoom   *Room
+	*slack.Msg
+	SubMessage  *slack.Msg
+	MentionsMe  bool
+	FromMe      bool
+	FromUser    *slack.User
+	FromChannel *slack.Channel
 }
 
 func (msg *Message) IsPrivate() bool {
-	return msg.FromRoom == nil
+	return msg.ChannelId == ""
 }
 
 func (msg *Message) ContainsAnyCased(strs []string) bool {
 	for _, s := range strs {
-		if strings.Contains(msg.Body, s) {
+		if strings.Contains(msg.Text, s) {
 			return true
 		}
 	}
@@ -34,7 +36,7 @@ func (msg *Message) ContainsAnyCased(strs []string) bool {
 }
 
 func (msg *Message) ContainsAny(strs []string) bool {
-	lowerStr := strings.ToLower(msg.Body)
+	lowerStr := strings.ToLower(msg.Text)
 
 	for _, s := range strs {
 		lowerInput := strings.ToLower(s)
@@ -48,7 +50,7 @@ func (msg *Message) ContainsAny(strs []string) bool {
 
 func (msg *Message) ContainsAll(strs []string) bool {
 
-	lowerStr := strings.ToLower(msg.Body)
+	lowerStr := strings.ToLower(msg.Text)
 
 	for _, s := range strs {
 		lowerInput := strings.ToLower(s)
@@ -61,7 +63,7 @@ func (msg *Message) ContainsAll(strs []string) bool {
 }
 
 func (msg *Message) Contains(s string) bool {
-	lowerStr := strings.ToLower(msg.Body)
+	lowerStr := strings.ToLower(msg.Text)
 	lowerInput := strings.ToLower(s)
 
 	if strings.Contains(lowerStr, lowerInput) {
@@ -71,44 +73,43 @@ func (msg *Message) Contains(s string) bool {
 }
 
 func (msg *Message) Reply(s string) *BotReply {
-	return &BotReply{
-		To:      msg.From,
-		Message: s,
+	rep := &BotReply{
+		Text: s,
 	}
+	if msg.ChannelId != "" {
+		rep.To = msg.ChannelId
+	} else {
+		rep.To = msg.UserId
+	}
+	return rep
 }
 
 func (msg *Message) ReplyPrivately(s string) *BotReply {
 	return &BotReply{
-		To:      msg.FromUser.JID,
-		Message: s,
+		To:   msg.UserId,
+		Text: s,
 	}
 }
 
 func (msg *Message) String() string {
-	fromUser := "<unknown>"
-	if msg.FromUser != nil {
-		fromUser = msg.FromUser.Name
-	}
-	fromRoom := "<none>"
-	if msg.FromRoom != nil {
-		fromRoom = msg.FromRoom.Name
-	}
-	return fmt.Sprintf(`Message{"%s", from_user=%s, from_room=%s, mentioned=%v, private=%v}`, msg.Body, fromUser, fromRoom, msg.MentionsMe, msg.IsPrivate())
+	return fmt.Sprintf("%#v", msg)
 }
 
 func (msg *Message) applyMentionsMe(bot *Bot) {
-	atMention := "@" + bot.Config.Mention
-	mentionColon := bot.Config.Mention + ":"
-	mentionComma := bot.Config.Mention + ","
+	if msg.IsPrivate() {
+		msg.MentionsMe = true
+	}
 
-	msg.MentionsMe = (strings.Contains(msg.Body, atMention) ||
-		strings.HasPrefix(msg.Body, mentionColon) ||
-		strings.HasPrefix(msg.Body, mentionComma) ||
-		msg.IsPrivate())
-
-	return
+	m := reAtMention.FindStringSubmatch(msg.Text)
+	if m != nil && m[1] == bot.Myself.Id {
+		msg.MentionsMe = true
+	}
 }
 
 func (msg *Message) applyFromMe(bot *Bot) {
-	msg.FromMe = strings.HasPrefix(msg.FromNick(), bot.Config.Nickname)
+	if msg.UserId == bot.Myself.Id {
+		msg.FromMe = true
+	}
 }
+
+var reAtMention = regexp.MustCompile(`<@([A-Z0-9]+)(|([^>]+))>`)

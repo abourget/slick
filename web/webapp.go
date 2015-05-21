@@ -87,7 +87,6 @@ func (webapp *Webapp) ServeWebRequests() {
 
 // 	rt.HandleFunc("/send_notif", handleNotif)
 // 	rt.HandleFunc("/hipchat/users", handleGetUsers)
-// 	rt.HandleFunc("/hipchat/rooms", handleGetRooms)
 
 // 	n.Run("localhost:8080")
 // }

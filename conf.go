@@ -5,16 +5,15 @@ import (
 	"os"
 )
 
-type HipchatConfig struct {
+type SlackConfig struct {
 	Username        string
 	Password        string
 	Resource        string
 	Nickname        string
-	Mention         string
-	Rooms           []string
-	TeamRoom        string `json:"team_room"`
-	HipchatApiToken string `json:"hipchat_api_token"`
-	WebBaseURL      string `json:"web_base_url"`
+	JoinChannels    []string `json:"join_channels"`
+	GeneralChannel  string   `json:"general_channel"`
+	ApiToken        string   `json:"api_token"`
+	WebBaseURL      string   `json:"web_base_url"`
 }
 
 type LevelConfig struct {
@@ -30,7 +29,7 @@ type ChatPluginConfig struct {
 }
 
 type Config struct {
-	Hipchat HipchatConfig `json:"Hipchat"`
+	Slack SlackConfig `json:"Slack"`
 }
 
 func checkPermission(file string) error {

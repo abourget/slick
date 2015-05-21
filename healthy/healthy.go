@@ -42,7 +42,7 @@ func (healthy *Healthy) InitChatPlugin(bot *slick.Bot) {
 
 // Handler
 func (healthy *Healthy) ChatHandler(conv *slick.Conversation, msg *slick.Message) {
-	log.Println("Health check. Requested by", msg.From)
+	log.Println("Health check. Requested by", msg.FromUser.Name)
 	conv.Reply(msg, healthy.CheckAll())
 }
 

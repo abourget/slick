@@ -4,7 +4,7 @@ import (
 	"testing"
 	"time"
 
-	"github.com/plotly/hipchat"
+	"github.com/nlopes/slack"
 )
 
 func TestConversationCheckParams(t *testing.T) {
@@ -20,8 +20,8 @@ func TestConversationCheckParams(t *testing.T) {
 
 func TestDefeaultFilter(t *testing.T) {
 	c := &Conversation{}
-	u := &User{JID: "a_user"}
-	m := &Message{Message: &hipchat.Message{Body: "hello mama"}, FromUser: u}
+	u := &slack.User{Id: "a_user"}
+	m := &Message{Msg: &slack.Msg{Text: "hello mama"}, FromUser: u}
 
 	if defaultFilterFunc(c, m) != true {
 		t.Error("defaultFilterFunc Failed")
@@ -47,7 +47,7 @@ func TestDefeaultFilter(t *testing.T) {
 		}, true},
 
 		El{&Conversation{
-			WithUser: &User{JID: "another_user"},
+			WithUser: &slack.User{Id: "another_user"},
 		}, false},
 	}
 

@@ -90,7 +90,7 @@ func (bugger *Bugger) ChatHandler(conv *slick.Conversation, msg *slick.Message) 
 		} else {
 			report = "bug count"
 		}
-		mention := bugger.bot.Config.Mention
+		mention := bugger.bot.Config.Nickname
 
 		conv.Reply(msg, fmt.Sprintf(
 			`Usage: %s, [give me a | insert demand]  <%s>  [from the | syntax filler] [last | past] [n] [days | weeks]
@@ -101,7 +101,7 @@ examples: %s, please give me a %s over the last 5 days
 
 	} else if msg.Contains("bug report") {
 
-		days := util.GetDaysFromQuery(msg.Body)
+		days := util.GetDaysFromQuery(msg.Text)
 		bugger.messageReport(days, msg, conv, func() string {
 			reporter := bugger.makeBugReporter(days)
 			return reporter.printReport(days)
@@ -109,7 +109,7 @@ examples: %s, please give me a %s over the last 5 days
 
 	} else if msg.Contains("bug count") {
 
-		days := util.GetDaysFromQuery(msg.Body)
+		days := util.GetDaysFromQuery(msg.Text)
 		bugger.messageReport(days, msg, conv, func() string {
 			reporter := bugger.makeBugReporter(days)
 			return reporter.printCount(days)

@@ -5,9 +5,9 @@ import (
 	"fmt"
 	"net/http"
 
-	"github.com/gorilla/mux"
 	"github.com/abourget/slick"
-	"github.com/abourget/slick/hipchatv2"
+	"github.com/gorilla/mux"
+	"github.com/nlopes/slack"
 )
 
 type Utils struct {
@@ -20,56 +20,20 @@ func init() {
 
 func (utils *Utils) InitWebPlugin(bot *slick.Bot, privRouter *mux.Router, pubRouter *mux.Router) {
 	utils.bot = bot
-	privRouter.HandleFunc("/send_notif", utils.handleNotif)
-	privRouter.HandleFunc("/send_message", utils.handleSendMessage)
-	privRouter.HandleFunc("/hipchat/rooms", utils.handleGetRooms)
-	privRouter.HandleFunc("/hipchat/users", utils.handleGetUsers)
-}
-
-func (utils *Utils) handleNotif(w http.ResponseWriter, r *http.Request) {
-	hipchatv2.SendNotification(utils.bot.Config.HipchatApiToken, "DevOps", "gray", "text", "Hey that's great!", false)
-
-	http.Error(w, "OK", 200)
-}
-
-func (utils *Utils) handleSendMessage(w http.ResponseWriter, r *http.Request) {
-	var data struct {
-		Room    string
-		Message string
-	}
-	err := json.NewDecoder(r.Body).Decode(&data)
-	if err != nil {
-		http.Error(w, "Couldn't decode message", 500)
-		return
-	}
-
-	room := utils.bot.GetRoom(data.Room)
-	if room == nil {
-		http.Error(w, "No such room", 400)
-		return
-	}
-
-	utils.bot.SendToRoom(room.JID, data.Message)
-
-	http.Error(w, "OK", 200)
+	privRouter.HandleFunc("/slack/channels", utils.handleGetChannels)
+	privRouter.HandleFunc("/slack/users", utils.handleGetUsers)
 }
 
 func (utils *Utils) handleGetUsers(w http.ResponseWriter, r *http.Request) {
-	users, err := hipchatv2.GetUsers(utils.bot.Config.HipchatApiToken)
-	if err != nil {
-		webReportError(w, "Error fetching users", err)
-		return
-	}
-
 	w.Header().Set("Content-Type", "application/json")
 	enc := json.NewEncoder(w)
 	out := struct {
-		Users []hipchatv2.User `json:"users"`
+		Users map[string]slack.User `json:"users"`
 	}{
-		Users: users,
+		Users: utils.bot.Users,
 	}
 
-	err = enc.Encode(out)
+	err := enc.Encode(out)
 	if err != nil {
 		webReportError(w, "Error encoding JSON", err)
 		return
@@ -77,22 +41,16 @@ func (utils *Utils) handleGetUsers(w http.ResponseWriter, r *http.Request) {
 	return
 }
 
-func (utils *Utils) handleGetRooms(w http.ResponseWriter, r *http.Request) {
-	rooms, err := hipchatv2.GetRooms(utils.bot.Config.HipchatApiToken)
-	if err != nil {
-		webReportError(w, "Error fetching rooms", err)
-		return
-	}
-
+func (utils *Utils) handleGetChannels(w http.ResponseWriter, r *http.Request) {
 	w.Header().Set("Content-Type", "application/json")
 	enc := json.NewEncoder(w)
 	out := struct {
-		Rooms []hipchatv2.Room `json:"rooms"`
+		Channels map[string]slack.Channel `json:"channels"`
 	}{
-		Rooms: rooms,
+		Channels: utils.bot.Channels,
 	}
 
-	err = enc.Encode(out)
+	err := enc.Encode(out)
 	if err != nil {
 		webReportError(w, "Error encoding JSON", err)
 		return

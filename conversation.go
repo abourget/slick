@@ -4,6 +4,8 @@ import (
 	"fmt"
 	"log"
 	"time"
+
+	"github.com/nlopes/slack"
 )
 
 type Conversation struct {
@@ -19,10 +21,10 @@ type Conversation struct {
 
 	// WithUser filters out incoming messages that are not with
 	// `*User` (publicly or privately)
-	WithUser *User
-	// InRoom filters messages that are sent to a different room than
+	WithUser *slack.User
+	// InChannel filters messages that are sent to a different room than
 	// `Room`. This can be mixed and matched with `WithUser`
-	InRoom *Room
+	InChannel *slack.Channel
 
 	// PrivateOnly filters out public messages.
 	PrivateOnly bool
@@ -185,15 +187,15 @@ func defaultFilterFunc(conv *Conversation, msg *Message) bool {
 		return false
 	}
 
-	if conv.WithUser != nil && msg.FromUser.JID != conv.WithUser.JID {
+	if conv.WithUser != nil && msg.FromUser.Id != conv.WithUser.Id {
 		return false
 	}
 
-	if conv.InRoom != nil {
-		if msg.FromRoom == nil {
+	if conv.InChannel != nil {
+		if msg.FromChannel == nil {
 			return false
 		}
-		if msg.FromRoom.JID != conv.InRoom.JID {
+		if msg.FromChannel.Id != conv.InChannel.Id {
 			return false
 		}
 	}

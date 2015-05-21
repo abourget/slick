@@ -4,13 +4,14 @@ import (
 	"testing"
 
 	"github.com/abourget/slick"
+	"github.com/nlopes/slack"
 )
 
 func TestFindNextRoom(t *testing.T) {
 	w := &Wicked{
-		bot: &slick.Bot{Rooms: []slick.Room{
-			slick.Room{JID: "room2"},
-			slick.Room{JID: "room3"},
+		bot: &slick.Bot{Channels: map[string]slack.Channel{
+			"room2": {BaseChannel: slack.BaseChannel{Id: "room2"}, Name: "room2"},
+			"room3": {BaseChannel: slack.BaseChannel{Id: "room3"}, Name: "room3"},
 		}},
 		meetings: map[string]*Meeting{
 			"room1": &Meeting{},
@@ -27,7 +28,7 @@ func TestFindNextRoom(t *testing.T) {
 	if res == nil {
 		t.Fail()
 	}
-	if res.JID != "room2" {
+	if res.Id != "room2" {
 		t.Error(`Should be "room2"`)
 	}
 
@@ -36,15 +37,15 @@ func TestFindNextRoom(t *testing.T) {
 	if res == nil {
 		t.Fail()
 	}
-	if res.JID != "room3" {
+	if res.Id != "room3" {
 		t.Error(`Should be "room3"`)
 	}
 }
 
 func TestFindNextRoomNilFromRoom(t *testing.T) {
 	w := &Wicked{
-		bot: &slick.Bot{Rooms: []slick.Room{
-			slick.Room{JID: "room1"},
+		bot: &slick.Bot{Channels: map[string]slack.Channel{
+			"room1": {BaseChannel: slack.BaseChannel{Id: "room1"}, Name: "room1"},
 		}},
 		meetings:  map[string]*Meeting{},
 		confRooms: []string{"room1"},
@@ -55,14 +56,14 @@ func TestFindNextRoomNilFromRoom(t *testing.T) {
 	if res == nil {
 		t.Fail()
 	}
-	if res.JID != "room1" {
+	if res.Id != "room1" {
 		t.Error(`Should be "room1"`)
 	}
 }
 
 func TestFindNextRoomAllTake(t *testing.T) {
 	w := &Wicked{
-		bot: &slick.Bot{Rooms: []slick.Room{}},
+		bot: &slick.Bot{Channels: map[string]slack.Channel{}},
 		meetings: map[string]*Meeting{
 			"room1": &Meeting{},
 		},

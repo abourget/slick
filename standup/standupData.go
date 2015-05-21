@@ -100,7 +100,7 @@ func (sm standupMap) String() (str string) {
 	for _, sdate := range sorted {
 		users := sm[sdate]
 		for _, user := range users {
-			seenUsers[user.Email] = user
+			seenUsers[user.Profile.Email] = user
 			lastUser = user
 		}
 	}

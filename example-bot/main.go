@@ -2,9 +2,7 @@ package main
 
 import (
 	"flag"
-	"io/ioutil"
 	"os"
-	"strconv"
 
 	"github.com/abourget/slick"
 	_ "github.com/abourget/slick/bugger"
@@ -27,17 +25,6 @@ func main() {
 	flag.Parse()
 
 	bot := slick.New(*configFile)
-
-	var serverConf struct {
-		Server struct {
-			Pidfile string `json:"pid_file"`
-		}
-	}
-
-	bot.LoadConfig(&serverConf)
-	pid := os.Getpid()
-	pidb := []byte(strconv.Itoa(pid))
-	ioutil.WriteFile(serverConf.Server.Pidfile, pidb, 0755)
 
 	bot.Run()
 }

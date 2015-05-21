@@ -54,7 +54,7 @@ func (standup *Standup) manageUpdatesInteraction() {
 	for {
 		select {
 		case update := <-standup.sectionUpdates:
-			userEmail := update.msg.FromUser.Email
+			userEmail := update.msg.FromUser.Profile.Email
 			progress := userProgressMap[userEmail]
 			if progress == nil {
 				progress = &userProgress{
@@ -72,7 +72,7 @@ func (standup *Standup) manageUpdatesInteraction() {
 				numDone := len(progress.sectionsDone)
 				if numDone == 3 {
 					standup.bot.ReplyMention(update.msg, "got it!")
-					delete(userProgressMap, update.msg.FromUser.Email)
+					delete(userProgressMap, update.msg.FromUser.Profile.Email)
 				} else {
 					progress.cancelTimer = make(chan bool)
 					go progress.waitAndCheckProgress(update.msg, remindCh)
@@ -80,7 +80,7 @@ func (standup *Standup) manageUpdatesInteraction() {
 			}
 
 		case msg := <-resetCh:
-			userEmail := msg.FromUser.Email
+			userEmail := msg.FromUser.Profile.Email
 			progress := userProgressMap[userEmail]
 			if progress != nil {
 				close(progress.cancelTimer)
@@ -89,7 +89,7 @@ func (standup *Standup) manageUpdatesInteraction() {
 
 		case msg := <-remindCh:
 			// Do the reminding for that user
-			userEmail := msg.FromUser.Email
+			userEmail := msg.FromUser.Profile.Email
 			userProgress := userProgressMap[userEmail]
 			if userProgress == nil {
 				continue

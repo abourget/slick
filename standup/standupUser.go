@@ -3,11 +3,11 @@ package standup
 import (
 	"strings"
 
-	"github.com/abourget/slick"
+	"github.com/nlopes/slack"
 )
 
 type standupUser struct {
-	*slick.User
+	*slack.User
 	data standupData
 }
 
@@ -21,7 +21,7 @@ type standupUsers []standupUser
 // TODO make this less specific to email, pass in a user struct filter and match against fields
 func (users standupUsers) filterByEmail(email string) (fusers standupUsers) {
 	for _, user := range users {
-		if email == user.Email {
+		if email == user.Profile.Email {
 			fusers = append(fusers, user)
 		}
 	}

@@ -45,7 +45,7 @@ func (totw *Totw) InitChatPlugin(bot *slick.Bot) {
 
 	totw.bot = bot
 
-	go totw.ScheduleAlerts(bot.Config.TeamRoom, time.Thursday, 16, 0)
+	go totw.ScheduleAlerts(bot.Config.GeneralChannel, time.Thursday, 16, 0)
 
 	bot.ListenFor(&slick.Conversation{
 		HandlerFunc: totw.ChatHandler,
@@ -53,19 +53,19 @@ func (totw *Totw) InitChatPlugin(bot *slick.Bot) {
 }
 
 func (totw *Totw) ChatHandler(conv *slick.Conversation, msg *slick.Message) {
-	if strings.HasPrefix(msg.Body, "!totw") || strings.HasPrefix(msg.Body, "!techoftheweek") {
+	if strings.HasPrefix(msg.Text, "!totw") || strings.HasPrefix(msg.Text, "!techoftheweek") {
 		conv.ReplyMention(msg, slick.RandomString("tech adept"))
 	}
 }
 
-func (totw *Totw) ScheduleAlerts(room string, w time.Weekday, hour, min int) {
+func (totw *Totw) ScheduleAlerts(channel string, w time.Weekday, hour, min int) {
 	for {
 		next, when := slick.NextWeekdayTime(w, hour, min)
 		log.Println("TOTW: Next occurrence: ", next)
 
 		<-time.After(when)
 
-		totw.bot.SendToRoom(room, slick.RandomString("useless techs"))
-		totw.bot.SendToRoom(room, `Time for some Tech of the Week! What's your pick ?  Start your line with "!techoftheweek"`)
+		totw.bot.SendToChannel(channel, slick.RandomString("useless techs"))
+		totw.bot.SendToChannel(channel, `Time for some Tech of the Week! What's your pick ?  Start your line with "!techoftheweek"`)
 	}
 }

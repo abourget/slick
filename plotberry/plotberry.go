@@ -131,7 +131,7 @@ func (plotberry *PlotBerry) launchCounter(statchan chan TotalUsers) {
 			} else if rem == 2 {
 				msg = fmt.Sprintf("%d more! humpa humpa\n", rem)
 			} else if rem == 1 {
-				plotberry.bot.SendToRoom(plotberry.bot.Config.TeamRoom, fmt.Sprintf("%d users until 100000.\nYOU'RE ALL MAGIC!", rem))
+				plotberry.bot.SendToChannel(plotberry.bot.Config.GeneralChannel, fmt.Sprintf("%d users until 100000.\nYOU'RE ALL MAGIC!", rem))
 				msg = "https://31.media.tumblr.com/3b74abfa367a3ed9a2cd753cd9018baa/tumblr_miul04oqog1qkp8xio1_400.gif"
 			} else if rem <= 0 {
 				msg = fmt.Sprintf("@all FINALCOUNTDOWN!!!\n We're at %d user signups!!!!! My human compatriots, taking an idea to a product with 100,000 users is an achievement few will experience in their life times. Reflect, humans, on your hard work and celebrate this success. You deserve it, and remember, Plot On!", totalUsers)
@@ -140,7 +140,7 @@ func (plotberry *PlotBerry) launchCounter(statchan chan TotalUsers) {
 				msg = fmt.Sprintf("We are at %d total user signups!", totalUsers)
 			}
 
-			plotberry.bot.SendToRoom(plotberry.bot.Config.TeamRoom, msg)
+			plotberry.bot.SendToChannel(plotberry.bot.Config.GeneralChannel, msg)
 		}
 	}
 

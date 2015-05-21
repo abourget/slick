@@ -100,7 +100,7 @@ func (hooker *Hooker) onPayingUser(w http.ResponseWriter, r *http.Request) {
 	}
 
 	if stripeEvent.Type == "customer.subscription.created" {
-		hooker.bot.SendToRoom(hooker.bot.Config.TeamRoom,
+		hooker.bot.SendToChannel(hooker.bot.Config.GeneralChannel,
 			fmt.Sprintf("Hey! Someone just subscribed to Plotly! More details here: https://dashboard.stripe.com/logs/%s",
 				stripeEvent.Request))
 	}

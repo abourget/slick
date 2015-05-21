@@ -5,7 +5,7 @@ import (
 	"strconv"
 	"testing"
 
-	"github.com/abourget/slick"
+	"github.com/nlopes/slack"
 )
 
 func TestStandupDataString(t *testing.T) {
@@ -31,17 +31,17 @@ func getTestStandupMap() standupMap {
 	sm := make(standupMap)
 
 	uA := standupUser{
-		&slick.User{
-			Name:  "A",
-			Email: "A@test.ly",
+		&slack.User{
+			Name:    "A",
+			Profile: slack.UserProfile{Email: "A@test.ly"},
 		},
 		standupData{},
 	}
 
 	uB := standupUser{
-		&slick.User{
-			Name:  "B",
-			Email: "B@test.ly",
+		&slack.User{
+			Name:    "B",
+			Profile: slack.UserProfile{Email: "B@test.ly"},
 		},
 		standupData{},
 	}

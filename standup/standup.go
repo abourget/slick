@@ -7,6 +7,7 @@ import (
 
 	"github.com/abourget/slick"
 	"github.com/abourget/slick/util"
+	"github.com/nlopes/slack"
 	levelutil "github.com/syndtr/goleveldb/leveldb/util"
 )
 
@@ -34,9 +35,9 @@ func (standup *Standup) InitChatPlugin(bot *slick.Bot) {
 }
 
 func (standup *Standup) ChatHandler(conv *slick.Conversation, msg *slick.Message) {
-	res := sectionRegexp.FindAllStringSubmatchIndex(msg.Body, -1)
+	res := sectionRegexp.FindAllStringSubmatchIndex(msg.Text, -1)
 	if res != nil {
-		for _, section := range extractSectionAndText(msg.Body, res) {
+		for _, section := range extractSectionAndText(msg.Text, res) {
 			standup.TriggerReminders(msg, section.name)
 			err := standup.StoreLine(msg, section.name, section.text)
 			if err != nil {
@@ -44,7 +45,7 @@ func (standup *Standup) ChatHandler(conv *slick.Conversation, msg *slick.Message
 			}
 		}
 	} else if msg.MentionsMe && msg.Contains("standup report") {
-		daysAgo := util.GetDaysFromQuery(msg.Body)
+		daysAgo := util.GetDaysFromQuery(msg.Text)
 		smap, err := standup.getRange(getStandupDate(-daysAgo), getStandupDate(TODAY))
 		if err != nil {
 			log.Println(err)
@@ -52,7 +53,7 @@ func (standup *Standup) ChatHandler(conv *slick.Conversation, msg *slick.Message
 				"I am the eggman and the walrus ate your report - Fzaow!"))
 		} else {
 			if msg.Contains(" my ") {
-				conv.Reply(msg, "/quote "+smap.filterByEmail(msg.FromUser.Email).String())
+				conv.Reply(msg, "/quote "+smap.filterByEmail(msg.FromUser.Profile.Email).String())
 			} else {
 				conv.Reply(msg, "/quote "+smap.String())
 			}
@@ -93,7 +94,7 @@ func (standup *Standup) getRange(from, to standupDate) (standupMap, error) {
 			// initialize a new user from the messaging platform
 			puser := standup.bot.GetUser(email)
 			if puser == nil {
-				puser = &slick.User{}
+				puser = &slack.User{}
 			}
 			user = standupUser{puser, standupData{}}
 
@@ -114,7 +115,7 @@ func (standup *Standup) getRange(from, to standupDate) (standupMap, error) {
 }
 
 func (standup *Standup) get(u standupUser, sd standupDate) (stand standupData, err error) {
-	key := standupKey{sd, u.Email}.key()
+	key := standupKey{sd, u.Profile.Email}.key()
 
 	db := standup.bot.DB
 	data, err := db.Get(key, nil)
@@ -134,7 +135,7 @@ func (standup *Standup) put(u standupUser, sd standupDate) (err error) {
 		return
 	}
 
-	key := standupKey{sd, u.Email}.key()
+	key := standupKey{sd, u.Profile.Email}.key()
 	err = db.Put(key, jdata, nil)
 	return
 }
@@ -142,7 +143,7 @@ func (standup *Standup) put(u standupUser, sd standupDate) (err error) {
 func (standup *Standup) StoreLine(msg *slick.Message, section string, line string) error {
 
 	standupDate := getStandupDate(TODAY)
-	user := standupUser{standup.bot.GetUser(msg.From), standupData{}}
+	user := standupUser{msg.FromUser, standupData{}}
 	data, err := standup.get(user, standupDate)
 	if err != nil {
 		log.Printf("Standup data for %s does not exist - using fresh\n", user.Name)

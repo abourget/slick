@@ -77,7 +77,7 @@ func (funny *Funny) ChatHandler(conv *slick.Conversation, msg *slick.Message) {
 			bot.ListenFor(&slick.Conversation{
 				ListenDuration: 60 * time.Second,
 				WithUser:       msg.FromUser,
-				InRoom:         msg.FromRoom,
+				InChannel:      msg.FromChannel,
 				MentionsMeOnly: true,
 				HandlerFunc: func(conv *slick.Conversation, msg *slick.Message) {
 					conv.ReplyMention(msg, bot.WithMood("glad to hear it!", "zwweeeeeeeeet !"))
@@ -173,7 +173,7 @@ func (funny *Funny) ChatHandler(conv *slick.Conversation, msg *slick.Message) {
 		conv.Reply(msg, "https://i.chzbgr.com/maxW500/8296294144/h7AC1001C.gif")
 		return
 
-	} else if msg.Body == "ls" {
+	} else if msg.Text == "ls" {
 
 		conv.Reply(msg, "/code deploy/      Contributors-Guide/ image_server/     sheep_porn/     streambed/\nstreamhead/  README.md")
 
