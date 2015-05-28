@@ -292,18 +292,17 @@ func (bot *Bot) replyHandler() {
 	count := 0
 	for {
 		reply := <-bot.replySink
-		if reply != nil {
-			//log.Println("REPLYING", reply.To, reply.Message)
-			count += 1
-			bot.rtm.SendMessage(&slack.OutgoingMessage{
-				Id:        count,
-				ChannelId: reply.To,
-				Type:      "message",
-				Text:      reply.Text,
-			})
-			time.Sleep(50 * time.Millisecond)
-
+		if reply == nil {
+			continue
 		}
+
+		//log.Println("REPLYING", reply.To, reply.Message)
+		count += 1
+
+		outMsg := bot.rtm.NewOutgoingMessage(reply.Text, reply.To)
+		bot.rtm.SendMessage(outMsg)
+
+		time.Sleep(50 * time.Millisecond)
 	}
 }
 
