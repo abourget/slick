@@ -12,7 +12,6 @@ import (
 // Hipbot Plugin
 type Healthy struct {
 	urls   []string
-	config *slick.ChatPluginConfig
 }
 
 func init() {
@@ -20,23 +19,20 @@ func init() {
 }
 
 func (healthy *Healthy) InitChatPlugin(bot *slick.Bot) {
-	healthy.config = &slick.ChatPluginConfig{
-		EchoMessages: false,
-		OnlyMentions: true,
-	}
-
 	var conf struct {
 		HealthCheck struct {
 			Urls []string
 		}
 	}
+
 	bot.LoadConfig(&conf)
 
 	healthy.urls = conf.HealthCheck.Urls
 
 	bot.ListenFor(&slick.Conversation{
-		ContainsAny: []string{"health", "healthy?", "health_check"},
-		HandlerFunc: healthy.ChatHandler,
+		MentionsMeOnly: true,
+		ContainsAny:    []string{"health", "healthy?", "health_check"},
+		HandlerFunc:    healthy.ChatHandler,
 	})
 }
 

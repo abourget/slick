@@ -61,18 +61,13 @@ func (dep *Deployer) InitChatPlugin(bot *slick.Bot) {
 	go dep.pubsubForwardReply()
 
 	bot.ListenFor(&slick.Conversation{
-		HandlerFunc: dep.ChatHandler,
+		HandlerFunc:    dep.ChatHandler,
+		MentionsMeOnly: true,
 	})
 }
 
 func (dep *Deployer) loadInternalAPI() {
 	dep.internal = internal.New(dep.bot.LoadConfig)
-}
-
-func (dep *Deployer) ChatConfig() *slick.ChatPluginConfig {
-	return &slick.ChatPluginConfig{
-		OnlyMentions: true,
-	}
 }
 
 /**

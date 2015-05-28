@@ -99,9 +99,9 @@ func (bot *Bot) Run() {
 		enabledPlugins = append(enabledPlugins, strings.Replace(pluginType.String(), ".", "_", -1))
 	}
 
-	InitChatPlugins(bot)
-	InitWebServer(bot, enabledPlugins)
-	InitWebPlugins(bot)
+	initChatPlugins(bot)
+	initWebServer(bot, enabledPlugins)
+	initWebPlugins(bot)
 
 	if bot.WebServer != nil {
 		go bot.WebServer.ServeWebRequests()
@@ -228,7 +228,6 @@ func (bot *Bot) connectClient() (err error) {
 	}
 
 	bot.api = slack.New(bot.Config.ApiToken)
-	// TODO: take out when needed
 	//bot.api.SetDebug(true)
 
 	ws, err := bot.api.StartRTM("", "http://safeidentity.slack.com")
@@ -253,7 +252,6 @@ func (bot *Bot) connectClient() (err error) {
 }
 
 func (bot *Bot) setupHandlers() {
-	// TODO: mark as present, not away
 	bot.disconnected = make(chan bool)
 	go keepaliveSlackWS(bot.ws)
 	go bot.replyHandler()
@@ -425,8 +423,6 @@ func (bot *Bot) handleRTMEvent(event *slack.SlackEvent) {
 			SubMessage: &ev.SubMessage,
 		}
 
-		// TODO: handle messages that update the channels, groups and users.. so we keep
-		// our cache fresh and up-to-date.
 		user, ok := bot.Users[ev.UserId]
 		if ok {
 			msg.FromUser = &user
