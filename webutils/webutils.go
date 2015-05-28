@@ -7,7 +7,7 @@ import (
 
 	"github.com/abourget/slick"
 	"github.com/gorilla/mux"
-	"github.com/nlopes/slack"
+	"github.com/abourget/slack"
 )
 
 type Utils struct {

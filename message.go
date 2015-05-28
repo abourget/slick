@@ -5,7 +5,7 @@ import (
 	"regexp"
 	"strings"
 
-	"github.com/nlopes/slack"
+	"github.com/abourget/slack"
 )
 
 type BotReply struct {

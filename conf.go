@@ -8,7 +8,6 @@ import (
 type SlackConfig struct {
 	Username       string
 	Password       string
-	Resource       string
 	Nickname       string
 	JoinChannels   []string `json:"join_channels"`
 	GeneralChannel string   `json:"general_channel"`

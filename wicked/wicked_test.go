@@ -4,7 +4,7 @@ import (
 	"testing"
 
 	"github.com/abourget/slick"
-	"github.com/nlopes/slack"
+	"github.com/abourget/slack"
 )
 
 func TestFindNextRoom(t *testing.T) {

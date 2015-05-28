@@ -5,7 +5,7 @@ import (
 	"log"
 	"time"
 
-	"github.com/nlopes/slack"
+	"github.com/abourget/slack"
 )
 
 type Conversation struct {

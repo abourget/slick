@@ -11,7 +11,7 @@ import (
 	"strings"
 	"time"
 
-	"github.com/nlopes/slack"
+	"github.com/abourget/slack"
 	"github.com/syndtr/goleveldb/leveldb"
 )
 
@@ -21,8 +21,8 @@ type Bot struct {
 	Config     SlackConfig
 
 	// Slack connectivity
-	api      *slack.Slack
-	ws       *slack.SlackWS
+	api      *slack.Client
+	rtm      *slack.RTM
 	Users    map[string]slack.User
 	Channels map[string]slack.Channel
 	Myself   slack.UserDetails
@@ -31,7 +31,6 @@ type Bot struct {
 	conversations     []*Conversation
 	addConversationCh chan *Conversation
 	delConversationCh chan *Conversation
-	disconnected      chan bool
 	replySink         chan *BotReply
 
 	// Storage
@@ -107,24 +106,15 @@ func (bot *Bot) Run() {
 		go bot.WebServer.ServeWebRequests()
 	}
 
-	for {
-		log.Println("Connecting client...")
-		err := bot.connectClient()
-		if err != nil {
-			log.Println("Error in connectClient(): ", err)
-			time.Sleep(3 * time.Second)
-			continue
-		}
+	bot.api = slack.New(bot.Config.ApiToken)
+	bot.api.SetDebug(true)
 
-		bot.setupHandlers()
+	rtm := bot.api.NewRTM()
+	bot.rtm = rtm
 
-		select {
-		case <-bot.disconnected:
-			log.Println("Disconnected...")
-			time.Sleep(1 * time.Second)
-			continue
-		}
-	}
+	bot.setupHandlers()
+
+	bot.rtm.ManageConnection()
 }
 
 func (bot *Bot) writePID() error {
@@ -221,39 +211,7 @@ func (bot *Bot) SendToChannel(channelName string, message string) {
 	return
 }
 
-func (bot *Bot) connectClient() (err error) {
-	resource := bot.Config.Resource
-	if resource == "" {
-		resource = "bot"
-	}
-
-	bot.api = slack.New(bot.Config.ApiToken)
-	//bot.api.SetDebug(true)
-
-	ws, err := bot.api.StartRTM("", "http://safeidentity.slack.com")
-	if err != nil {
-		return err
-	}
-	bot.ws = ws
-
-	infos := bot.api.GetInfo()
-	bot.Myself = infos.User
-	bot.cacheUsers(infos.Users)
-	bot.cacheChannels(infos.Channels, infos.Groups)
-
-	for _, channelName := range bot.Config.JoinChannels {
-		channel := bot.GetChannelByName(channelName)
-		if channel != nil {
-			bot.api.JoinChannel(channel.Id)
-		}
-	}
-
-	return
-}
-
 func (bot *Bot) setupHandlers() {
-	bot.disconnected = make(chan bool)
-	go keepaliveSlackWS(bot.ws)
 	go bot.replyHandler()
 	go bot.messageHandler()
 	log.Println("Bot ready")
@@ -279,25 +237,13 @@ func (bot *Bot) cacheChannels(channels []slack.Channel, groups []slack.Group) {
 			IsChannel:   false,
 			Creator:     group.Creator,
 			IsArchived:  group.IsArchived,
-			IsGeneral:   group.IsGeneral,
+			IsGeneral:   false,
 			IsGroup:     true,
 			Members:     group.Members,
 			Topic:       group.Topic,
 			Purpose:     group.Purpose,
 			IsMember:    true,
 			NumMembers:  group.NumMembers,
-		}
-	}
-}
-
-func keepaliveSlackWS(ws *slack.SlackWS) {
-	ticker := time.NewTicker(30 * time.Second)
-	defer ticker.Stop()
-
-	for {
-		<-ticker.C
-		if err := ws.Ping(); err != nil {
-			return
 		}
 	}
 }
@@ -345,25 +291,18 @@ func (bot *Bot) LoadConfig(config interface{}) (err error) {
 func (bot *Bot) replyHandler() {
 	count := 0
 	for {
-		select {
-		case <-bot.disconnected:
-			return
-		case reply := <-bot.replySink:
-			if reply != nil {
-				//log.Println("REPLYING", reply.To, reply.Message)
-				count += 1
-				err := bot.ws.SendMessage(&slack.OutgoingMessage{
-					Id:        count,
-					ChannelId: reply.To,
-					Type:      "message",
-					Text:      reply.Text,
-				})
-				if err != nil {
-					return
-				}
-				time.Sleep(50 * time.Millisecond)
+		reply := <-bot.replySink
+		if reply != nil {
+			//log.Println("REPLYING", reply.To, reply.Message)
+			count += 1
+			bot.rtm.SendMessage(&slack.OutgoingMessage{
+				Id:        count,
+				ChannelId: reply.To,
+				Type:      "message",
+				Text:      reply.Text,
+			})
+			time.Sleep(50 * time.Millisecond)
 
-			}
 		}
 	}
 }
@@ -383,21 +322,15 @@ func (bot *Bot) removeConversation(conv *Conversation) {
 }
 
 func (bot *Bot) messageHandler() {
-	events := make(chan slack.SlackEvent, 10)
-	go bot.ws.HandleIncomingEvents(events)
-
 	for {
 		select {
-		case <-bot.disconnected:
-			return
-
 		case conv := <-bot.addConversationCh:
 			bot.conversations = append(bot.conversations, conv)
 
 		case conv := <-bot.delConversationCh:
 			bot.removeConversation(conv)
 
-		case event := <-events:
+		case event := <-bot.rtm.IncomingEvents:
 			bot.handleRTMEvent(&event)
 		}
 
@@ -413,14 +346,45 @@ func (bot *Bot) messageHandler() {
 
 func (bot *Bot) handleRTMEvent(event *slack.SlackEvent) {
 	switch ev := event.Data.(type) {
-	case slack.HelloEvent:
+
+	/**
+	 * Connection handling...
+	 */
+	case *slack.LatencyReport:
+		log.Printf("Current latency: %v\n", ev)
+	case *slack.SlackWSError:
+		log.Printf("Error: %d - %s\n", ev.Code, ev.Msg)
+
+	case *slack.ConnectedEvent:
+		log.Printf("Bot connected, connection_count=%d\n", ev.ConnectionCount)
+		bot.Myself = *ev.Info.User
+		bot.cacheUsers(ev.Info.Users)
+		bot.cacheChannels(ev.Info.Channels, ev.Info.Groups)
+
+		for _, channelName := range bot.Config.JoinChannels {
+			channel := bot.GetChannelByName(channelName)
+			if channel != nil && !channel.IsMember {
+				bot.api.JoinChannel(channel.Id)
+			}
+		}
+
+	case *slack.DisconnectedEvent:
+		log.Println("Bot disconnected")
+
+	case *slack.ConnectingEvent:
+		log.Printf("Bot connecting, connection_count=%d, attempt=%d\n", ev.ConnectionCount, ev.Attempt)
+
+	case *slack.HelloEvent:
 		fmt.Println("Got a HELLO from websocket")
 
+	/**
+	 * Message dispatch and handling
+	 */
 	case *slack.MessageEvent:
 		fmt.Printf("Message: %v\n", ev)
 		msg := &Message{
 			Msg:        &ev.Msg,
-			SubMessage: &ev.SubMessage,
+			SubMessage: ev.SubMessage,
 		}
 
 		user, ok := bot.Users[ev.UserId]
@@ -452,14 +416,6 @@ func (bot *Bot) handleRTMEvent(event *slack.SlackEvent) {
 		user := bot.Users[ev.UserId]
 		log.Printf("User %q is now %q\n", user.Name, ev.Presence)
 		user.Presence = ev.Presence
-
-	/**
-	 * Mama
-	 */
-	case slack.LatencyReport:
-		fmt.Printf("Current latency: %v\n", ev)
-	case *slack.SlackWSError:
-		fmt.Printf("Error: %d - %s\n", ev.Code, ev.Msg)
 
 	// TODO: manage im_open, im_close, and im_created ?
 
@@ -536,19 +492,17 @@ func (bot *Bot) handleRTMEvent(event *slack.SlackEvent) {
 		group.IsArchived = false
 
 	default:
-		fmt.Printf("Unexpected: %v\n", ev)
+		log.Printf("Unexpected: %#v\n", ev)
 	}
+
+	// Dispatch to plugins who are listening for certain events..
 }
 
-// Disconnect, you can call many times, checks closed channel first.
+// Disconnect the websocket.
 func (bot *Bot) Disconnect() {
-	select {
-	case _, ok := <-bot.disconnected:
-		if ok {
-			close(bot.disconnected)
-		}
-	default:
-	}
+	// FIXME: implement a Reconnect() method.. calling the SlackWS method of the same name.
+	// QUERYME: do we need that, really ?
+	bot.rtm.Disconnect()
 }
 
 // GetUser returns a *slack.User by ID, Name, RealName or Email

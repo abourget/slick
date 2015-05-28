@@ -5,7 +5,7 @@ import (
 	"strconv"
 	"testing"
 
-	"github.com/nlopes/slack"
+	"github.com/abourget/slack"
 )
 
 func TestStandupDataString(t *testing.T) {

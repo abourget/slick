@@ -18,7 +18,7 @@ import (
 	"time"
 
 	"github.com/abourget/slick"
-	"github.com/nlopes/slack"
+	"github.com/abourget/slack"
 )
 
 type Wicked struct {

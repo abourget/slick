@@ -4,7 +4,7 @@ import (
 	"testing"
 	"time"
 
-	"github.com/nlopes/slack"
+	"github.com/abourget/slack"
 )
 
 func TestConversationCheckParams(t *testing.T) {
