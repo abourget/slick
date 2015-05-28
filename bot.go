@@ -35,8 +35,8 @@ type Bot struct {
 	replySink         chan *BotReply
 
 	// Storage
-	LevelConfig LevelConfig
-	DB          *leveldb.DB
+	LevelDBConfig LevelDBConfig
+	DB            *leveldb.DB
 
 	// Other features
 	WebServer WebServer
@@ -66,7 +66,7 @@ func (bot *Bot) Run() {
 		log.Fatal("Couldn't write PID file:", err)
 	}
 
-	db, err := leveldb.OpenFile(bot.LevelConfig.Path, nil)
+	db, err := leveldb.OpenFile(bot.LevelDBConfig.Path, nil)
 	if err != nil {
 		log.Fatal("Could not initialize Leveldb key/value store")
 	}
@@ -318,13 +318,13 @@ func (bot *Bot) loadBaseConfig() {
 	}
 
 	var config2 struct {
-		Leveldb LevelConfig
+		LevelDB LevelDBConfig
 	}
 	err = bot.LoadConfig(&config2)
 	if err != nil {
 		log.Fatalln("Error loading LevelDB config section:", err)
 	} else {
-		bot.LevelConfig = config2.Leveldb
+		bot.LevelDBConfig = config2.LevelDB
 	}
 }
 

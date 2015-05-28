@@ -6,17 +6,17 @@ import (
 )
 
 type SlackConfig struct {
-	Username        string
-	Password        string
-	Resource        string
-	Nickname        string
-	JoinChannels    []string `json:"join_channels"`
-	GeneralChannel  string   `json:"general_channel"`
-	ApiToken        string   `json:"api_token"`
-	WebBaseURL      string   `json:"web_base_url"`
+	Username       string
+	Password       string
+	Resource       string
+	Nickname       string
+	JoinChannels   []string `json:"join_channels"`
+	GeneralChannel string   `json:"general_channel"`
+	ApiToken       string   `json:"api_token"`
+	WebBaseURL     string   `json:"web_base_url"`
 }
 
-type LevelConfig struct {
+type LevelDBConfig struct {
 	Path string
 }
 
