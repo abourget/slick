@@ -28,10 +28,6 @@ type ChatPluginConfig struct {
 	OnlyMentions bool
 }
 
-type Config struct {
-	Slack SlackConfig `json:"Slack"`
-}
-
 func checkPermission(file string) error {
 	fi, err := os.Stat(file)
 	if err != nil {

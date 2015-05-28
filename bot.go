@@ -312,7 +312,7 @@ func (bot *Bot) loadBaseConfig() {
 	}
 	err := bot.LoadConfig(&config1)
 	if err != nil {
-		log.Fatalln("Error loading Hipchat config section: ", err)
+		log.Fatalln("Error loading Slack config section:", err)
 	} else {
 		bot.Config = config1.Slack
 	}
@@ -322,7 +322,7 @@ func (bot *Bot) loadBaseConfig() {
 	}
 	err = bot.LoadConfig(&config2)
 	if err != nil {
-		log.Fatalln("Error loading LevelDB config section: ", err)
+		log.Fatalln("Error loading LevelDB config section:", err)
 	} else {
 		bot.LevelConfig = config2.Leveldb
 	}
