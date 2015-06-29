@@ -1,4 +1,0 @@
-/**
- * Plotbot the Plotly Bot - https://plot.ly - ver: <%= pkg.version %>, rev: <%= gitRev %>, gen: <%= date %>
- * Source code: https://github.com/abourget/ahipbot - License: MIT or whatever - Copyright 2014 (c) Plotly Inc.
- */
