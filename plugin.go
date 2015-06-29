@@ -1,6 +1,13 @@
 package slick
 
-import "github.com/gorilla/mux"
+import (
+	"log"
+	"net/http"
+
+	"github.com/gorilla/mux"
+	"github.com/gorilla/sessions"
+	"github.com/abourget/slack"
+)
 
 //
 // Bot plugins
@@ -13,15 +20,29 @@ type PluginInitializer interface {
 }
 
 type WebServer interface {
+	// Used internally by the `slick` library.
 	InitWebServer(*Bot, []string)
-	ServeWebRequests()
+	RunServer()
+
+	// Used by an Auth provider.
+	SetAuthMiddleware(func(http.Handler) http.Handler)
+	SetAuthenticatedUserFunc(func(req *http.Request) (*slack.User, error))
+
+	// Can be called by any plugins.
 	PrivateRouter() *mux.Router
 	PublicRouter() *mux.Router
+	GetSession(*http.Request) *sessions.Session
+	AuthenticatedUser(*http.Request) (*slack.User, error)
 }
 
 // WebPlugin initializes plugins with a `Bot` instance, a `privateRouter` and a `publicRouter`. All URLs handled by the `publicRouter` must start with `/public/`.
 type WebPlugin interface {
-	InitWebPlugin(*Bot, *mux.Router, *mux.Router)
+	InitWebPlugin(bot *Bot, private *mux.Router, public *mux.Router)
+}
+
+// WebServerAuth returns a middleware warpping the passed on `http.Handler`. Only one auth handler can be added.
+type WebServerAuth interface {
+	InitWebServerAuth(bot *Bot, webserver WebServer)
 }
 
 var registeredPlugins = make([]Plugin, 0)
@@ -56,9 +77,19 @@ func initWebPlugins(bot *Bot) {
 	}
 
 	for _, plugin := range registeredPlugins {
-		webPlugin, ok := plugin.(WebPlugin)
-		if ok {
+		if webPlugin, ok := plugin.(WebPlugin); ok {
 			webPlugin.InitWebPlugin(bot, bot.WebServer.PrivateRouter(), bot.WebServer.PublicRouter())
 		}
+
+		count := 0
+		if webServerAuth, ok := plugin.(WebServerAuth); ok {
+			count += 1
+
+			if count > 1 {
+				log.Fatalln("Can not load two WebServerAuth plugins. Already loaded one.")
+			}
+			webServerAuth.InitWebServerAuth(bot, bot.WebServer)
+		}
+
 	}
 }

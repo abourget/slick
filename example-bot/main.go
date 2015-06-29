@@ -15,6 +15,7 @@ import (
 	_ "github.com/abourget/slick/standup"
 	_ "github.com/abourget/slick/totw"
 	_ "github.com/abourget/slick/web"
+	_ "github.com/abourget/slick/webauth"
 	_ "github.com/abourget/slick/webutils"
 	_ "github.com/abourget/slick/wicked"
 )

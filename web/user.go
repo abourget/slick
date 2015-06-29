@@ -1,29 +1,16 @@
 package web
 
 import (
-	"encoding/gob"
-	"html/template"
 	"encoding/json"
-	"log"
+	"html/template"
+
+	"github.com/abourget/slack"
 )
 
-type GoogleUserProfile struct {
-	Name          string `json:"name"`
-	Hd            string `json:"hd"`
-	Email         string `json:"email"`
-	Picture       string `json:"picture"`
-	VerifiedEmail bool   `json:"verified_email"`
-}
-
-func (up *GoogleUserProfile) AsJavascript() template.JS {
-	jsonProfile, err := json.MarshalIndent(up, "", "  ")
+func userAsJavascript(user *slack.User) template.JS {
+	jsonProfile, err := json.MarshalIndent(user, "", "  ")
 	if err != nil {
-		log.Fatal("Couldn't marshal GoogleUserProfile for rendering", err)
-		return template.JS("{}")
+		return template.JS(`{"error": "couldn't decode user"}`)
 	}
 	return template.JS(jsonProfile)
-}
-
-func init() {
-	gob.Register(&GoogleUserProfile{})
 }

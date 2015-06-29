@@ -11,8 +11,10 @@ type SlackConfig struct {
 	Nickname       string
 	JoinChannels   []string `json:"join_channels"`
 	GeneralChannel string   `json:"general_channel"`
+	TeamDomain     string   `json:"team_domain"`
 	ApiToken       string   `json:"api_token"`
 	WebBaseURL     string   `json:"web_base_url"`
+	Debug          bool
 }
 
 type LevelDBConfig struct {

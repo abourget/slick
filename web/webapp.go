@@ -7,33 +7,30 @@ import (
 	"log"
 	"net/http"
 
-	"github.com/GeertJohan/go.rice"
+	"github.com/abourget/slack"
+	"github.com/abourget/slick"
 	"github.com/codegangsta/negroni"
 	"github.com/gorilla/context"
 	"github.com/gorilla/mux"
 	"github.com/gorilla/sessions"
-	"github.com/abourget/slick"
-	"golang.org/x/oauth2"
 )
 
 var web *Webapp
 
 type Webapp struct {
-	config         *WebappConfig
-	store          *sessions.CookieStore
-	bot            *slick.Bot
-	handler        *negroni.Negroni
-	privateRouter  *mux.Router
-	publicRouter   *mux.Router
-	enabledPlugins []string
+	config                *WebappConfig
+	store                 *sessions.CookieStore
+	bot                   *slick.Bot
+	handler               *negroni.Negroni
+	privateRouter         *mux.Router
+	publicRouter          *mux.Router
+	enabledPlugins        []string
+	authMiddleware        func(http.Handler) http.Handler
+	authenticatedUserFunc func(req *http.Request) (*slack.User, error)
 }
 
 type WebappConfig struct {
 	Listen            string `json:"listen"`
-	RedirectURL       string `json:"oauth_base_url"`
-	ClientID          string `json:"client_id"`
-	ClientSecret      string `json:"client_secret"`
-	RestrictDomain    string `json:"restrict_domain"`
 	SessionAuthKey    string `json:"session_auth_key"`
 	SessionEncryptKey string `json:"session_encrypt_key"`
 }
@@ -55,9 +52,6 @@ func (webapp *Webapp) InitWebServer(bot *slick.Bot, enabledPlugins []string) {
 	webapp.privateRouter = mux.NewRouter()
 	webapp.publicRouter = mux.NewRouter()
 
-	configureWebapp(&conf.Webapp)
-
-	webapp.privateRouter.HandleFunc("/", webapp.handleRoot)
 	web = webapp
 }
 
@@ -68,14 +62,34 @@ func (webapp *Webapp) PublicRouter() *mux.Router {
 	return webapp.publicRouter
 }
 
-func (webapp *Webapp) ServeWebRequests() {
+// SetAuthMiddleware should be called once by a WebServerAuth plugin, if any.
+func (webapp *Webapp) SetAuthMiddleware(middleware func(http.Handler) http.Handler) {
+	webapp.authMiddleware = middleware
+}
+
+// SetAuthenticatedUserFunc should be called once by a WebServerAuth plugin, if any.
+func (webapp *Webapp) SetAuthenticatedUserFunc(f func(req *http.Request) (*slack.User, error)) {
+	webapp.authenticatedUserFunc = f
+}
+
+func (webapp *Webapp) AuthenticatedUser(req *http.Request) (*slack.User, error) {
+	if webapp.authenticatedUserFunc == nil {
+		return nil, fmt.Errorf("No WebServerAuth plugin registered any AuthenticatedUser func call")
+	}
+	return webapp.authenticatedUserFunc(req)
+}
+
+func (webapp *Webapp) RunServer() {
 	privMux := http.NewServeMux()
-	privMux.Handle("/static/", http.StripPrefix("/static", http.FileServer(rice.MustFindBox("static").HTTPBox())))
-	privMux.Handle("/", webapp.privateRouter)
+	privMux.Handle("/", webapp.PrivateRouter())
 
 	pubMux := http.NewServeMux()
-	pubMux.Handle("/public/", webapp.publicRouter)
-	pubMux.Handle("/", NewOAuthMiddleware(privMux))
+	pubMux.Handle("/public/", webapp.PublicRouter())
+	if webapp.authMiddleware != nil {
+		pubMux.Handle("/", webapp.authMiddleware(privMux))
+	} else {
+		pubMux.Handle("/", privMux)
+	}
 
 	webapp.handler = negroni.Classic()
 	webapp.handler.UseHandler(context.ClearHandler(pubMux))
@@ -83,25 +97,13 @@ func (webapp *Webapp) ServeWebRequests() {
 	webapp.handler.Run(webapp.config.Listen)
 }
 
-// func LaunchWebapp(b *slick.Bot) {
-
-// 	rt.HandleFunc("/send_notif", handleNotif)
-// 	rt.HandleFunc("/hipchat/users", handleGetUsers)
-
-// 	n.Run("localhost:8080")
-// }
-
-func configureWebapp(conf *WebappConfig) {
-	oauthCfg = &oauth2.Config{
-		ClientID:     conf.ClientID,
-		ClientSecret: conf.ClientSecret,
-		RedirectURL:  conf.RedirectURL + "/oauth2callback",
-		Scopes:       []string{"openid", "profile", "email", "https://www.googleapis.com/auth/userinfo.profile"},
-		Endpoint: oauth2.Endpoint{
-			AuthURL:  "https://accounts.google.com/o/oauth2/auth",
-			TokenURL: "https://accounts.google.com/o/oauth2/token",
-		},
+func (webapp *Webapp) GetSession(r *http.Request) *sessions.Session {
+	sess, err := web.store.Get(r, "slick")
+	if err != nil {
+		log.Println("web/session: warn: unable to decode Session cookie: ", err)
 	}
+
+	return sess
 }
 
 func (webapp *Webapp) handleRoot(w http.ResponseWriter, r *http.Request) {
@@ -110,7 +112,7 @@ func (webapp *Webapp) handleRoot(w http.ResponseWriter, r *http.Request) {
 		return
 	}
 
-	profile, _ := checkAuth(r)
+	profile, _ := webapp.AuthenticatedUser(r)
 
 	tpl, err := getRootTemplate()
 	if err != nil {
@@ -121,29 +123,21 @@ func (webapp *Webapp) handleRoot(w http.ResponseWriter, r *http.Request) {
 	ctx := struct {
 		CurrentUser, EnabledPlugins template.JS
 	}{
-		profile.AsJavascript(),
+		userAsJavascript(profile),
 		webapp.getEnabledPluginsJS(),
 	}
 	tpl.Execute(w, ctx)
 }
 
 func getRootTemplate() (*template.Template, error) {
-	box, err := rice.FindBox("static")
-	if err != nil {
-		return nil, fmt.Errorf("Error finding static assets: %s", err)
-	}
-
-	rawTpl, err := box.String("index.html")
-	if err != nil {
-		return nil, fmt.Errorf("Error loading index.html: %s", err)
-	}
-
-	tpl, err := template.New("index.html").Parse(rawTpl)
-	if err != nil {
-		return nil, fmt.Errorf("Cannot parse index.html: %s", err)
-	}
-
-	return tpl, nil
+	return template.New("index.html").Parse(`
+<html><head></head><body>
+<script>
+USER = {{.CurrentUser}};
+ENABLED_PLUGINS = {{.EnabledPlugins}};
+</script>
+</body></html>
+`)
 }
 
 func (webapp *Webapp) getEnabledPluginsJS() template.JS {
