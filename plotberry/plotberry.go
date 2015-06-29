@@ -26,7 +26,7 @@ func init() {
 	slick.RegisterPlugin(&PlotBerry{})
 }
 
-func (plotberry *PlotBerry) InitChatPlugin(bot *slick.Bot) {
+func (plotberry *PlotBerry) InitPlugin(bot *slick.Bot) {
 
 	plotberry.bot = bot
 	plotberry.celebrated = true

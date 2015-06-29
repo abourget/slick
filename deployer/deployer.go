@@ -41,7 +41,7 @@ func init() {
 	slick.RegisterPlugin(&Deployer{})
 }
 
-func (dep *Deployer) InitChatPlugin(bot *slick.Bot) {
+func (dep *Deployer) InitPlugin(bot *slick.Bot) {
 	var conf struct {
 		Deployer DeployerConfig
 	}

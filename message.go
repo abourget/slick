@@ -17,6 +17,7 @@ type Message struct {
 	*slack.Msg
 	SubMessage  *slack.Msg
 	MentionsMe  bool
+	IsEdition   bool
 	FromMe      bool
 	FromUser    *slack.User
 	FromChannel *slack.Channel
@@ -70,6 +71,10 @@ func (msg *Message) Contains(s string) bool {
 		return true
 	}
 	return false
+}
+
+func (msg *Message) HasPrefix(prefix string) bool {
+	return strings.HasPrefix(msg.Text, prefix)
 }
 
 func (msg *Message) Reply(s string) *BotReply {

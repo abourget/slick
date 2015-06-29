@@ -8,9 +8,8 @@ import "github.com/gorilla/mux"
 
 type Plugin interface{}
 
-type ChatPlugin interface {
-	// InitChatPlugin registers Conversations to be listened to.
-	InitChatPlugin(*Bot)
+type PluginInitializer interface {
+	InitPlugin(*Bot)
 }
 
 type WebServer interface {
@@ -33,9 +32,9 @@ func RegisterPlugin(plugin Plugin) {
 
 func initChatPlugins(bot *Bot) {
 	for _, plugin := range registeredPlugins {
-		chatPlugin, ok := plugin.(ChatPlugin)
+		chatPlugin, ok := plugin.(PluginInitializer)
 		if ok {
-			chatPlugin.InitChatPlugin(bot)
+			chatPlugin.InitPlugin(bot)
 		}
 	}
 }

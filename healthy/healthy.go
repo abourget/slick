@@ -18,7 +18,7 @@ func init() {
 	slick.RegisterPlugin(&Healthy{})
 }
 
-func (healthy *Healthy) InitChatPlugin(bot *slick.Bot) {
+func (healthy *Healthy) InitPlugin(bot *slick.Bot) {
 	var conf struct {
 		HealthCheck struct {
 			Urls []string

@@ -15,7 +15,7 @@ func init() {
 	slick.RegisterPlugin(&Mooder{})
 }
 
-func (mooder *Mooder) InitChatPlugin(bot *slick.Bot) {
+func (mooder *Mooder) InitPlugin(bot *slick.Bot) {
 	mooder.bot = bot
 	go mooder.SetupMoodChanger()
 }

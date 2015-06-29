@@ -32,7 +32,7 @@ func init() {
 	slick.RegisterPlugin(&Wicked{})
 }
 
-func (wicked *Wicked) InitChatPlugin(bot *slick.Bot) {
+func (wicked *Wicked) InitPlugin(bot *slick.Bot) {
 	wicked.bot = bot
 	wicked.meetings = make(map[string]*Meeting)
 

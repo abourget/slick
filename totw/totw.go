@@ -16,7 +16,7 @@ func init() {
 	slick.RegisterPlugin(&Totw{})
 }
 
-func (totw *Totw) InitChatPlugin(bot *slick.Bot) {
+func (totw *Totw) InitPlugin(bot *slick.Bot) {
 	slick.RegisterStringList("useless techs", []string{
 		"http://i.minus.com/ib2bUNs2W1CI1V.gif",
 		"http://media.giphy.com/media/anl0wydLNhKus/giphy.gif",

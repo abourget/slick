@@ -83,8 +83,8 @@ func (bot *Bot) Run() {
 			pluginType = pluginType.Elem()
 		}
 		typeList := make([]string, 0)
-		if _, ok := plugin.(ChatPlugin); ok {
-			typeList = append(typeList, "ChatPlugin")
+		if _, ok := plugin.(PluginInitializer); ok {
+			typeList = append(typeList, "Plugin")
 		}
 		if _, ok := plugin.(WebServer); ok {
 			typeList = append(typeList, "WebServer")

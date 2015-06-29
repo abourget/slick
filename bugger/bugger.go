@@ -52,7 +52,7 @@ func (bugger *Bugger) makeBugReporter(days int) (reporter bugReporter) {
 	return
 }
 
-func (bugger *Bugger) InitChatPlugin(bot *slick.Bot) {
+func (bugger *Bugger) InitPlugin(bot *slick.Bot) {
 
 	/*
 	 * Get an array of issues matching Filters

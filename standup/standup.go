@@ -23,7 +23,7 @@ func init() {
 	slick.RegisterPlugin(&Standup{})
 }
 
-func (standup *Standup) InitChatPlugin(bot *slick.Bot) {
+func (standup *Standup) InitPlugin(bot *slick.Bot) {
 	standup.bot = bot
 	standup.sectionUpdates = make(chan sectionUpdate, 15)
 
