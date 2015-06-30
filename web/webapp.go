@@ -52,6 +52,8 @@ func (webapp *Webapp) InitWebServer(bot *slick.Bot, enabledPlugins []string) {
 	webapp.privateRouter = mux.NewRouter()
 	webapp.publicRouter = mux.NewRouter()
 
+	webapp.privateRouter.HandleFunc("/", webapp.handleRoot)
+
 	web = webapp
 }
 
@@ -112,7 +114,11 @@ func (webapp *Webapp) handleRoot(w http.ResponseWriter, r *http.Request) {
 		return
 	}
 
-	profile, _ := webapp.AuthenticatedUser(r)
+	sess := webapp.GetSession(r)
+
+	profile, err := webapp.AuthenticatedUser(r)
+
+	fmt.Println("MAMA", profile, sess.Values, err)
 
 	tpl, err := getRootTemplate()
 	if err != nil {
@@ -136,6 +142,7 @@ func getRootTemplate() (*template.Template, error) {
 USER = {{.CurrentUser}};
 ENABLED_PLUGINS = {{.EnabledPlugins}};
 </script>
+<h1>Welcome to your secure website</h1>
 </body></html>
 `)
 }
@@ -148,7 +155,7 @@ func (webapp *Webapp) getEnabledPluginsJS() template.JS {
 
 	jsonMap, err := json.MarshalIndent(out, "", "  ")
 	if err != nil {
-		log.Fatal("Couldn't marshal EnabledPlugins list for rendering", err)
+		log.Println("Couldn't marshal EnabledPlugins list for rendering", err)
 		return template.JS("{}")
 	}
 	return template.JS(jsonMap)

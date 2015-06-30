@@ -1,9 +1,8 @@
 package webauth
 
 import (
-	"encoding/json"
+	"encoding/gob"
 	"fmt"
-	"io/ioutil"
 	"log"
 	"net/http"
 
@@ -14,6 +13,7 @@ import (
 
 func init() {
 	slick.RegisterPlugin(&OAuthPlugin{})
+	gob.Register(&slack.User{})
 }
 
 type OAuthPlugin struct {
@@ -54,6 +54,7 @@ func (p *OAuthPlugin) InitWebServerAuth(bot *slick.Bot, webserver slick.WebServe
 			},
 		}
 	})
+	webserver.SetAuthenticatedUserFunc(p.AuthenticatedUser)
 }
 
 func (p *OAuthPlugin) AuthenticatedUser(r *http.Request) (*slack.User, error) {
@@ -88,7 +89,7 @@ func (mw *OAuthMiddleware) ServeHTTP(w http.ResponseWriter, r *http.Request) {
 	if err != nil {
 		if r.URL.Path == "/" {
 			log.Println("Not logged in", err)
-			url := mw.oauthCfg.AuthCodeURL("", oauth2.SetAuthURLParam("team", mw.bot.Config.TeamDomain))
+			url := mw.oauthCfg.AuthCodeURL("", oauth2.SetAuthURLParam("team", mw.bot.Config.TeamID))
 			http.Redirect(w, r, url, http.StatusFound)
 		} else {
 			w.WriteHeader(http.StatusForbidden)
@@ -108,7 +109,12 @@ func (mw *OAuthMiddleware) handleOAuth2Callback(w http.ResponseWriter, r *http.R
 		// Mark logged in
 		sess := mw.webserver.GetSession(r)
 		sess.Values["profile"] = profile
-		sess.Save(r, w)
+		err := sess.Save(r, w)
+		if err != nil {
+			fmt.Println("Error saving cookie:", err)
+			w.Write([]byte(err.Error()))
+			return
+		}
 
 		http.Redirect(w, r, "/", http.StatusFound)
 	}
@@ -120,38 +126,20 @@ func (mw *OAuthMiddleware) doOAuth2Roundtrip(w http.ResponseWriter, r *http.Requ
 	token, err := mw.oauthCfg.Exchange(oauth2.NoContext, code)
 	if err != nil {
 		log.Println("OAuth2: ", err)
-		return nil, fmt.Errorf("Error processing token.  Did you try to refresh ?")
+		return nil, fmt.Errorf("Error processing token.")
 	}
 
-	//now get user data based on the Transport which has the token
-	client := mw.oauthCfg.Client(oauth2.NoContext, token)
-	//mw.bot.api.
-	resp, err := client.Get("https://www.googleapis.com/oauth2/v1/userinfo?alt=json")
+	client := slack.New(token.AccessToken)
+
+	resp, err := client.AuthTest()
 	if err != nil {
-		log.Fatal("Fatal error After OAuth2: ", err)
+		return nil, fmt.Errorf("User unauthenticated: %s", err)
 	}
 
-	defer resp.Body.Close()
-
-	body, err := ioutil.ReadAll(resp.Body)
-	if err != nil {
-		return nil, fmt.Errorf("Could not read data from Google APIs: %s", err)
+	expectedURL := fmt.Sprintf("https://%s.slack.com/", mw.bot.Config.TeamDomain)
+	if resp.URL != expectedURL {
+		return nil, fmt.Errorf("Authenticated for wrong domain: %q != %q", resp.URL, expectedURL)
 	}
 
-	identity := struct {
-		UserID string `json:"user_id"`
-		URL    string
-		OK     bool
-	}{}
-	err = json.Unmarshal(body, &identity)
-	if err != nil {
-		return nil, fmt.Errorf("Could not read data from Google APIs: %s", err)
-	}
-	// TODO; do something with userid, fetch from our internal list.
-
-	if identity.URL != fmt.Sprintf("https://%s.slack.com") {
-		return nil, fmt.Errorf("Authenticated for wrong domain: %s", identity.URL)
-	}
-
-	return &slack.User{}, nil
+	return mw.bot.GetUser(resp.UserId), nil
 }

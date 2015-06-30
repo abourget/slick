@@ -21,7 +21,7 @@ type Bot struct {
 	Config     SlackConfig
 
 	// Slack connectivity
-	api      *slack.Client
+	Slack    *slack.Client
 	rtm      *slack.RTM
 	Users    map[string]slack.User
 	Channels map[string]slack.Channel
@@ -109,10 +109,10 @@ func (bot *Bot) Run() {
 		go bot.WebServer.RunServer()
 	}
 
-	bot.api = slack.New(bot.Config.ApiToken)
-	bot.api.SetDebug(bot.Config.Debug)
+	bot.Slack = slack.New(bot.Config.ApiToken)
+	bot.Slack.SetDebug(bot.Config.Debug)
 
-	rtm := bot.api.NewRTM()
+	rtm := bot.Slack.NewRTM()
 	bot.rtm = rtm
 
 	bot.setupHandlers()
@@ -366,7 +366,7 @@ func (bot *Bot) handleRTMEvent(event *slack.SlackEvent) {
 		for _, channelName := range bot.Config.JoinChannels {
 			channel := bot.GetChannelByName(channelName)
 			if channel != nil && !channel.IsMember {
-				bot.api.JoinChannel(channel.Id)
+				bot.Slack.JoinChannel(channel.Id)
 			}
 		}
 
