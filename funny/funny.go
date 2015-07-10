@@ -175,7 +175,7 @@ func (funny *Funny) ChatHandler(conv *slick.Conversation, msg *slick.Message) {
 
 	} else if msg.Text == "ls" {
 
-		conv.Reply(msg, "/code deploy/      Contributors-Guide/ image_server/     sheep_porn/     streambed/\nstreamhead/  README.md")
+		conv.Reply(msg, "/code deploy/      Contributors-Guide/ image_server/     streambed/\nstreamhead/  README.md")
 
 	} else if msg.ContainsAny([]string{"that's really cool", "that is really cool", "really happy"}) {
 
@@ -207,6 +207,10 @@ func (funny *Funny) ChatHandler(conv *slick.Conversation, msg *slick.Message) {
 	} else if msg.ContainsAny([]string{"internet", " tube "}) {
 
 		conv.Reply(msg, "https://pbs.twimg.com/media/By0J3YHCcAA4UBo.jpg:large")
+
+	} else if msg.ContainsAny([]string{"droits", "you're admin", "admin rights"})
+
+		conv.Reply(msg, "Houuu, ... et pour pas cher")
 
 	}
 
