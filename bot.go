@@ -5,6 +5,7 @@ import (
 	"fmt"
 	"io/ioutil"
 	"log"
+	"net/http"
 	"os"
 	"reflect"
 	"strconv"
@@ -51,6 +52,12 @@ func New(configFile string) *Bot {
 
 		Users:    make(map[string]slack.User),
 		Channels: make(map[string]slack.Channel),
+	}
+
+	http.DefaultClient = &http.Client{
+		Transport: &http.Transport{
+			Proxy: http.ProxyFromEnvironment,
+		},
 	}
 
 	return bot
