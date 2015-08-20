@@ -4,7 +4,7 @@ import (
 	"testing"
 	"time"
 
-	"github.com/abourget/slack"
+	"github.com/nlopes/slack"
 )
 
 func TestConversationCheckParams(t *testing.T) {
@@ -20,7 +20,7 @@ func TestConversationCheckParams(t *testing.T) {
 
 func TestDefeaultFilter(t *testing.T) {
 	c := &Conversation{}
-	u := &slack.User{Id: "a_user"}
+	u := &slack.User{ID: "a_user"}
 	m := &Message{Msg: &slack.Msg{Text: "hello mama"}, FromUser: u}
 
 	if defaultFilterFunc(c, m) != true {
@@ -47,7 +47,7 @@ func TestDefeaultFilter(t *testing.T) {
 		}, true},
 
 		El{&Conversation{
-			WithUser: &slack.User{Id: "another_user"},
+			WithUser: &slack.User{ID: "another_user"},
 		}, false},
 	}
 

@@ -7,7 +7,7 @@ import (
 	"log"
 	"net/http"
 
-	"github.com/abourget/slack"
+	"github.com/nlopes/slack"
 	"github.com/abourget/slick"
 	"github.com/codegangsta/negroni"
 	"github.com/gorilla/context"

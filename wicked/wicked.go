@@ -18,7 +18,7 @@ import (
 	"time"
 
 	"github.com/abourget/slick"
-	"github.com/abourget/slack"
+	"github.com/nlopes/slack"
 )
 
 type Wicked struct {
@@ -58,7 +58,7 @@ func (wicked *Wicked) ChatHandler(conv *slick.Conversation, msg *slick.Message) 
 	if strings.HasPrefix(msg.Text, "!wicked ") {
 		fromRoom := ""
 		if msg.FromChannel != nil {
-			fromRoom = msg.FromChannel.Id
+			fromRoom = msg.FromChannel.ID
 		}
 
 		availableRoom := wicked.FindAvailableRoom(fromRoom)
@@ -72,9 +72,9 @@ func (wicked *Wicked) ChatHandler(conv *slick.Conversation, msg *slick.Message) 
 		meeting := NewMeeting(id, msg.FromUser, msg.Text[7:], bot, availableRoom, uuidNow)
 
 		wicked.pastMeetings = append(wicked.pastMeetings, meeting)
-		wicked.meetings[availableRoom.Id] = meeting
+		wicked.meetings[availableRoom.ID] = meeting
 
-		if availableRoom.Id == fromRoom {
+		if availableRoom.ID == fromRoom {
 			meeting.sendToRoom(fmt.Sprintf(`*** Starting wicked meeting W%s in here.`, meeting.ID))
 		} else {
 			conv.Reply(msg, fmt.Sprintf(`*** Starting wicked meeting W%s in room "%s". Join with !join W%s`, meeting.ID, availableRoom.Name, meeting.ID))
@@ -108,7 +108,7 @@ continueLogging:
 	if msg.FromChannel == nil {
 		return
 	}
-	room := msg.FromChannel.Id
+	room := msg.FromChannel.ID
 	meeting, meetingExists := wicked.meetings[room]
 	if !meetingExists {
 		return

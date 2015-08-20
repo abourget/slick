@@ -15,7 +15,7 @@ type Client struct {
 }
 
 type Task struct {
-	Id        int64
+	ID        int64
 	Name      string
 	Assignee  User
 	Completed bool
@@ -30,7 +30,7 @@ type Task struct {
 }
 
 type Story struct {
-	Id        int64
+	ID        int64
 	Text      string
 	Type      string
 	CreatedBy User   `json:"created_by"`
@@ -38,7 +38,7 @@ type Story struct {
 }
 
 type User struct {
-	Id         int64
+	ID         int64
 	Name       string
 	Email      string
 	Photo      *Photo
@@ -46,12 +46,12 @@ type User struct {
 }
 
 type Workspace struct {
-	Id   int64
+	ID   int64
 	Name string
 }
 
 type Project struct {
-	Id   int64
+	ID   int64
 	Name string
 }
 
@@ -64,12 +64,12 @@ type Photo struct {
 }
 
 type Tag struct {
-	Id   int64
+	ID   int64
 	Name string
 }
 
-func (t *Tag) StringId() string {
-	return fmt.Sprintf("%v", t.Id)
+func (t *Tag) StringID() string {
+	return fmt.Sprintf("%v", t.ID)
 }
 
 func NewClient(key, workspace string) *Client {
@@ -117,7 +117,7 @@ func (asana *Client) GetTasksByAssignee(user User) ([]Task, error) {
 	workspace := asana.workspace
 
 	url := fmt.Sprintf("https://app.asana.com/api/1.0/workspaces/%s/tasks?assignee=%v",
-		workspace, user.Id)
+		workspace, user.ID)
 
 	body, err := asana.request("GET", url, "")
 
@@ -130,13 +130,13 @@ func (asana *Client) GetTasksByAssignee(user User) ([]Task, error) {
 	return data.Data, err
 }
 
-func (asana *Client) GetTasksByTag(tagId string) ([]Task, error) {
+func (asana *Client) GetTasksByTag(tagID string) ([]Task, error) {
 	var data struct {
 		Data []Task
 	}
 
 	url := fmt.Sprintf("https://app.asana.com/api/1.0/tags/%s/tasks",
-		tagId)
+		tagID)
 
 	body, err := asana.request("GET", url, "")
 
@@ -149,12 +149,12 @@ func (asana *Client) GetTasksByTag(tagId string) ([]Task, error) {
 	return data.Data, err
 }
 
-func (asana *Client) GetTaskStories(taskId int64) ([]Story, error) {
+func (asana *Client) GetTaskStories(taskID int64) ([]Story, error) {
 	var data struct {
 		Data []Story
 	}
 
-	url := fmt.Sprintf("https://app.asana.com/api/1.0/tasks/%v/stories", taskId)
+	url := fmt.Sprintf("https://app.asana.com/api/1.0/tasks/%v/stories", taskID)
 	body, err := asana.request("GET", url, "")
 
 	if err != nil {
@@ -166,12 +166,12 @@ func (asana *Client) GetTaskStories(taskId int64) ([]Story, error) {
 	return data.Data, err
 }
 
-func (asana *Client) GetUser(userId int64) (*User, error) {
+func (asana *Client) GetUser(userID int64) (*User, error) {
 	var data struct {
 		Data User
 	}
 
-	url := fmt.Sprintf("https://app.asana.com/api/1.0/users/%v", userId)
+	url := fmt.Sprintf("https://app.asana.com/api/1.0/users/%v", userID)
 	body, err := asana.request("GET", url, "")
 
 	if err != nil {
@@ -200,12 +200,12 @@ func (asana *Client) GetUsers() ([]User, error) {
 	return data.Data, err
 }
 
-func (asana *Client) GetTaskById(taskId int64) (*Task, error) {
+func (asana *Client) GetTaskByID(taskID int64) (*Task, error) {
 	var data struct {
 		Data Task
 	}
 
-	url := fmt.Sprintf("https://app.asana.com/api/1.0/tasks/%v", taskId)
+	url := fmt.Sprintf("https://app.asana.com/api/1.0/tasks/%v", taskID)
 	body, err := asana.request("GET", url, "")
 
 	if err != nil {
@@ -219,13 +219,13 @@ func (asana *Client) GetTaskById(taskId int64) (*Task, error) {
 	return &data.Data, err
 }
 
-func (asana *Client) GetTagsOnTask(tagId int64) ([]Tag, error) {
+func (asana *Client) GetTagsOnTask(tagID int64) ([]Tag, error) {
 	var data struct {
 		Data []Tag
 	}
 
 	url := fmt.Sprintf("https://app.asana.com/api/1.0/tasks/%v/tags",
-		tagId)
+		tagID)
 
 	body, err := asana.request("GET", url, "")
 
@@ -244,7 +244,7 @@ func (asana *Client) UpdateTask(updateStr string, task Task) (*Task, error) {
 		Data Task
 	}
 
-	url := fmt.Sprintf("https://app.asana.com/api/1.0/tasks/%v", task.Id)
+	url := fmt.Sprintf("https://app.asana.com/api/1.0/tasks/%v", task.ID)
 
 	fmt.Println(url)
 

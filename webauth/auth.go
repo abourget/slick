@@ -6,7 +6,7 @@ import (
 	"log"
 	"net/http"
 
-	"github.com/abourget/slack"
+	"github.com/nlopes/slack"
 	"github.com/abourget/slick"
 	"golang.org/x/oauth2"
 )
@@ -141,5 +141,5 @@ func (mw *OAuthMiddleware) doOAuth2Roundtrip(w http.ResponseWriter, r *http.Requ
 		return nil, fmt.Errorf("Authenticated for wrong domain: %q != %q", resp.URL, expectedURL)
 	}
 
-	return mw.bot.GetUser(resp.UserId), nil
+	return mw.bot.GetUser(resp.User), nil
 }

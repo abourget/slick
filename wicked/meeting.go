@@ -6,7 +6,7 @@ import (
 	"time"
 
 	"github.com/abourget/slick"
-	"github.com/abourget/slack"
+	"github.com/nlopes/slack"
 )
 
 func init() {
@@ -48,7 +48,7 @@ func NewMeeting(id string, user *slack.User, goal string, bot *slick.Bot, channe
 	meeting := &Meeting{}
 	meeting.ID = id
 	meeting.Channel = channel.Name
-	meeting.ChannelID = channel.Id
+	meeting.ChannelID = channel.ID
 	meeting.Goal = strings.TrimSpace(goal)
 	meeting.StartTime = uuidNow
 	meeting.Decisions = []*Decision{}
@@ -60,7 +60,7 @@ func NewMeeting(id string, user *slack.User, goal string, bot *slick.Bot, channe
 	}
 	meeting.setTopic = func(topic string) {
 		// TODO: set a topic with Slack.
-		//hipchatv2.SetTopic(bot.Config.HipchatApiToken, roomId, topic)
+		//hipchatv2.SetTopic(bot.Config.HipchatApiToken, roomID, topic)
 	}
 
 	newUser := meeting.ImportUser(user)

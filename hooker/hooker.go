@@ -89,7 +89,7 @@ func (hooker *Hooker) onPayingUser(w http.ResponseWriter, r *http.Request) {
 
 	var stripeEvent struct {
 		Type    string
-		Id      string
+		ID      string
 		Request string
 	}
 	err := json.Unmarshal(bodyBytes, &stripeEvent)

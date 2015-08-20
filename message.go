@@ -5,7 +5,7 @@ import (
 	"regexp"
 	"strings"
 
-	"github.com/abourget/slack"
+	"github.com/nlopes/slack"
 )
 
 type BotReply struct {
@@ -24,7 +24,7 @@ type Message struct {
 }
 
 func (msg *Message) IsPrivate() bool {
-	return msg.ChannelId == ""
+	return msg.Channel == ""
 }
 
 func (msg *Message) ContainsAnyCased(strs []string) bool {
@@ -81,17 +81,17 @@ func (msg *Message) Reply(s string) *BotReply {
 	rep := &BotReply{
 		Text: s,
 	}
-	if msg.ChannelId != "" {
-		rep.To = msg.ChannelId
+	if msg.Channel != "" {
+		rep.To = msg.Channel
 	} else {
-		rep.To = msg.UserId
+		rep.To = msg.User
 	}
 	return rep
 }
 
 func (msg *Message) ReplyPrivately(s string) *BotReply {
 	return &BotReply{
-		To:   msg.UserId,
+		To:   msg.User,
 		Text: s,
 	}
 }
@@ -106,13 +106,13 @@ func (msg *Message) applyMentionsMe(bot *Bot) {
 	}
 
 	m := reAtMention.FindStringSubmatch(msg.Text)
-	if m != nil && m[1] == bot.Myself.Id {
+	if m != nil && m[1] == bot.Myself.ID {
 		msg.MentionsMe = true
 	}
 }
 
 func (msg *Message) applyFromMe(bot *Bot) {
-	if msg.UserId == bot.Myself.Id {
+	if msg.User == bot.Myself.ID {
 		msg.FromMe = true
 	}
 }

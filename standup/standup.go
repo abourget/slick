@@ -7,7 +7,7 @@ import (
 
 	"github.com/abourget/slick"
 	"github.com/abourget/slick/util"
-	"github.com/abourget/slack"
+	"github.com/nlopes/slack"
 	levelutil "github.com/syndtr/goleveldb/leveldb/util"
 )
 

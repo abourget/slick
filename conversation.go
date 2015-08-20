@@ -5,7 +5,7 @@ import (
 	"log"
 	"time"
 
-	"github.com/abourget/slack"
+	"github.com/nlopes/slack"
 )
 
 type Conversation struct {
@@ -187,7 +187,7 @@ func defaultFilterFunc(conv *Conversation, msg *Message) bool {
 		return false
 	}
 
-	if conv.WithUser != nil && msg.FromUser.Id != conv.WithUser.Id {
+	if conv.WithUser != nil && msg.FromUser.ID != conv.WithUser.ID {
 		return false
 	}
 
@@ -195,7 +195,7 @@ func defaultFilterFunc(conv *Conversation, msg *Message) bool {
 		if msg.FromChannel == nil {
 			return false
 		}
-		if msg.FromChannel.Id != conv.InChannel.Id {
+		if msg.FromChannel.ID != conv.InChannel.ID {
 			return false
 		}
 	}

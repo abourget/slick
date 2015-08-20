@@ -6,7 +6,7 @@ import (
 
 	"github.com/gorilla/mux"
 	"github.com/gorilla/sessions"
-	"github.com/abourget/slack"
+	"github.com/nlopes/slack"
 )
 
 //

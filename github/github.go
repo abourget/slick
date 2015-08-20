@@ -29,7 +29,7 @@ type GHUser struct {
 type IssueItem struct {
 	Url       string
 	Title     string
-	Id        int
+	ID        int
 	Number    int
 	Milestone string
 	Assignee  GHUser
@@ -38,7 +38,7 @@ type IssueItem struct {
 }
 
 type IssueEvent struct {
-	Id    int
+	ID    int
 	Actor GHUser
 	Event string
 }

@@ -51,7 +51,7 @@ func (v *Vote) voteHandler(conv *slick.Conversation, msg *slick.Message) {
 	}
 
 	if msg.HasPrefix("!what-for-lunch ") || msg.HasPrefix("!vote-for-lunch ") {
-		if v.runningVotes[msg.FromChannel.Id] != nil {
+		if v.runningVotes[msg.FromChannel.ID] != nil {
 			bot.ReplyMention(msg, "vote is already running!")
 			return
 		}
@@ -63,7 +63,7 @@ func (v *Vote) voteHandler(conv *slick.Conversation, msg *slick.Message) {
 			return
 		}
 
-		v.runningVotes[msg.FromChannel.Id] = make([]vote, 0)
+		v.runningVotes[msg.FromChannel.ID] = make([]vote, 0)
 
 		go func() {
 			time.Sleep(dur)
@@ -72,7 +72,7 @@ func (v *Vote) voteHandler(conv *slick.Conversation, msg *slick.Message) {
 			defer v.mutex.Unlock()
 
 			res := make(map[string]int)
-			for _, oneVote := range v.runningVotes[msg.FromChannel.Id] {
+			for _, oneVote := range v.runningVotes[msg.FromChannel.ID] {
 				res[oneVote.vote] = res[oneVote.vote] + 1
 			}
 
@@ -91,7 +91,7 @@ func (v *Vote) voteHandler(conv *slick.Conversation, msg *slick.Message) {
 				bot.ReplyMention(msg, strings.Join(out, "\n"))
 			}
 
-			delete(v.runningVotes, msg.FromChannel.Id)
+			delete(v.runningVotes, msg.FromChannel.ID)
 		}()
 
 		bot.Reply(msg, "<!channel> okay, what do we eat ? Votes are open. Use `!vote The Food Place http://food-place.url` .. you can vote for the same place with a substring, ex: `!vote food place`")
@@ -99,7 +99,7 @@ func (v *Vote) voteHandler(conv *slick.Conversation, msg *slick.Message) {
 	}
 
 	if msg.HasPrefix("!vote ") {
-		running := v.runningVotes[msg.FromChannel.Id]
+		running := v.runningVotes[msg.FromChannel.ID]
 		if running == nil {
 			bot.Reply(msg, bot.WithMood("what vote ?!", "oh you're so cute! voting while there's no vote going on !"))
 			return
@@ -112,7 +112,7 @@ func (v *Vote) voteHandler(conv *slick.Conversation, msg *slick.Message) {
 
 		// TODO: check for dupe
 		for _, prevVote := range running {
-			if msg.FromUser.Id == prevVote.user {
+			if msg.FromUser.ID == prevVote.user {
 				// buzz off if you voted already
 				bot.ReplyMention(msg, bot.WithMood("you voted already", "trying to double vote ! how charming :)"))
 				return
@@ -121,14 +121,14 @@ func (v *Vote) voteHandler(conv *slick.Conversation, msg *slick.Message) {
 
 		for _, prevVote := range running {
 			if strings.Contains(strings.ToLower(prevVote.vote), strings.ToLower(voteCast)) {
-				running = append(running, vote{msg.FromUser.Id, prevVote.vote})
-				v.runningVotes[msg.FromChannel.Id] = running
+				running = append(running, vote{msg.FromUser.ID, prevVote.vote})
+				v.runningVotes[msg.FromChannel.ID] = running
 				bot.ReplyMention(msg, bot.WithMood("okay", "hmmm kaay"))
 				return
 			}
 		}
-		running = append(running, vote{msg.FromUser.Id, voteCast})
-		v.runningVotes[msg.FromChannel.Id] = running
+		running = append(running, vote{msg.FromUser.ID, voteCast})
+		v.runningVotes[msg.FromChannel.ID] = running
 		bot.ReplyMention(msg, bot.WithMood("taking note", "taking note! what a creative mind..."))
 
 		// TODO: match "!what-for-lunch 1h|5m|50s"
