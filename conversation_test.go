@@ -7,8 +7,8 @@ import (
 	"github.com/nlopes/slack"
 )
 
-func TestConversationCheckParams(t *testing.T) {
-	c := Conversation{
+func TestListenerCheckParams(t *testing.T) {
+	c := Listener{
 		ListenUntil:    time.Now(),
 		ListenDuration: 120 * time.Second,
 	}
@@ -19,7 +19,7 @@ func TestConversationCheckParams(t *testing.T) {
 }
 
 func TestDefeaultFilter(t *testing.T) {
-	c := &Conversation{}
+	c := &Listener{}
 	u := &slack.User{ID: "a_user"}
 	m := &Message{Msg: &slack.Msg{Text: "hello mama"}, FromUser: u}
 
@@ -28,25 +28,25 @@ func TestDefeaultFilter(t *testing.T) {
 	}
 
 	type El struct {
-		c *Conversation
+		c *Listener
 		r bool
 	}
 	tests := []El{
-		El{&Conversation{}, true},
+		El{&Listener{}, true},
 
-		El{&Conversation{
+		El{&Listener{
 			Contains: "moo",
 		}, false},
 
-		El{&Conversation{
+		El{&Listener{
 			Contains: "MAMA",
 		}, true},
 
-		El{&Conversation{
+		El{&Listener{
 			WithUser: u,
 		}, true},
 
-		El{&Conversation{
+		El{&Listener{
 			WithUser: &slack.User{ID: "another_user"},
 		}, false},
 	}

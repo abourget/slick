@@ -60,8 +60,8 @@ func (dep *Deployer) InitPlugin(bot *slick.Bot) {
 
 	go dep.pubsubForwardReply()
 
-	bot.ListenFor(&slick.Conversation{
-		HandlerFunc:    dep.ChatHandler,
+	bot.ListenFor(&slick.Listener{
+		MessageHandlerFunc:    dep.ChatHandler,
 		MentionsMeOnly: true,
 	})
 }
@@ -92,8 +92,8 @@ type DeployJob struct {
 
 var deployFormat = regexp.MustCompile(`deploy( ([a-zA-Z0-9_\.-]+))? to ([a-z_-]+)( using ([a-zA-Z0-9_\.-]+))?((,| with)? tags?:? ?(.+))?`)
 
-func (dep *Deployer) ChatHandler(conv *slick.Conversation, msg *slick.Message) {
-	bot := conv.Bot
+func (dep *Deployer) ChatHandler(listen *slick.Listener, msg *slick.Message) {
+	bot := listen.Bot
 
 	// Discard non "mention_name, " prefixed messages
 	if !strings.HasPrefix(msg.Text, fmt.Sprintf("%s, ", bot.Config.Nickname)) {
@@ -102,12 +102,12 @@ func (dep *Deployer) ChatHandler(conv *slick.Conversation, msg *slick.Message) {
 
 	if match := deployFormat.FindStringSubmatch(msg.Text); match != nil {
 		if dep.lockedBy != "" {
-			conv.Reply(msg, fmt.Sprintf("Deployment was locked by %s.  Unlock with '%s, unlock deployment' if they're OK with it.", dep.lockedBy, dep.bot.Config.Nickname))
+			msg.Reply(fmt.Sprintf("Deployment was locked by %s.  Unlock with '%s, unlock deployment' if they're OK with it.", dep.lockedBy, dep.bot.Config.Nickname))
 			return
 		}
 		if dep.runningJob != nil {
 			params := dep.runningJob.params
-			conv.Reply(msg, fmt.Sprintf("@%s Deploy currently running: %s", msg.FromUser.Name, params))
+			msg.Reply(fmt.Sprintf("@%s Deploy currently running: %s", msg.FromUser.Name, params))
 			return
 		} else {
 			params := &DeployParams{
@@ -126,13 +126,13 @@ func (dep *Deployer) ChatHandler(conv *slick.Conversation, msg *slick.Message) {
 	} else if msg.Contains("cancel deploy") {
 
 		if dep.runningJob == nil {
-			conv.Reply(msg, "No deploy running, sorry man..")
+			msg.Reply("No deploy running, sorry man..")
 		} else {
 			if dep.runningJob.killing == true {
-				conv.Reply(msg, "deploy: Interrupt signal already sent, waiting to die")
+				msg.Reply("deploy: Interrupt signal already sent, waiting to die")
 				return
 			} else {
-				conv.Reply(msg, "deploy: Sending Interrupt signal...")
+				msg.Reply("deploy: Sending Interrupt signal...")
 				dep.runningJob.killing = true
 				dep.runningJob.kill <- true
 			}
@@ -142,21 +142,21 @@ func (dep *Deployer) ChatHandler(conv *slick.Conversation, msg *slick.Message) {
 		url := dep.getCompareUrl("prod", dep.config.DefaultStreambedBranch)
 		mention := msg.FromUser.Name
 		if url != "" {
-			conv.Reply(msg, fmt.Sprintf("@%s in %s branch, waiting to reach prod: %s", mention, dep.config.DefaultStreambedBranch, url))
+			msg.Reply(fmt.Sprintf("@%s in %s branch, waiting to reach prod: %s", mention, dep.config.DefaultStreambedBranch, url))
 		} else {
-			conv.Reply(msg, fmt.Sprintf("@%s couldn't get current revision on prod", mention))
+			msg.Reply(fmt.Sprintf("@%s couldn't get current revision on prod", mention))
 		}
 	} else if msg.Contains("unlock deploy") {
 		dep.lockedBy = ""
-		conv.Reply(msg, fmt.Sprintf("Deployment is now unlocked."))
+		msg.Reply(fmt.Sprintf("Deployment is now unlocked."))
 		bot.Notify(dep.config.AnnounceRoom, "purple", "text", fmt.Sprintf("%s has unlocked deployment", msg.FromUser.Name), true)
 	} else if msg.Contains("lock deploy") {
 		dep.lockedBy = msg.FromUser.Name
-		conv.Reply(msg, fmt.Sprintf("Deployment is now locked.  Unlock with '%s, unlock deployment' ASAP!", dep.bot.Config.Nickname))
+		msg.Reply(fmt.Sprintf("Deployment is now locked.  Unlock with '%s, unlock deployment' ASAP!", dep.bot.Config.Nickname))
 		bot.Notify(dep.config.AnnounceRoom, "purple", "text", fmt.Sprintf("%s has locked deployment", dep.lockedBy), true)
 	} else if msg.Contains("deploy") || msg.Contains("push to") {
 		mention := dep.bot.Config.Nickname
-		conv.Reply(msg, fmt.Sprintf(`Usage: %s, [please|insert reverence] deploy [<branch-name>] to <environment> [using <deployment-branch>][, tags: <ansible-playbook tags>, ..., ...]
+		msg.Reply(fmt.Sprintf(`Usage: %s, [please|insert reverence] deploy [<branch-name>] to <environment> [using <deployment-branch>][, tags: <ansible-playbook tags>, ..., ...]
 examples: %s, please deploy to prod
 %s, deploy thing-to-test to stage
 %s, deploy complicated-thing to stage, tags: updt_streambed, blow_up_the_sun
@@ -303,7 +303,7 @@ func (dep *Deployer) replyPersonnally(params *DeployParams, msg string) {
 	if params.initiatedByChat == nil {
 		return
 	}
-	dep.bot.ReplyMention(params.initiatedByChat, msg)
+	params.initiatedByChat.ReplyMention(msg)
 }
 
 func (dep *Deployer) getCompareUrl(env, branch string) string {

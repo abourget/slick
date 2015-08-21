@@ -29,17 +29,17 @@ func (healthy *Healthy) InitPlugin(bot *slick.Bot) {
 
 	healthy.urls = conf.HealthCheck.Urls
 
-	bot.ListenFor(&slick.Conversation{
+	bot.ListenFor(&slick.Listener{
 		MentionsMeOnly: true,
 		ContainsAny:    []string{"health", "healthy?", "health_check"},
-		HandlerFunc:    healthy.ChatHandler,
+		MessageHandlerFunc:    healthy.ChatHandler,
 	})
 }
 
 // Handler
-func (healthy *Healthy) ChatHandler(conv *slick.Conversation, msg *slick.Message) {
+func (healthy *Healthy) ChatHandler(listen *slick.Listener, msg *slick.Message) {
 	log.Println("Health check. Requested by", msg.FromUser.Name)
-	conv.Reply(msg, healthy.CheckAll())
+	msg.Reply(healthy.CheckAll())
 }
 
 func (healthy *Healthy) CheckAll() string {

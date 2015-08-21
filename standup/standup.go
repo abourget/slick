@@ -29,12 +29,12 @@ func (standup *Standup) InitPlugin(bot *slick.Bot) {
 
 	go standup.manageUpdatesInteraction()
 
-	bot.ListenFor(&slick.Conversation{
-		HandlerFunc: standup.ChatHandler,
+	bot.ListenFor(&slick.Listener{
+		MessageHandlerFunc: standup.ChatHandler,
 	})
 }
 
-func (standup *Standup) ChatHandler(conv *slick.Conversation, msg *slick.Message) {
+func (standup *Standup) ChatHandler(listen *slick.Listener, msg *slick.Message) {
 	res := sectionRegexp.FindAllStringSubmatchIndex(msg.Text, -1)
 	if res != nil {
 		for _, section := range extractSectionAndText(msg.Text, res) {
@@ -49,13 +49,13 @@ func (standup *Standup) ChatHandler(conv *slick.Conversation, msg *slick.Message
 		smap, err := standup.getRange(getStandupDate(-daysAgo), getStandupDate(TODAY))
 		if err != nil {
 			log.Println(err)
-			conv.Reply(msg, standup.bot.WithMood("Sorry, could not retrieve your report...",
+			msg.Reply(standup.bot.WithMood("Sorry, could not retrieve your report...",
 				"I am the eggman and the walrus ate your report - Fzaow!"))
 		} else {
 			if msg.Contains(" my ") {
-				conv.Reply(msg, "/quote "+smap.filterByEmail(msg.FromUser.Profile.Email).String())
+				msg.Reply("/quote "+smap.filterByEmail(msg.FromUser.Profile.Email).String())
 			} else {
-				conv.Reply(msg, "/quote "+smap.String())
+				msg.Reply("/quote "+smap.String())
 			}
 		}
 	}

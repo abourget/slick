@@ -69,13 +69,13 @@ func (bugger *Bugger) InitPlugin(bot *slick.Bot) {
 		Conf: conf.Github,
 	}
 
-	bot.ListenFor(&slick.Conversation{
-		HandlerFunc: bugger.ChatHandler,
+	bot.ListenFor(&slick.Listener{
+		MessageHandlerFunc: bugger.ChatHandler,
 	})
 
 }
 
-func (bugger *Bugger) ChatHandler(conv *slick.Conversation, msg *slick.Message) {
+func (bugger *Bugger) ChatHandler(listen *slick.Listener, msg *slick.Message) {
 
 	if !msg.MentionsMe {
 		return
@@ -92,7 +92,7 @@ func (bugger *Bugger) ChatHandler(conv *slick.Conversation, msg *slick.Message) 
 		}
 		mention := bugger.bot.Config.Nickname
 
-		conv.Reply(msg, fmt.Sprintf(
+		msg.Reply(fmt.Sprintf(
 			`Usage: %s, [give me a | insert demand]  <%s>  [from the | syntax filler] [last | past] [n] [days | weeks]
 examples: %s, please give me a %s over the last 5 days
 %s, produce a %s   (7 day default)
@@ -102,7 +102,7 @@ examples: %s, please give me a %s over the last 5 days
 	} else if msg.Contains("bug report") {
 
 		days := util.GetDaysFromQuery(msg.Text)
-		bugger.messageReport(days, msg, conv, func() string {
+		bugger.messageReport(days, msg, listen, func() string {
 			reporter := bugger.makeBugReporter(days)
 			return reporter.printReport(days)
 		})
@@ -110,7 +110,7 @@ examples: %s, please give me a %s over the last 5 days
 	} else if msg.Contains("bug count") {
 
 		days := util.GetDaysFromQuery(msg.Text)
-		bugger.messageReport(days, msg, conv, func() string {
+		bugger.messageReport(days, msg, listen, func() string {
 			reporter := bugger.makeBugReporter(days)
 			return reporter.printCount(days)
 		})
@@ -121,16 +121,16 @@ examples: %s, please give me a %s over the last 5 days
 
 }
 
-func (bugger *Bugger) messageReport(days int, msg *slick.Message, conv *slick.Conversation, genReport func() string) {
+func (bugger *Bugger) messageReport(days int, msg *slick.Message, listen *slick.Listener, genReport func() string) {
 
 	if days > 31 {
-		conv.Reply(msg, fmt.Sprintf("Whaoz, %d is too much data to compile - well maybe not, I am just scared", days))
+		msg.Reply(fmt.Sprintf("Whaoz, %d is too much data to compile - well maybe not, I am just scared", days))
 		return
 	}
 
-	conv.Reply(msg, bugger.bot.WithMood("Building report - one moment please",
+	msg.Reply(bugger.bot.WithMood("Building report - one moment please",
 		"Whaooo! Pinging those githubbers - Let's do this!"))
 
-	conv.Reply(msg, genReport())
+	msg.Reply(genReport())
 
 }

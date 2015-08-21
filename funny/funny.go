@@ -2,6 +2,7 @@ package funny
 
 import (
 	"fmt"
+	"strings"
 	"time"
 
 	"github.com/abourget/slick"
@@ -48,43 +49,65 @@ func (funny *Funny) InitPlugin(bot *slick.Bot) {
 		"http://i.imgur.com/WIL27Br.gif",
 	})
 
-	bot.ListenFor(&slick.Conversation{
-		HandlerFunc: funny.ChatHandler,
+	bot.ListenFor(&slick.Listener{
+		MessageHandlerFunc: funny.ChatHandler,
 	})
 }
 
-func (funny *Funny) ChatHandler(conv *slick.Conversation, msg *slick.Message) {
-	bot := conv.Bot
+func (funny *Funny) ChatHandler(listen *slick.Listener, msg *slick.Message) {
+	bot := listen.Bot
+
+	if msg.Contains("mama") {
+		listen.Bot.ListenFor(&slick.Listener{
+			ListenDuration: time.Duration(10 * time.Second),
+			MessageHandlerFunc: func(listen *slick.Listener, msg *slick.Message) {
+				if strings.Contains(msg.Text, "papa") {
+					msg.ReplyFlash("3s", "yo rocker")
+					msg.AddReaction("wink")
+					go func() {
+						time.Sleep(3 * time.Second)
+						msg.AddReaction("beer")
+						time.Sleep(1 * time.Second)
+						msg.RemoveReaction("wink")
+					}()
+				}
+			},
+			TimeoutFunc: func(listen *slick.Listener) {
+				listen.Close()
+			},
+		})
+	}
+
 	if msg.MentionsMe {
 		if msg.Contains("you're funny") {
 
 			if bot.Mood == slick.Happy {
-				conv.Reply(msg, "/me blushes")
+				msg.Reply("/me blushes")
 			} else {
-				conv.Reply(msg, "here's another one")
-				conv.Reply(msg, slick.RandomString("robot jokes"))
+				msg.Reply("here's another one")
+				msg.Reply(slick.RandomString("robot jokes"))
 			}
 
 		} else if msg.ContainsAny([]string{"dumb ass", "dumbass"}) {
 
-			conv.Reply(msg, "don't say such things")
+			msg.Reply("don't say such things")
 
 		} else if msg.ContainsAny([]string{"thanks", "thank you", "thx", "thnks"}) {
-			conv.Reply(msg, bot.WithMood("my pleasure", "any time, just ask, I'm here for you, ffiieeewww!get a life"))
+			msg.Reply(bot.WithMood("my pleasure", "any time, just ask, I'm here for you, ffiieeewww!get a life"))
 
 		} else if msg.Contains("how are you") && msg.MentionsMe {
-			conv.ReplyMention(msg, bot.WithMood("good, and you ?", "I'm wild today!! wadabout you ?"))
-			bot.ListenFor(&slick.Conversation{
+			msg.ReplyMention(bot.WithMood("good, and you ?", "I'm wild today!! wadabout you ?"))
+			bot.ListenFor(&slick.Listener{
 				ListenDuration: 60 * time.Second,
 				WithUser:       msg.FromUser,
 				InChannel:      msg.FromChannel,
 				MentionsMeOnly: true,
-				HandlerFunc: func(conv *slick.Conversation, msg *slick.Message) {
-					conv.ReplyMention(msg, bot.WithMood("glad to hear it!", "zwweeeeeeeeet !"))
-					conv.Close()
+				MessageHandlerFunc: func(listen *slick.Listener, msg *slick.Message) {
+					msg.ReplyMention(bot.WithMood("glad to hear it!", "zwweeeeeeeeet !"))
+					listen.Close()
 				},
-				TimeoutFunc: func(conv *slick.Conversation) {
-					conv.ReplyMention(msg, "well, we can catch up later")
+				TimeoutFunc: func(listen *slick.Listener) {
+					msg.ReplyMention("well, we can catch up later")
 				},
 			})
 		}
@@ -92,75 +115,75 @@ func (funny *Funny) ChatHandler(conv *slick.Conversation, msg *slick.Message) {
 
 	if msg.ContainsAny([]string{"lot of excitement", "that's exciting", "how exciting", "much excitement"}) {
 
-		conv.Reply(msg, "http://static.fjcdn.com/gifs/Japanese+kids+spongebob+toys_0ad21b_3186721.gif")
+		msg.Reply("http://static.fjcdn.com/gifs/Japanese+kids+spongebob+toys_0ad21b_3186721.gif")
 		return
 
 	} else if msg.ContainsAny([]string{"what is your problem", "what's your problem", "is there a problem", "which problem"}) {
 
-		conv.Reply(msg, "http://media4.giphy.com/media/19hU0m3TJe6I/200w.gif")
+		msg.Reply("http://media4.giphy.com/media/19hU0m3TJe6I/200w.gif")
 		return
 
 	} else if msg.Contains("force push") {
 
 		url := slick.RandomString("forcePush")
-		conv.Reply(msg, url)
+		msg.Reply(url)
 		return
 
 	} else if msg.ContainsAny([]string{"there is a bug", "there's a bug"}) {
 
-		conv.Reply(msg, "https://s3.amazonaws.com/pushbullet-uploads/ujy7DF0U8wm-9YYvLZkmSM8pMYcxCXXig8LjJORE9Xzt/The-life-of-a-coder.jpg")
+		msg.Reply("https://s3.amazonaws.com/pushbullet-uploads/ujy7DF0U8wm-9YYvLZkmSM8pMYcxCXXig8LjJORE9Xzt/The-life-of-a-coder.jpg")
 		return
 
 	} else if msg.ContainsAny([]string{"oh yeah", "approved"}) {
 
-		conv.Reply(msg, "https://i.chzbgr.com/maxW250/4496881920/h9C58F860.gif")
+		msg.Reply("https://i.chzbgr.com/maxW250/4496881920/h9C58F860.gif")
 		return
 
 	} else if msg.Contains("ice cream") {
 
-		conv.Reply(msg, "http://i.giphy.com/IGyLuFXIGSJj2.gif")
-		conv.Reply(msg, "I love ice cream too")
+		msg.Reply("http://i.giphy.com/IGyLuFXIGSJj2.gif")
+		msg.Reply("I love ice cream too")
 		return
 
 	} else if msg.ContainsAny([]string{"lot of tension", "some tension", " tensed"}) {
 
-		conv.Reply(msg, "http://thumbpress.com/wp-content/uploads/2014/01/funny-gif-meeting-strangers-girl-scared1.gif")
-		conv.Reply(msg, "tensed, like that ?")
+		msg.Reply("http://thumbpress.com/wp-content/uploads/2014/01/funny-gif-meeting-strangers-girl-scared1.gif")
+		msg.Reply("tensed, like that ?")
 		return
 
 	} else if msg.Contains("quick fix") {
 
-		conv.Reply(msg, "http://blog.pgi.com/wp-content/uploads/2013/02/jim-carey.gif")
-		conv.Reply(msg, "make it real quick")
+		msg.Reply("http://blog.pgi.com/wp-content/uploads/2013/02/jim-carey.gif")
+		msg.Reply("make it real quick")
 		return
 
 	} else if msg.ContainsAny([]string{"crack an egg", "crack something", "to crack"}) {
 
-		conv.Reply(msg, "http://s3-ec.buzzfed.com/static/enhanced/webdr02/2012/11/8/18/anigif_enhanced-buzz-31656-1352415875-9.gif")
-		conv.Reply(msg, "crack an egg, yeah")
+		msg.Reply("http://s3-ec.buzzfed.com/static/enhanced/webdr02/2012/11/8/18/anigif_enhanced-buzz-31656-1352415875-9.gif")
+		msg.Reply("crack an egg, yeah")
 		return
 
 	} else if msg.ContainsAny([]string{"i'm stuck", "I'm stuck", "we're stuck"}) {
 
-		conv.Reply(msg, "http://media.giphy.com/media/RVlWx1msxnf7W/giphy.gif")
-		conv.Reply(msg, "I'm stuck too!")
+		msg.Reply("http://media.giphy.com/media/RVlWx1msxnf7W/giphy.gif")
+		msg.Reply("I'm stuck too!")
 		return
 
 	} else if msg.ContainsAny([]string{"watching tv", "watch tv"}) {
 
-		conv.Reply(msg, "http://i0.kym-cdn.com/photos/images/newsfeed/000/495/040/9ab.gif")
-		conv.Reply(msg, "like that ?")
+		msg.Reply("http://i0.kym-cdn.com/photos/images/newsfeed/000/495/040/9ab.gif")
+		msg.Reply("like that ?")
 		return
 
 	} else if msg.ContainsAny([]string{"spider", "pee on", "inappropriate"}) {
 
-		conv.Reply(msg, "https://i.chzbgr.com/maxW500/5626597120/hB2E11E61.gif")
+		msg.Reply("https://i.chzbgr.com/maxW500/5626597120/hB2E11E61.gif")
 		return
 
 	} else if msg.ContainsAny([]string{"a meeting", "an interview"}) {
 
-		conv.Reply(msg, "like this one")
-		conv.Reply(msg, "https://i.chzbgr.com/maxW500/6696664320/hFC69678C.gif")
+		msg.Reply("like this one")
+		msg.Reply("https://i.chzbgr.com/maxW500/6696664320/hFC69678C.gif")
 		return
 
 	} else if msg.ContainsAny([]string{"it's odd", "it is odd", "that's odd", "that is odd", "it's awkward", "it is awkward", "that's awkward", "that is awkward"}) {
@@ -169,44 +192,44 @@ func (funny *Funny) ChatHandler(conv *slick.Conversation, msg *slick.Message) {
 		if msg.Contains("odd") {
 			term = "odd"
 		}
-		conv.Reply(msg, fmt.Sprintf("THAT's %s", term))
-		conv.Reply(msg, "https://i.chzbgr.com/maxW500/8296294144/h7AC1001C.gif")
+		msg.Reply(fmt.Sprintf("THAT's %s", term))
+		msg.Reply("https://i.chzbgr.com/maxW500/8296294144/h7AC1001C.gif")
 		return
 
 	} else if msg.Text == "ls" {
 
-		conv.Reply(msg, "/code deploy/      Contributors-Guide/ image_server/     sheep_porn/     streambed/\nstreamhead/  README.md")
+		msg.Reply("/code deploy/      Contributors-Guide/ image_server/     sheep_porn/     streambed/\nstreamhead/  README.md")
 
 	} else if msg.ContainsAny([]string{"that's really cool", "that is really cool", "really happy"}) {
 
-		conv.Reply(msg, "http://media.giphy.com/media/BlVnrxJgTGsUw/giphy.gif")
+		msg.Reply("http://media.giphy.com/media/BlVnrxJgTGsUw/giphy.gif")
 
 	} else if msg.ContainsAny([]string{"difficult problem", "hard problem"}) {
 
-		conv.Reply(msg, "naming things, cache invalidation and off-by-1 errors are the two most difficult computer science problems")
+		msg.Reply("naming things, cache invalidation and off-by-1 errors are the two most difficult computer science problems")
 
 	} else if msg.Contains("in theory") {
 
-		conv.Reply(msg, "yeah, theory and practice perfectly match... in theory.")
+		msg.Reply("yeah, theory and practice perfectly match... in theory.")
 	} else if msg.Contains("dishes") {
 
-		conv.Reply(msg, slick.RandomString("dishes"))
+		msg.Reply(slick.RandomString("dishes"))
 
 	} else if msg.Contains(" bean") {
 
-		conv.Reply(msg, "http://media3.giphy.com/media/c35RMDO6luMaQ/500w.gif")
+		msg.Reply("http://media3.giphy.com/media/c35RMDO6luMaQ/500w.gif")
 
 	} else if msg.Contains("steak") {
 
-		conv.Reply(msg, "http://media.tumblr.com/tumblr_me6r52h1md1r6nno1.gif")
+		msg.Reply("http://media.tumblr.com/tumblr_me6r52h1md1r6nno1.gif")
 
 	} else if msg.ContainsAny([]string{"booze", "alcohol", "martini", " dog "}) {
 
-		conv.Reply(msg, "http://media2.giphy.com/media/ZmJBjPdd44gXS/200w.gif")
+		msg.Reply("http://media2.giphy.com/media/ZmJBjPdd44gXS/200w.gif")
 
 	} else if msg.ContainsAny([]string{"internet", " tube "}) {
 
-		conv.Reply(msg, "https://pbs.twimg.com/media/By0J3YHCcAA4UBo.jpg:large")
+		msg.Reply("https://pbs.twimg.com/media/By0J3YHCcAA4UBo.jpg:large")
 
 	}
 

@@ -47,14 +47,14 @@ func (totw *Totw) InitPlugin(bot *slick.Bot) {
 
 	go totw.ScheduleAlerts(bot.Config.GeneralChannel, time.Thursday, 16, 0)
 
-	bot.ListenFor(&slick.Conversation{
-		HandlerFunc: totw.ChatHandler,
+	bot.ListenFor(&slick.Listener{
+		MessageHandlerFunc: totw.ChatHandler,
 	})
 }
 
-func (totw *Totw) ChatHandler(conv *slick.Conversation, msg *slick.Message) {
+func (totw *Totw) ChatHandler(conv *slick.Listener, msg *slick.Message) {
 	if strings.HasPrefix(msg.Text, "!totw") || strings.HasPrefix(msg.Text, "!techoftheweek") {
-		conv.ReplyMention(msg, slick.RandomString("tech adept"))
+		msg.ReplyMention(slick.RandomString("tech adept"))
 	}
 }
 

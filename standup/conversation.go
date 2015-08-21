@@ -71,7 +71,7 @@ func (standup *Standup) manageUpdatesInteraction() {
 				progress.sectionsDone[update.section] = true
 				numDone := len(progress.sectionsDone)
 				if numDone == 3 {
-					standup.bot.ReplyMention(update.msg, "got it!")
+					update.msg.ReplyMention("got it!")
 					delete(userProgressMap, update.msg.FromUser.Profile.Email)
 				} else {
 					progress.cancelTimer = make(chan bool)
@@ -109,7 +109,7 @@ func (standup *Standup) manageUpdatesInteraction() {
 			remain := strings.Join(remains, " or ")
 
 			if remain != "" {
-				standup.bot.ReplyMention(msg, fmt.Sprintf("what about %s ?", remain))
+				msg.ReplyMention(fmt.Sprintf("what about %s ?", remain))
 			}
 		}
 	}

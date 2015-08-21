@@ -29,10 +29,10 @@ type Bot struct {
 	Myself   slack.UserDetails
 
 	// Internal handling
-	conversations     []*Conversation
-	addConversationCh chan *Conversation
-	delConversationCh chan *Conversation
-	replySink         chan *BotReply
+	listeners     []*Listener
+	addListenerCh chan *Listener
+	delListenerCh chan *Listener
+	outgoingMsgCh chan *slack.OutgoingMessage
 
 	// Storage
 	LevelDBConfig LevelDBConfig
@@ -45,10 +45,10 @@ type Bot struct {
 
 func New(configFile string) *Bot {
 	bot := &Bot{
-		configFile:        configFile,
-		replySink:         make(chan *BotReply, 10),
-		addConversationCh: make(chan *Conversation, 100),
-		delConversationCh: make(chan *Conversation, 100),
+		configFile:    configFile,
+		outgoingMsgCh: make(chan *slack.OutgoingMessage, 100),
+		addListenerCh: make(chan *Listener, 100),
+		delListenerCh: make(chan *Listener, 100),
 
 		Users:    make(map[string]slack.User),
 		Channels: make(map[string]slack.Channel),
@@ -148,47 +148,32 @@ func (bot *Bot) writePID() error {
 	return ioutil.WriteFile(serverConf.Server.Pidfile, pidb, 0755)
 }
 
-func (bot *Bot) ListenFor(conv *Conversation) error {
-	conv.Bot = bot
+// ListenFor registers a listener for messages and events. There are two main
+// handling functions on a Listener: MessageHandlerFunc and EventHandlerFunc.
+// MessageHandlerFunc is filtered by a bunch of other properties of the Listener,
+// whereas EventHandlerFunc will receive all events unfiltered, but with
+// *slick.Message instead of a raw *slack.MessageEvent (it's in there anyway),
+// which adds a bunch of useful methods to it.
+//
+// Explore the Listener for more details.
+func (bot *Bot) ListenFor(listen *Listener) error {
+	listen.Bot = bot
 
-	err := conv.checkParams()
+	err := listen.checkParams()
 	if err != nil {
-		log.Println("Bot.ListenFor(): Invalid Conversation: ", err)
+		log.Println("Bot.ListenFor(): Invalid Listener: ", err)
 		return err
 	}
 
-	conv.setupChannels()
+	listen.setupChannels()
 
-	if conv.isManaged() {
-		go conv.launchManager()
+	if listen.isManaged() {
+		go listen.launchManager()
 	}
 
-	bot.addConversationCh <- conv
+	bot.addListenerCh <- listen
 
 	return nil
-}
-
-func (bot *Bot) Reply(msg *Message, reply string) {
-	log.Println("Replying:", reply)
-	bot.replySink <- msg.Reply(reply)
-}
-
-// ReplyMention replies with a @mention named prefixed, when replying in public. When replying in private, nothing is added.
-func (bot *Bot) ReplyMention(msg *Message, reply string) {
-	if msg.IsPrivate() {
-		bot.Reply(msg, reply)
-	} else {
-		prefix := ""
-		if msg.FromUser != nil {
-			prefix = fmt.Sprintf("<@%s> ", msg.FromUser.Name)
-		}
-		bot.Reply(msg, fmt.Sprintf("%s%s", prefix, reply))
-	}
-}
-
-func (bot *Bot) ReplyPrivately(msg *Message, reply string) {
-	log.Println("Replying privately:", reply)
-	bot.replySink <- msg.ReplyPrivately(reply)
 }
 
 func (bot *Bot) Notify(room, color, format, msg string, notify bool) error {
@@ -213,11 +198,8 @@ func (bot *Bot) SendToChannel(channelName string, message string) {
 	}
 	log.Printf("Sending to channel %q: %q\n", channelName, message)
 
-	reply := &BotReply{
-		To:   channel.ID,
-		Text: message,
-	}
-	bot.replySink <- reply
+	bot.SendOutgoingMessage(message, channel.ID)
+
 	return
 }
 
@@ -299,30 +281,32 @@ func (bot *Bot) LoadConfig(config interface{}) (err error) {
 }
 
 func (bot *Bot) replyHandler() {
-	count := 0
 	for {
-		reply := <-bot.replySink
-		if reply == nil {
+		outMsg := <-bot.outgoingMsgCh
+		if outMsg == nil {
 			continue
 		}
 
-		//log.Println("REPLYING", reply.To, reply.Message)
-		count += 1
-
-		outMsg := bot.rtm.NewOutgoingMessage(reply.Text, reply.To)
 		bot.rtm.SendMessage(outMsg)
 
 		time.Sleep(50 * time.Millisecond)
 	}
 }
 
-func (bot *Bot) removeConversation(conv *Conversation) {
-	for i, element := range bot.conversations {
-		if element == conv {
+// SendOutgoingMessage returns a *slack.OutgoingMessage and schedules it for departure.
+func (bot *Bot) SendOutgoingMessage(text string, to string) *slack.OutgoingMessage {
+	outMsg := bot.rtm.NewOutgoingMessage(text, to)
+	bot.outgoingMsgCh <- outMsg
+	return outMsg
+}
+
+func (bot *Bot) removeListener(listen *Listener) {
+	for i, element := range bot.listeners {
+		if element == listen {
 			// following: https://code.google.com/p/go-wiki/wiki/SliceTricks
-			copy(bot.conversations[i:], bot.conversations[i+1:])
-			bot.conversations[len(bot.conversations)-1] = nil
-			bot.conversations = bot.conversations[:len(bot.conversations)-1]
+			copy(bot.listeners[i:], bot.listeners[i+1:])
+			bot.listeners[len(bot.listeners)-1] = nil
+			bot.listeners = bot.listeners[:len(bot.listeners)-1]
 			return
 		}
 	}
@@ -332,30 +316,35 @@ func (bot *Bot) removeConversation(conv *Conversation) {
 
 func (bot *Bot) messageHandler() {
 	for {
+	nextMessages:
 		select {
-		case conv := <-bot.addConversationCh:
-			bot.conversations = append(bot.conversations, conv)
+		case listen := <-bot.addListenerCh:
+			bot.listeners = append(bot.listeners, listen)
 
-		case conv := <-bot.delConversationCh:
-			bot.removeConversation(conv)
+		case listen := <-bot.delListenerCh:
+			bot.removeListener(listen)
 
 		case event := <-bot.rtm.IncomingEvents:
 			bot.handleRTMEvent(&event)
 		}
 
-		// Always flush conversations deletions between messages, so a
-		// Close()'d Conversation never processes another message.
-		select {
-		case conv := <-bot.delConversationCh:
-			bot.removeConversation(conv)
-		default:
+		// Always flush listeners deletions between messages, so a
+		// Close()'d Listener never processes another message.
+		for {
+			select {
+			case listen := <-bot.delListenerCh:
+				bot.removeListener(listen)
+			default:
+				goto nextMessages
+			}
 		}
 	}
 }
 
 func (bot *Bot) handleRTMEvent(event *slack.RTMEvent) {
-	switch ev := event.Data.(type) {
+	var msg *Message
 
+	switch ev := event.Data.(type) {
 	/**
 	 * Connection handling...
 	 */
@@ -391,9 +380,10 @@ func (bot *Bot) handleRTMEvent(event *slack.RTMEvent) {
 	 */
 	case *slack.MessageEvent:
 		fmt.Printf("Message: %v\n", ev)
-		msg := &Message{
-			Msg:        &ev.Msg,
-			SubMessage: ev.SubMessage,
+		msg = &Message{
+			Msg:           &ev.Msg,
+			SubMessage:    ev.SubMessage,
+			bot:           bot,
 		}
 
 		user, ok := bot.Users[ev.User]
@@ -409,17 +399,6 @@ func (bot *Bot) handleRTMEvent(event *slack.RTMEvent) {
 		msg.applyFromMe(bot)
 
 		log.Printf("Incoming message: %s\n", msg)
-
-		for _, conv := range bot.conversations {
-			filterFunc := defaultFilterFunc
-			if conv.FilterFunc != nil {
-				filterFunc = conv.FilterFunc
-			}
-
-			if filterFunc(conv, msg) {
-				conv.HandlerFunc(conv, msg)
-			}
-		}
 
 	case *slack.PresenceChangeEvent:
 		user := bot.Users[ev.User]
@@ -501,12 +480,28 @@ func (bot *Bot) handleRTMEvent(event *slack.RTMEvent) {
 		log.Printf("Unexpected: %#v\n", ev)
 	}
 
-	// Dispatch to plugins who are listening for certain events..
+	// Dispatch listeners
+	for _, listen := range bot.listeners {
+		if msg == nil {
+			if listen.EventHandlerFunc != nil {
+				listen.EventHandlerFunc(listen, event.Data)
+			}
+		} else {
+			if listen.MessageHandlerFunc != nil {
+				if defaultFilterFunc(listen, msg) {
+					listen.MessageHandlerFunc(listen, msg)
+				}
+			} else {
+				listen.EventHandlerFunc(listen, msg)
+			}
+		}
+	}
+
 }
 
 // Disconnect the websocket.
 func (bot *Bot) Disconnect() {
-	// FIXME: implement a Reconnect() method.. calling the SlackWS method of the same name.
+	// FIXME: implement a Reconnect() method.. calling the RTM method of the same name.
 	// QUERYME: do we need that, really ?
 	bot.rtm.Disconnect()
 }

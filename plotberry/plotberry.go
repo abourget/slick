@@ -38,14 +38,14 @@ func (plotberry *PlotBerry) InitPlugin(bot *slick.Bot) {
 	go plotberry.launchWatcher(statchan)
 	go plotberry.launchCounter(statchan)
 
-	bot.ListenFor(&slick.Conversation{
-		HandlerFunc: plotberry.ChatHandler,
+	bot.ListenFor(&slick.Listener{
+		MessageHandlerFunc: plotberry.ChatHandler,
 	})
 }
 
-func (plotberry *PlotBerry) ChatHandler(conv *slick.Conversation, msg *slick.Message) {
+func (plotberry *PlotBerry) ChatHandler(listen *slick.Listener, msg *slick.Message) {
 	if msg.MentionsMe && msg.Contains("how many user") {
-		conv.Reply(msg, fmt.Sprintf("We got %d users!", plotberry.totalUsers))
+		msg.Reply(fmt.Sprintf("We got %d users!", plotberry.totalUsers))
 	}
 	return
 }

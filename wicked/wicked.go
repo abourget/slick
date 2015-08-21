@@ -46,13 +46,13 @@ func (wicked *Wicked) InitPlugin(bot *slick.Bot) {
 		wicked.confRooms = append(wicked.confRooms, confroom)
 	}
 
-	bot.ListenFor(&slick.Conversation{
-		HandlerFunc: wicked.ChatHandler,
+	bot.ListenFor(&slick.Listener{
+		MessageHandlerFunc: wicked.ChatHandler,
 	})
 }
 
-func (wicked *Wicked) ChatHandler(conv *slick.Conversation, msg *slick.Message) {
-	bot := conv.Bot
+func (wicked *Wicked) ChatHandler(listen *slick.Listener, msg *slick.Message) {
+	bot := listen.Bot
 	uuidNow := time.Now()
 
 	if strings.HasPrefix(msg.Text, "!wicked ") {
@@ -64,7 +64,7 @@ func (wicked *Wicked) ChatHandler(conv *slick.Conversation, msg *slick.Message) 
 		availableRoom := wicked.FindAvailableRoom(fromRoom)
 
 		if availableRoom == nil {
-			conv.Reply(msg, "No available Wicked Confroom for a meeting! Seems you'll need to create new Wicked Confrooms !")
+			msg.Reply("No available Wicked Confroom for a meeting! Seems you'll need to create new Wicked Confrooms !")
 			goto continueLogging
 		}
 
@@ -77,7 +77,7 @@ func (wicked *Wicked) ChatHandler(conv *slick.Conversation, msg *slick.Message) 
 		if availableRoom.ID == fromRoom {
 			meeting.sendToRoom(fmt.Sprintf(`*** Starting wicked meeting W%s in here.`, meeting.ID))
 		} else {
-			conv.Reply(msg, fmt.Sprintf(`*** Starting wicked meeting W%s in room "%s". Join with !join W%s`, meeting.ID, availableRoom.Name, meeting.ID))
+			msg.Reply(fmt.Sprintf(`*** Starting wicked meeting W%s in room "%s". Join with !join W%s`, meeting.ID, availableRoom.Name, meeting.ID))
 			initiatedFrom := ""
 			if fromRoom != "" {
 				initiatedFrom = fmt.Sprintf(` in "%s"`, msg.FromChannel.Name)
@@ -90,7 +90,7 @@ func (wicked *Wicked) ChatHandler(conv *slick.Conversation, msg *slick.Message) 
 	} else if strings.HasPrefix(msg.Text, "!join") {
 		match := joinMatcher.FindStringSubmatch(msg.Text)
 		if match == nil {
-			conv.ReplyMention(msg, `invalid !join syntax. Use something like "!join W123"`)
+			msg.ReplyMention(`invalid !join syntax. Use something like "!join W123"`)
 		} else {
 			for _, meeting := range wicked.meetings {
 				if match[1] == meeting.ID {
@@ -119,15 +119,15 @@ continueLogging:
 	if strings.HasPrefix(msg.Text, "!proposition ") {
 		decision := meeting.AddDecision(user, msg.Text[12:], uuidNow)
 		if decision == nil {
-			conv.Reply(msg, "Whoops, wrong syntax for !proposition")
+			msg.Reply("Whoops, wrong syntax for !proposition")
 		} else {
-			conv.Reply(msg, fmt.Sprintf("Proposition added, ref: D%s", decision.ID))
+			msg.Reply(fmt.Sprintf("Proposition added, ref: D%s", decision.ID))
 		}
 
 	} else if strings.HasPrefix(msg.Text, "!ref ") {
 
 		meeting.AddReference(user, msg.Text[4:], uuidNow)
-		conv.Reply(msg, "Ref. added")
+		msg.Reply("Ref. added")
 
 	} else if strings.HasPrefix(msg.Text, "!conclude") {
 		meeting.Conclude()
@@ -141,7 +141,7 @@ continueLogging:
 		decision := meeting.GetDecisionByID(match[1])
 		if decision != nil {
 			decision.RecordPlusplus(user)
-			conv.ReplyMention(msg, "noted")
+			msg.ReplyMention("noted")
 		}
 
 	}

@@ -24,9 +24,9 @@ func init() {
 func (vote *Vote) InitPlugin(bot *slick.Bot) {
 	vote.bot = bot
 
-	bot.ListenFor(&slick.Conversation{
+	bot.ListenFor(&slick.Listener{
 		PublicOnly:  true,
-		HandlerFunc: vote.voteHandler,
+		MessageHandlerFunc: vote.voteHandler,
 	})
 }
 
@@ -35,7 +35,7 @@ type vote struct {
 	vote string
 }
 
-func (v *Vote) voteHandler(conv *slick.Conversation, msg *slick.Message) {
+func (v *Vote) voteHandler(listen *slick.Listener, msg *slick.Message) {
 	v.mutex.Lock()
 	defer v.mutex.Unlock()
 
@@ -46,20 +46,20 @@ func (v *Vote) voteHandler(conv *slick.Conversation, msg *slick.Message) {
 	// TODO: match "!vote Other place
 
 	if msg.Text == "!what-for-lunch" || msg.Text == "!vote-for-lunch" {
-		bot.ReplyMention(msg, "you can say `!what-for-lunch 5m` to get a vote that will last 5 minutes. `!vote-for-lunch` is an alias")
+		msg.ReplyMention("you can say `!what-for-lunch 5m` to get a vote that will last 5 minutes. `!vote-for-lunch` is an alias")
 		return
 	}
 
 	if msg.HasPrefix("!what-for-lunch ") || msg.HasPrefix("!vote-for-lunch ") {
 		if v.runningVotes[msg.FromChannel.ID] != nil {
-			bot.ReplyMention(msg, "vote is already running!")
+			msg.ReplyMentionFlash("3s", "vote is already running!")
 			return
 		}
 
 		timing := strings.TrimSpace(strings.SplitN(msg.Text, " ", 2)[1])
 		dur, err := time.ParseDuration(timing)
 		if err != nil {
-			bot.ReplyMention(msg, fmt.Sprintf("couldn't parse duration: %s", err))
+			msg.ReplyMention(fmt.Sprintf("couldn't parse duration: %s", err))
 			return
 		}
 
@@ -78,7 +78,7 @@ func (v *Vote) voteHandler(conv *slick.Conversation, msg *slick.Message) {
 
 			// TODO: print report, clear up
 			if len(res) == 0 {
-				bot.ReplyMention(msg, "polls closed, but no one voted")
+				msg.ReplyMention("polls closed, but no one voted")
 			} else {
 				out := []string{"polls closed, here are the results:"}
 				for theVote, count := range res {
@@ -88,20 +88,20 @@ func (v *Vote) voteHandler(conv *slick.Conversation, msg *slick.Message) {
 					}
 					out = append(out, fmt.Sprintf("* %s: %d vote%s", theVote, count, plural))
 				}
-				bot.ReplyMention(msg, strings.Join(out, "\n"))
+				msg.ReplyMention(strings.Join(out, "\n"))
 			}
 
 			delete(v.runningVotes, msg.FromChannel.ID)
 		}()
 
-		bot.Reply(msg, "<!channel> okay, what do we eat ? Votes are open. Use `!vote The Food Place http://food-place.url` .. you can vote for the same place with a substring, ex: `!vote food place`")
+		msg.Reply("<!channel> okay, what do we eat ? Votes are open. Use `!vote The Food Place http://food-place.url` .. you can vote for the same place with a substring, ex: `!vote food place`")
 
 	}
 
 	if msg.HasPrefix("!vote ") {
 		running := v.runningVotes[msg.FromChannel.ID]
 		if running == nil {
-			bot.Reply(msg, bot.WithMood("what vote ?!", "oh you're so cute! voting while there's no vote going on !"))
+			msg.Reply(bot.WithMood("what vote ?!", "oh you're so cute! voting while there's no vote going on !"))
 			return
 		}
 
@@ -114,7 +114,7 @@ func (v *Vote) voteHandler(conv *slick.Conversation, msg *slick.Message) {
 		for _, prevVote := range running {
 			if msg.FromUser.ID == prevVote.user {
 				// buzz off if you voted already
-				bot.ReplyMention(msg, bot.WithMood("you voted already", "trying to double vote ! how charming :)"))
+				msg.ReplyMention(bot.WithMood("you voted already", "trying to double vote ! how charming :)"))
 				return
 			}
 		}
@@ -123,13 +123,13 @@ func (v *Vote) voteHandler(conv *slick.Conversation, msg *slick.Message) {
 			if strings.Contains(strings.ToLower(prevVote.vote), strings.ToLower(voteCast)) {
 				running = append(running, vote{msg.FromUser.ID, prevVote.vote})
 				v.runningVotes[msg.FromChannel.ID] = running
-				bot.ReplyMention(msg, bot.WithMood("okay", "hmmm kaay"))
+				msg.ReplyMentionFlash("2s", bot.WithMood("okay", "hmmm kaay"))
 				return
 			}
 		}
 		running = append(running, vote{msg.FromUser.ID, voteCast})
 		v.runningVotes[msg.FromChannel.ID] = running
-		bot.ReplyMention(msg, bot.WithMood("taking note", "taking note! what a creative mind..."))
+		msg.ReplyMentionFlash("2s", bot.WithMood("taking note", "taking note! what a creative mind..."))
 
 		// TODO: match "!what-for-lunch 1h|5m|50s"
 
