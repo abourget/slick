@@ -9,6 +9,16 @@ import (
 )
 
 type Listener struct {
+	// OutgoingMessage can be set to a *slack.OutgoingMessage. If it is
+	// non-nil, slick will listen for the Ack and add the AckMessage
+	// to OutgoingMessageAck *before* really attaching this listener.
+	//
+	OutgoingMessage *slack.OutgoingMessage
+
+	// OutgoingMessageAck is fill by the bot when you specify OutgoingMessage
+	// before calling `Listen`
+	OutgoingMessageAck *slack.AckMessage
+
 	// ListenUntil sets an absolute date at which this Listener
 	// expires and stops listening.  ListenUntil and ListenDuration
 	// are optional and mutually exclusive.

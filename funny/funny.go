@@ -49,7 +49,7 @@ func (funny *Funny) InitPlugin(bot *slick.Bot) {
 		"http://i.imgur.com/WIL27Br.gif",
 	})
 
-	bot.ListenFor(&slick.Listener{
+	bot.Listen(&slick.Listener{
 		MessageHandlerFunc: funny.ChatHandler,
 	})
 }
@@ -58,7 +58,7 @@ func (funny *Funny) ChatHandler(listen *slick.Listener, msg *slick.Message) {
 	bot := listen.Bot
 
 	if msg.Contains("mama") {
-		listen.Bot.ListenFor(&slick.Listener{
+		listen.Bot.Listen(&slick.Listener{
 			ListenDuration: time.Duration(10 * time.Second),
 			MessageHandlerFunc: func(listen *slick.Listener, msg *slick.Message) {
 				if strings.Contains(msg.Text, "papa") {
@@ -97,7 +97,7 @@ func (funny *Funny) ChatHandler(listen *slick.Listener, msg *slick.Message) {
 
 		} else if msg.Contains("how are you") && msg.MentionsMe {
 			msg.ReplyMention(bot.WithMood("good, and you ?", "I'm wild today!! wadabout you ?"))
-			bot.ListenFor(&slick.Listener{
+			bot.Listen(&slick.Listener{
 				ListenDuration: 60 * time.Second,
 				WithUser:       msg.FromUser,
 				InChannel:      msg.FromChannel,

@@ -46,7 +46,7 @@ func (wicked *Wicked) InitPlugin(bot *slick.Bot) {
 		wicked.confRooms = append(wicked.confRooms, confroom)
 	}
 
-	bot.ListenFor(&slick.Listener{
+	bot.Listen(&slick.Listener{
 		MessageHandlerFunc: wicked.ChatHandler,
 	})
 }

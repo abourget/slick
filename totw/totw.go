@@ -47,7 +47,7 @@ func (totw *Totw) InitPlugin(bot *slick.Bot) {
 
 	go totw.ScheduleAlerts(bot.Config.GeneralChannel, time.Thursday, 16, 0)
 
-	bot.ListenFor(&slick.Listener{
+	bot.Listen(&slick.Listener{
 		MessageHandlerFunc: totw.ChatHandler,
 	})
 }

@@ -38,7 +38,7 @@ func (plotberry *PlotBerry) InitPlugin(bot *slick.Bot) {
 	go plotberry.launchWatcher(statchan)
 	go plotberry.launchCounter(statchan)
 
-	bot.ListenFor(&slick.Listener{
+	bot.Listen(&slick.Listener{
 		MessageHandlerFunc: plotberry.ChatHandler,
 	})
 }

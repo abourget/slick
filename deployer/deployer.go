@@ -60,7 +60,7 @@ func (dep *Deployer) InitPlugin(bot *slick.Bot) {
 
 	go dep.pubsubForwardReply()
 
-	bot.ListenFor(&slick.Listener{
+	bot.Listen(&slick.Listener{
 		MessageHandlerFunc:    dep.ChatHandler,
 		MentionsMeOnly: true,
 	})

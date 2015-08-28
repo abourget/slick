@@ -29,7 +29,7 @@ func (standup *Standup) InitPlugin(bot *slick.Bot) {
 
 	go standup.manageUpdatesInteraction()
 
-	bot.ListenFor(&slick.Listener{
+	bot.Listen(&slick.Listener{
 		MessageHandlerFunc: standup.ChatHandler,
 	})
 }

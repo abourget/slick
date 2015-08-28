@@ -69,7 +69,7 @@ func (bugger *Bugger) InitPlugin(bot *slick.Bot) {
 		Conf: conf.Github,
 	}
 
-	bot.ListenFor(&slick.Listener{
+	bot.Listen(&slick.Listener{
 		MessageHandlerFunc: bugger.ChatHandler,
 	})
 

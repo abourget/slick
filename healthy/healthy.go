@@ -29,7 +29,7 @@ func (healthy *Healthy) InitPlugin(bot *slick.Bot) {
 
 	healthy.urls = conf.HealthCheck.Urls
 
-	bot.ListenFor(&slick.Listener{
+	bot.Listen(&slick.Listener{
 		MentionsMeOnly: true,
 		ContainsAny:    []string{"health", "healthy?", "health_check"},
 		MessageHandlerFunc:    healthy.ChatHandler,

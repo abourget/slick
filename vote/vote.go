@@ -24,7 +24,7 @@ func init() {
 func (vote *Vote) InitPlugin(bot *slick.Bot) {
 	vote.bot = bot
 
-	bot.ListenFor(&slick.Listener{
+	bot.Listen(&slick.Listener{
 		PublicOnly:  true,
 		MessageHandlerFunc: vote.voteHandler,
 	})

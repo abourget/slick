@@ -148,7 +148,7 @@ func (bot *Bot) writePID() error {
 	return ioutil.WriteFile(serverConf.Server.Pidfile, pidb, 0755)
 }
 
-// ListenFor registers a listener for messages and events. There are two main
+// Listen registers a listener for messages and events. There are two main
 // handling functions on a Listener: MessageHandlerFunc and EventHandlerFunc.
 // MessageHandlerFunc is filtered by a bunch of other properties of the Listener,
 // whereas EventHandlerFunc will receive all events unfiltered, but with
@@ -156,12 +156,12 @@ func (bot *Bot) writePID() error {
 // which adds a bunch of useful methods to it.
 //
 // Explore the Listener for more details.
-func (bot *Bot) ListenFor(listen *Listener) error {
+func (bot *Bot) Listen(listen *Listener) error {
 	listen.Bot = bot
 
 	err := listen.checkParams()
 	if err != nil {
-		log.Println("Bot.ListenFor(): Invalid Listener: ", err)
+		log.Println("Bot.Listen(): Invalid Listener: ", err)
 		return err
 	}
 

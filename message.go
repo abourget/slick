@@ -132,7 +132,7 @@ func (msg *Message) ReplyMentionFlash(duration string, reply string) *slack.Outg
 }
 
 func (msg *Message) selfDestruct(duration time.Duration, outMsg *slack.OutgoingMessage) {
-	msg.bot.ListenFor(&Listener{
+	msg.bot.Listen(&Listener{
 		ListenDuration: time.Duration(30 * time.Second), // before the ACK
 		EventHandlerFunc: func(listen *Listener, event interface{}) {
 			if ev, ok := event.(*slack.AckMessage); ok {
