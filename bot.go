@@ -165,15 +165,41 @@ func (bot *Bot) Listen(listen *Listener) error {
 		return err
 	}
 
-	listen.setupChannels()
+	if listen.OutgoingMessage != nil {
+		bot.Listen(&Listener{
+			ListenDuration: 20 * time.Second,
+			EventHandlerFunc: func(subListen *Listener, event interface{}) {
+				if ev, ok := event.(*slack.AckMessage); ok {
+					if ev.ReplyTo == listen.OutgoingMessage.ID {
+						listen.OutgoingMessageAck = ev
+						bot.addListener(listen)
+						if listen.AddReactions != nil {
+							for _, reaction := range listen.AddReactions {
+								bot.Slack.AddReaction(reaction, slack.NewRefToMessage(listen.OutgoingMessage.Channel, ev.Timestamp))
+							}
+						}
+						subListen.Close()
+					}
+				}
+			},
+			TimeoutFunc: func(subListen *Listener) {
+				log.Println("Listener dropped, because not corresponding AckMessage was received within timout")
+				subListen.Close()
+			},
+		})
+	} else {
+		bot.addListener(listen)
+	}
 
+	return nil
+}
+
+func (bot *Bot) addListener(listen *Listener) {
+	listen.setupChannels()
 	if listen.isManaged() {
 		go listen.launchManager()
 	}
-
 	bot.addListenerCh <- listen
-
-	return nil
 }
 
 func (bot *Bot) Notify(room, color, format, msg string, notify bool) error {
@@ -381,12 +407,19 @@ func (bot *Bot) handleRTMEvent(event *slack.RTMEvent) {
 	case *slack.MessageEvent:
 		fmt.Printf("Message: %v\n", ev)
 		msg = &Message{
-			Msg:           &ev.Msg,
-			SubMessage:    ev.SubMessage,
-			bot:           bot,
+			Msg:        &ev.Msg,
+			SubMessage: ev.SubMessage,
+			bot:        bot,
 		}
 
-		user, ok := bot.Users[ev.User]
+		userID := ev.User
+		if ev.Msg.SubType == "message_changed" {
+			userID = ev.SubMessage.User
+			msg.Msg.Text = ev.SubMessage.Text
+			msg.IsEdit = true
+		}
+
+		user, ok := bot.Users[userID]
 		if ok {
 			msg.FromUser = &user
 		}
@@ -398,7 +431,7 @@ func (bot *Bot) handleRTMEvent(event *slack.RTMEvent) {
 		msg.applyMentionsMe(bot)
 		msg.applyFromMe(bot)
 
-		log.Printf("Incoming message: %s\n", msg)
+		log.Printf("Incoming message subtype=%q:\n\t%q\n\tMessage: %s\n\tmsg.Msg: %#v\n\tSubMessage: %#v\n", msg.Msg.SubType, msg.Text, msg, msg.Msg, msg.SubMessage)
 
 	case *slack.PresenceChangeEvent:
 		user := bot.Users[ev.User]

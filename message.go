@@ -17,13 +17,13 @@ type botReply struct {
 
 type Message struct {
 	*slack.Msg
-	SubMessage    *slack.Msg
-	bot           *Bot
-	MentionsMe    bool
-	IsEdition     bool
-	FromMe        bool
-	FromUser      *slack.User
-	FromChannel   *slack.Channel
+	SubMessage  *slack.Msg
+	bot         *Bot
+	MentionsMe  bool
+	IsEdit      bool
+	FromMe      bool
+	FromUser    *slack.User
+	FromChannel *slack.Channel
 }
 
 func (msg *Message) IsPrivate() bool {

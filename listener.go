@@ -19,6 +19,10 @@ type Listener struct {
 	// before calling `Listen`
 	OutgoingMessageAck *slack.AckMessage
 
+	// AddReactions will automatically add reactions to the specified
+	// OutgoingMessage
+	AddReactions []string
+
 	// ListenUntil sets an absolute date at which this Listener
 	// expires and stops listening.  ListenUntil and ListenDuration
 	// are optional and mutually exclusive.
@@ -51,6 +55,10 @@ type Listener struct {
 	// as substrings in the message body.  Mutually exclusive with
 	// `Contains`.
 	ContainsAny []string
+
+	// ListenForEdits will trigger a message when a user edits a
+	// message as well as creates a new one.
+	ListenForEdits bool
 
 	// MentionsMe filters out messages that do not mention the Bot's
 	// `bot.Config.MentionName`
@@ -146,8 +154,16 @@ func (listen *Listener) timeoutDuration() (timeout time.Duration) {
 }
 
 func (listen *Listener) checkParams() error {
+	if listen.OutgoingMessageAck != nil {
+		return fmt.Errorf("OutgoingMessageAck should not be specified, it is to be injected by the bot upon receiving the AckMessage")
+	}
+
+	if listen.AddReactions != nil && listen.OutgoingMessage == nil {
+		return fmt.Errorf("specifying AddReactions requires OutgoingMessage to be present")
+	}
+
 	if !listen.ListenUntil.IsZero() && int64(listen.ListenDuration) != 0 {
-		return fmt.Errorf("Specify `ListenUntil` *or* `ListenDuration`, not both.")
+		return fmt.Errorf("specify `ListenUntil` *or* `ListenDuration`, not both.")
 	}
 
 	if listen.PrivateOnly && listen.PublicOnly {
@@ -172,6 +188,14 @@ func (listen *Listener) setupChannels() {
 
 // defaultFilterFunc applies checks from a Listener against a Message.
 func defaultFilterFunc(listen *Listener, msg *Message) bool {
+	if msg.Msg.SubType == "message_deleted" {
+		// like "message_deleted"
+		return false
+	}
+	if msg.Msg.SubType == "message_changed" && !listen.ListenForEdits {
+		return false
+	}
+
 	if listen.MentionsMeOnly && !msg.MentionsMe {
 		return false
 	}
@@ -192,7 +216,8 @@ func defaultFilterFunc(listen *Listener, msg *Message) bool {
 		return false
 	}
 
-	if listen.WithUser != nil && msg.FromUser.ID != listen.WithUser.ID {
+	// If there is no msg.FromUser, the message is filtered out.
+	if listen.WithUser != nil && (msg.FromUser == nil || msg.FromUser.ID != listen.WithUser.ID) {
 		return false
 	}
 
