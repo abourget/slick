@@ -46,9 +46,9 @@ type Bot struct {
 func New(configFile string) *Bot {
 	bot := &Bot{
 		configFile:    configFile,
-		outgoingMsgCh: make(chan *slack.OutgoingMessage, 100),
-		addListenerCh: make(chan *Listener, 100),
-		delListenerCh: make(chan *Listener, 100),
+		outgoingMsgCh: make(chan *slack.OutgoingMessage, 500),
+		addListenerCh: make(chan *Listener, 500),
+		delListenerCh: make(chan *Listener, 500),
 
 		Users:    make(map[string]slack.User),
 		Channels: make(map[string]slack.Channel),
@@ -165,31 +165,7 @@ func (bot *Bot) Listen(listen *Listener) error {
 		return err
 	}
 
-	if listen.OutgoingMessage != nil {
-		bot.Listen(&Listener{
-			ListenDuration: 20 * time.Second,
-			EventHandlerFunc: func(subListen *Listener, event interface{}) {
-				if ev, ok := event.(*slack.AckMessage); ok {
-					if ev.ReplyTo == listen.OutgoingMessage.ID {
-						listen.OutgoingMessageAck = ev
-						bot.addListener(listen)
-						if listen.AddReactions != nil {
-							for _, reaction := range listen.AddReactions {
-								bot.Slack.AddReaction(reaction, slack.NewRefToMessage(listen.OutgoingMessage.Channel, ev.Timestamp))
-							}
-						}
-						subListen.Close()
-					}
-				}
-			},
-			TimeoutFunc: func(subListen *Listener) {
-				log.Println("Listener dropped, because not corresponding AckMessage was received within timout")
-				subListen.Close()
-			},
-		})
-	} else {
-		bot.addListener(listen)
-	}
+	bot.addListener(listen)
 
 	return nil
 }
@@ -215,18 +191,16 @@ func (bot *Bot) Notify(room, color, format, msg string, notify bool) error {
 	return nil
 }
 
-func (bot *Bot) SendToChannel(channelName string, message string) {
+func (bot *Bot) SendToChannel(channelName string, message string) *Reply {
 	channel := bot.GetChannelByName(channelName)
 
 	if channel == nil {
 		log.Printf("Couldn't send message, channel %q not found: %q\n", channelName, message)
-		return
+		return nil
 	}
 	log.Printf("Sending to channel %q: %q\n", channelName, message)
 
-	bot.SendOutgoingMessage(message, channel.ID)
-
-	return
+	return bot.SendOutgoingMessage(message, channel.ID)
 }
 
 func (bot *Bot) setupHandlers() {
@@ -319,11 +293,12 @@ func (bot *Bot) replyHandler() {
 	}
 }
 
-// SendOutgoingMessage returns a *slack.OutgoingMessage and schedules it for departure.
-func (bot *Bot) SendOutgoingMessage(text string, to string) *slack.OutgoingMessage {
+// SendOutgoingMessage schedules the message for departure and returns
+// a Reply which can be listened on. See type `Reply`.
+func (bot *Bot) SendOutgoingMessage(text string, to string) *Reply {
 	outMsg := bot.rtm.NewOutgoingMessage(text, to)
 	bot.outgoingMsgCh <- outMsg
-	return outMsg
+	return &Reply{outMsg, bot}
 }
 
 func (bot *Bot) removeListener(listen *Listener) {
@@ -369,6 +344,7 @@ func (bot *Bot) messageHandler() {
 
 func (bot *Bot) handleRTMEvent(event *slack.RTMEvent) {
 	var msg *Message
+	//var reaction interface{}
 
 	switch ev := event.Data.(type) {
 	/**
@@ -399,13 +375,13 @@ func (bot *Bot) handleRTMEvent(event *slack.RTMEvent) {
 		log.Printf("Bot connecting, connection_count=%d, attempt=%d\n", ev.ConnectionCount, ev.Attempt)
 
 	case *slack.HelloEvent:
-		fmt.Println("Got a HELLO from websocket")
+		log.Println("Got a HELLO from websocket")
 
 	/**
 	 * Message dispatch and handling
 	 */
 	case *slack.MessageEvent:
-		fmt.Printf("Message: %v\n", ev)
+		log.Printf("Message: %v\n", ev)
 		msg = &Message{
 			Msg:        &ev.Msg,
 			SubMessage: ev.SubMessage,
@@ -439,6 +415,12 @@ func (bot *Bot) handleRTMEvent(event *slack.RTMEvent) {
 		user.Presence = ev.Presence
 
 	// TODO: manage im_open, im_close, and im_created ?
+
+
+	// case *slack.ReactionAddedEvent:
+	// 	reaction = ev
+	// case *slack.ReactionRemovedEvent:
+	// 	reaction = ev
 
 	/**
 	 * User changes
@@ -515,18 +497,16 @@ func (bot *Bot) handleRTMEvent(event *slack.RTMEvent) {
 
 	// Dispatch listeners
 	for _, listen := range bot.listeners {
-		if msg == nil {
-			if listen.EventHandlerFunc != nil {
-				listen.EventHandlerFunc(listen, event.Data)
+		if msg != nil && listen.MessageHandlerFunc != nil {
+			listen.filterAndDispatchMessage(msg)
+		}
+
+		if listen.EventHandlerFunc != nil {
+			var handleEvent interface{} = event.Data
+			if msg != nil {
+				handleEvent = msg
 			}
-		} else {
-			if listen.MessageHandlerFunc != nil {
-				if defaultFilterFunc(listen, msg) {
-					listen.MessageHandlerFunc(listen, msg)
-				}
-			} else {
-				listen.EventHandlerFunc(listen, msg)
-			}
+			listen.EventHandlerFunc(listen, handleEvent)
 		}
 	}
 

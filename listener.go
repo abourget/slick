@@ -9,19 +9,8 @@ import (
 )
 
 type Listener struct {
-	// OutgoingMessage can be set to a *slack.OutgoingMessage. If it is
-	// non-nil, slick will listen for the Ack and add the AckMessage
-	// to OutgoingMessageAck *before* really attaching this listener.
-	//
-	OutgoingMessage *slack.OutgoingMessage
-
-	// OutgoingMessageAck is fill by the bot when you specify OutgoingMessage
-	// before calling `Listen`
-	OutgoingMessageAck *slack.AckMessage
-
-	// AddReactions will automatically add reactions to the specified
-	// OutgoingMessage
-	AddReactions []string
+	// replyAck is filled when you call Listen() on a Reply.
+	replyAck *slack.AckMessage
 
 	// ListenUntil sets an absolute date at which this Listener
 	// expires and stops listening.  ListenUntil and ListenDuration
@@ -103,6 +92,12 @@ func (listen *Listener) Close() {
 	listen.doneCh <- true
 }
 
+// ReplyAck returns the AckMessage received that corresponds to the Reply
+// on which you called Listen()
+func (listen *Listener) ReplyAck() *slack.AckMessage {
+	return listen.replyAck
+}
+
 // ResetDuration re-initializes the timeout set by
 // `Listener.ListenDuration`, and continues listening for another
 // such duration.
@@ -154,14 +149,6 @@ func (listen *Listener) timeoutDuration() (timeout time.Duration) {
 }
 
 func (listen *Listener) checkParams() error {
-	if listen.OutgoingMessageAck != nil {
-		return fmt.Errorf("OutgoingMessageAck should not be specified, it is to be injected by the bot upon receiving the AckMessage")
-	}
-
-	if listen.AddReactions != nil && listen.OutgoingMessage == nil {
-		return fmt.Errorf("specifying AddReactions requires OutgoingMessage to be present")
-	}
-
 	if !listen.ListenUntil.IsZero() && int64(listen.ListenDuration) != 0 {
 		return fmt.Errorf("specify `ListenUntil` *or* `ListenDuration`, not both.")
 	}
@@ -186,8 +173,14 @@ func (listen *Listener) setupChannels() {
 	listen.doneCh = make(chan bool, 10)
 }
 
-// defaultFilterFunc applies checks from a Listener against a Message.
-func defaultFilterFunc(listen *Listener, msg *Message) bool {
+func (listen *Listener) filterAndDispatchMessage(msg *Message) {
+	if listen.filterMessage(msg) {
+		listen.MessageHandlerFunc(listen, msg)
+	}
+}
+
+// filterMessage applies checks from a Listener against a Message.
+func (listen *Listener) filterMessage(msg *Message) bool {
 	if msg.Msg.SubType == "message_deleted" {
 		// like "message_deleted"
 		return false

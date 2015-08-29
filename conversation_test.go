@@ -23,8 +23,8 @@ func TestDefeaultFilter(t *testing.T) {
 	u := &slack.User{ID: "a_user"}
 	m := &Message{Msg: &slack.Msg{Text: "hello mama"}, FromUser: u}
 
-	if defaultFilterFunc(c, m) != true {
-		t.Error("defaultFilterFunc Failed")
+	if c.filterMessage(m) != true {
+		t.Error("filterMessage Failed")
 	}
 
 	type El struct {
@@ -52,8 +52,8 @@ func TestDefeaultFilter(t *testing.T) {
 	}
 
 	for i, el := range tests {
-		if defaultFilterFunc(el.c, m) != el.r {
-			t.Error("defaultFilterFunc Failed, index ", i)
+		if el.c.filterMessage(m) != el.r {
+			t.Error("filterMessage Failed, index ", i)
 		}
 	}
 }

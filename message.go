@@ -88,50 +88,52 @@ func (msg *Message) RemoveReaction(emoticon string) {
 	msg.bot.Slack.RemoveReaction(emoticon, slack.NewRefToMessage(msg.Channel, msg.Timestamp))
 }
 
-func (msg *Message) Reply(s string) *slack.OutgoingMessage {
+func (msg *Message) Reply(text string, v ...interface{}) *Reply {
 	to := msg.User
 	if msg.Channel != "" {
 		to = msg.Channel
 	}
-	return msg.bot.SendOutgoingMessage(s, to)
+	text = Format(text, v...)
+	return msg.bot.SendOutgoingMessage(text, to)
 }
 
-func (msg *Message) ReplyPrivately(s string) *slack.OutgoingMessage {
-	return msg.bot.SendOutgoingMessage(s, msg.User)
+func (msg *Message) ReplyPrivately(text string, v ...interface{}) *Reply {
+	text = Format(text, v...)
+	return msg.bot.SendOutgoingMessage(text, msg.User)
 }
 
 // ReplyMention replies with a @mention named prefixed, when replying
 // in public. When replying in private, nothing is added.
-func (msg *Message) ReplyMention(reply string) *slack.OutgoingMessage {
+func (msg *Message) ReplyMention(text string, v ...interface{}) *Reply {
 	if msg.IsPrivate() {
-		return msg.Reply(reply)
+		return msg.Reply(text, v...)
 	}
 	prefix := ""
 	if msg.FromUser != nil {
 		prefix = fmt.Sprintf("<@%s> ", msg.FromUser.Name)
 	}
-	return msg.Reply(fmt.Sprintf("%s%s", prefix, reply))
+	return msg.Reply(fmt.Sprintf("%s%s", prefix, text), v...)
 }
 
 // ReplyFlash sends a reply like "Reply", but will self-destruct after `duration`
 // time (as a time.ParseDuration).
-func (msg *Message) ReplyFlash(duration string, reply string) *slack.OutgoingMessage {
+func (msg *Message) ReplyFlash(duration string, reply string, v ...interface{}) *Reply {
 	timeDur := parseAutodestructDuration("ReplyFlash", duration)
-	outMsg := msg.Reply(reply)
+	outMsg := msg.Reply(reply, v...)
 	msg.selfDestruct(timeDur, outMsg)
 	return outMsg
 }
 
 // ReplyMentionFlash sends a reply like "Reply", but will self-destruct after `duration`
 // time (as a time.ParseDuration).
-func (msg *Message) ReplyMentionFlash(duration string, reply string) *slack.OutgoingMessage {
+func (msg *Message) ReplyMentionFlash(duration string, reply string, v ...interface{}) *Reply {
 	timeDur := parseAutodestructDuration("ReplyMentionFlash", duration)
-	outMsg := msg.ReplyMention(reply)
+	outMsg := msg.ReplyMention(reply, v...)
 	msg.selfDestruct(timeDur, outMsg)
 	return outMsg
 }
 
-func (msg *Message) selfDestruct(duration time.Duration, outMsg *slack.OutgoingMessage) {
+func (msg *Message) selfDestruct(duration time.Duration, outMsg *Reply) {
 	msg.bot.Listen(&Listener{
 		ListenDuration: time.Duration(30 * time.Second), // before the ACK
 		EventHandlerFunc: func(listen *Listener, event interface{}) {
@@ -178,3 +180,14 @@ func (msg *Message) applyFromMe(bot *Bot) {
 }
 
 var reAtMention = regexp.MustCompile(`<@([A-Z0-9]+)(|([^>]+))>`)
+
+// Format conditionally formats using fmt.Sprintf if there is more
+// than one argument, otherwise returns the first parameter
+// uninterpreted.
+func Format(s string, v ...interface{}) string {
+	count := len(v)
+	if count == 0 {
+		return s
+	}
+	return fmt.Sprintf(s, v...)
+}
