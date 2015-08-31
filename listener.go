@@ -23,12 +23,12 @@ type Listener struct {
 	// `ListenDuration`.
 	ListenDuration time.Duration
 
-	// WithUser filters out incoming messages that are not with
+	// FromUser filters out incoming messages that are not with
 	// `*User` (publicly or privately)
-	WithUser *slack.User
-	// InChannel filters messages that are sent to a different room than
-	// `Room`. This can be mixed and matched with `WithUser`
-	InChannel *slack.Channel
+	FromUser *slack.User
+	// FromChannel filters messages that are sent to a different room than
+	// `Room`. This can be mixed and matched with `FromUser`
+	FromChannel *slack.Channel
 
 	// PrivateOnly filters out public messages.
 	PrivateOnly bool
@@ -210,15 +210,15 @@ func (listen *Listener) filterMessage(msg *Message) bool {
 	}
 
 	// If there is no msg.FromUser, the message is filtered out.
-	if listen.WithUser != nil && (msg.FromUser == nil || msg.FromUser.ID != listen.WithUser.ID) {
+	if listen.FromUser != nil && (msg.FromUser == nil || msg.FromUser.ID != listen.FromUser.ID) {
 		return false
 	}
 
-	if listen.InChannel != nil {
+	if listen.FromChannel != nil {
 		if msg.FromChannel == nil {
 			return false
 		}
-		if msg.FromChannel.ID != listen.InChannel.ID {
+		if msg.FromChannel.ID != listen.FromChannel.ID {
 			return false
 		}
 	}

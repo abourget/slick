@@ -43,11 +43,11 @@ func TestDefeaultFilter(t *testing.T) {
 		}, true},
 
 		El{&Listener{
-			WithUser: u,
+			FromUser: u,
 		}, true},
 
 		El{&Listener{
-			WithUser: &slack.User{ID: "another_user"},
+			FromUser: &slack.User{ID: "another_user"},
 		}, false},
 	}
 

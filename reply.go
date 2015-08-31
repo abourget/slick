@@ -19,24 +19,33 @@ func (r *Reply) OnReaction(f func(addOrRemove string, emoji string)) {
 }
 
 func (r *Reply) AddReaction(emoji string) *Reply {
-	r.bot.addListener(&Listener{
+	r.OnAck(func(ev *slack.AckMessage) {
+		go r.bot.Slack.AddReaction(emoji, slack.NewRefToMessage(r.Channel, ev.Timestamp))
+	})
+	return r
+}
+
+func (r *Reply) OnAck(f func(ack *slack.AckMessage)) {
+	r.bot.Listen(&Listener{
 		ListenDuration: 20 * time.Second,
 		EventHandlerFunc: func(subListen *Listener, event interface{}) {
 			if ev, ok := event.(*slack.AckMessage); ok {
 				if ev.ReplyTo == r.ID {
-					go r.bot.Slack.AddReaction(emoji, slack.NewRefToMessage(r.Channel, ev.Timestamp))
+					f(ev)
 					subListen.Close()
 				}
 			}
 		},
 		TimeoutFunc: func(subListen *Listener) {
-			log.Println("Reply.AddReaction Listener dropped, because not corresponding AckMessage was received before timeout")
+			log.Println("OnAck Listener dropped, because no corresponding AckMessage was received before timeout")
 			subListen.Close()
 		},
 	})
-	return r
 }
 
+// Listen here on Reply is the same as Bot.Listen except that
+// ReplyAck() will be filled with the slack.AckMessage before any
+// event is dispatched to this listener.
 func (r *Reply) Listen(listen *Listener) error {
 	listen.Bot = r.bot
 
@@ -46,20 +55,32 @@ func (r *Reply) Listen(listen *Listener) error {
 		return err
 	}
 
-	return r.bot.Listen(&Listener{
-		ListenDuration: 20 * time.Second,
-		EventHandlerFunc: func(subListen *Listener, event interface{}) {
-			if ev, ok := event.(*slack.AckMessage); ok {
-				if ev.ReplyTo == r.ID {
-					listen.replyAck = ev
-					r.bot.addListener(listen)
-					subListen.Close()
-				}
-			}
-		},
-		TimeoutFunc: func(subListen *Listener) {
-			log.Println("Reply.Listen Listener dropped, because not corresponding AckMessage was received before timeout")
-			subListen.Close()
-		},
+	r.OnAck(func(ev *slack.AckMessage) {
+		listen.replyAck = ev
+		r.bot.addListener(listen)
 	})
+
+	return nil
+}
+
+func (r *Reply) DeleteAfter(duration string) *Reply {
+	timeDur := parseAutodestructDuration("DeleteAfter", duration)
+
+	r.OnAck(func(ev *slack.AckMessage) {
+		go func() {
+			time.Sleep(timeDur)
+			r.bot.Slack.DeleteMessage(r.Channel, ev.Timestamp)
+		}()
+	})
+
+	return r
+}
+
+func parseAutodestructDuration(funcName string, duration string) time.Duration {
+	timeDur, err := time.ParseDuration(duration)
+	if err != nil {
+		log.Printf("error: %s called with invalid `duration`: %q, using 1 second instead.\n", funcName, duration)
+		timeDur = 1 * time.Second
+	}
+	return timeDur
 }

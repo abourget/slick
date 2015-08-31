@@ -25,7 +25,7 @@ func (vote *Vote) InitPlugin(bot *slick.Bot) {
 	vote.bot = bot
 
 	bot.Listen(&slick.Listener{
-		PublicOnly:  true,
+		PublicOnly:         true,
 		MessageHandlerFunc: vote.voteHandler,
 	})
 }
@@ -52,7 +52,7 @@ func (v *Vote) voteHandler(listen *slick.Listener, msg *slick.Message) {
 
 	if msg.HasPrefix("!what-for-lunch ") || msg.HasPrefix("!vote-for-lunch ") {
 		if v.runningVotes[msg.FromChannel.ID] != nil {
-			msg.ReplyMentionFlash("3s", "vote is already running!")
+			msg.ReplyMention("vote is already running!").DeleteAfter("3s")
 			return
 		}
 
@@ -123,13 +123,13 @@ func (v *Vote) voteHandler(listen *slick.Listener, msg *slick.Message) {
 			if strings.Contains(strings.ToLower(prevVote.vote), strings.ToLower(voteCast)) {
 				running = append(running, vote{msg.FromUser.ID, prevVote.vote})
 				v.runningVotes[msg.FromChannel.ID] = running
-				msg.ReplyMentionFlash("2s", bot.WithMood("okay", "hmmm kaay"))
+				msg.ReplyMention(bot.WithMood("okay", "hmmm kaay")).DeleteAfter("2s")
 				return
 			}
 		}
 		running = append(running, vote{msg.FromUser.ID, voteCast})
 		v.runningVotes[msg.FromChannel.ID] = running
-		msg.ReplyMentionFlash("2s", bot.WithMood("taking note", "taking note! what a creative mind..."))
+		msg.ReplyMention(bot.WithMood("taking note", "taking note! what a creative mind...")).DeleteAfter("2s")
 
 		// TODO: match "!what-for-lunch 1h|5m|50s"
 

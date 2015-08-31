@@ -2,10 +2,8 @@ package slick
 
 import (
 	"fmt"
-	"log"
 	"regexp"
 	"strings"
-	"time"
 
 	"github.com/nlopes/slack"
 )
@@ -113,49 +111,6 @@ func (msg *Message) ReplyMention(text string, v ...interface{}) *Reply {
 		prefix = fmt.Sprintf("<@%s> ", msg.FromUser.Name)
 	}
 	return msg.Reply(fmt.Sprintf("%s%s", prefix, text), v...)
-}
-
-// ReplyFlash sends a reply like "Reply", but will self-destruct after `duration`
-// time (as a time.ParseDuration).
-func (msg *Message) ReplyFlash(duration string, reply string, v ...interface{}) *Reply {
-	timeDur := parseAutodestructDuration("ReplyFlash", duration)
-	outMsg := msg.Reply(reply, v...)
-	msg.selfDestruct(timeDur, outMsg)
-	return outMsg
-}
-
-// ReplyMentionFlash sends a reply like "Reply", but will self-destruct after `duration`
-// time (as a time.ParseDuration).
-func (msg *Message) ReplyMentionFlash(duration string, reply string, v ...interface{}) *Reply {
-	timeDur := parseAutodestructDuration("ReplyMentionFlash", duration)
-	outMsg := msg.ReplyMention(reply, v...)
-	msg.selfDestruct(timeDur, outMsg)
-	return outMsg
-}
-
-func (msg *Message) selfDestruct(duration time.Duration, outMsg *Reply) {
-	msg.bot.Listen(&Listener{
-		ListenDuration: time.Duration(30 * time.Second), // before the ACK
-		EventHandlerFunc: func(listen *Listener, event interface{}) {
-			if ev, ok := event.(*slack.AckMessage); ok {
-				if ev.ReplyTo == outMsg.ID {
-					go func() {
-						<-time.After(duration)
-						msg.bot.Slack.DeleteMessage(outMsg.Channel, ev.Timestamp)
-					}()
-				}
-			}
-		},
-	})
-}
-
-func parseAutodestructDuration(funcName string, duration string) time.Duration {
-	timeDur, err := time.ParseDuration(duration)
-	if err != nil {
-		log.Printf("%s called with invalid `duration`: %q, using 1 second instead.\n", funcName, duration)
-		timeDur = time.Duration(1 * time.Second)
-	}
-	return timeDur
 }
 
 func (msg *Message) String() string {

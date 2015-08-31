@@ -62,7 +62,7 @@ func (funny *Funny) ChatHandler(listen *slick.Listener, msg *slick.Message) {
 			ListenDuration: time.Duration(10 * time.Second),
 			MessageHandlerFunc: func(listen *slick.Listener, msg *slick.Message) {
 				if strings.Contains(msg.Text, "papa") {
-					msg.ReplyFlash("3s", "yo rocker")
+					msg.Reply("3s", "yo rocker").DeleteAfter("3s")
 					msg.AddReaction("wink")
 					go func() {
 						time.Sleep(3 * time.Second)
@@ -99,8 +99,8 @@ func (funny *Funny) ChatHandler(listen *slick.Listener, msg *slick.Message) {
 			msg.ReplyMention(bot.WithMood("good, and you ?", "I'm wild today!! wadabout you ?"))
 			bot.Listen(&slick.Listener{
 				ListenDuration: 60 * time.Second,
-				WithUser:       msg.FromUser,
-				InChannel:      msg.FromChannel,
+				FromUser:       msg.FromUser,
+				FromChannel:    msg.FromChannel,
 				MentionsMeOnly: true,
 				MessageHandlerFunc: func(listen *slick.Listener, msg *slick.Message) {
 					msg.ReplyMention(bot.WithMood("glad to hear it!", "zwweeeeeeeeet !"))

@@ -2,7 +2,6 @@ package slick
 
 import (
 	"encoding/json"
-	"fmt"
 	"io/ioutil"
 	"log"
 	"net/http"
@@ -415,7 +414,6 @@ func (bot *Bot) handleRTMEvent(event *slack.RTMEvent) {
 		user.Presence = ev.Presence
 
 	// TODO: manage im_open, im_close, and im_created ?
-
 
 	// case *slack.ReactionAddedEvent:
 	// 	reaction = ev
