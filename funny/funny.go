@@ -72,9 +72,6 @@ func (funny *Funny) ChatHandler(listen *slick.Listener, msg *slick.Message) {
 					}()
 				}
 			},
-			TimeoutFunc: func(listen *slick.Listener) {
-				listen.Close()
-			},
 		})
 	}
 
@@ -108,6 +105,7 @@ func (funny *Funny) ChatHandler(listen *slick.Listener, msg *slick.Message) {
 				},
 				TimeoutFunc: func(listen *slick.Listener) {
 					msg.ReplyMention("well, we can catch up later")
+					listen.Close()
 				},
 			})
 		}
@@ -116,75 +114,62 @@ func (funny *Funny) ChatHandler(listen *slick.Listener, msg *slick.Message) {
 	if msg.ContainsAny([]string{"lot of excitement", "that's exciting", "how exciting", "much excitement"}) {
 
 		msg.Reply("http://static.fjcdn.com/gifs/Japanese+kids+spongebob+toys_0ad21b_3186721.gif")
-		return
 
 	} else if msg.ContainsAny([]string{"what is your problem", "what's your problem", "is there a problem", "which problem"}) {
 
 		msg.Reply("http://media4.giphy.com/media/19hU0m3TJe6I/200w.gif")
-		return
 
 	} else if msg.Contains("force push") {
 
 		url := slick.RandomString("forcePush")
 		msg.Reply(url)
-		return
 
 	} else if msg.ContainsAny([]string{"there is a bug", "there's a bug"}) {
 
 		msg.Reply("https://s3.amazonaws.com/pushbullet-uploads/ujy7DF0U8wm-9YYvLZkmSM8pMYcxCXXig8LjJORE9Xzt/The-life-of-a-coder.jpg")
-		return
 
 	} else if msg.ContainsAny([]string{"oh yeah", "approved"}) {
 
 		msg.Reply("https://i.chzbgr.com/maxW250/4496881920/h9C58F860.gif")
-		return
 
 	} else if msg.Contains("ice cream") {
 
 		msg.Reply("http://i.giphy.com/IGyLuFXIGSJj2.gif")
 		msg.Reply("I love ice cream too")
-		return
 
 	} else if msg.ContainsAny([]string{"lot of tension", "some tension", " tensed"}) {
 
 		msg.Reply("http://thumbpress.com/wp-content/uploads/2014/01/funny-gif-meeting-strangers-girl-scared1.gif")
 		msg.Reply("tensed, like that ?")
-		return
 
 	} else if msg.Contains("quick fix") {
 
 		msg.Reply("http://blog.pgi.com/wp-content/uploads/2013/02/jim-carey.gif")
 		msg.Reply("make it real quick")
-		return
 
 	} else if msg.ContainsAny([]string{"crack an egg", "crack something", "to crack"}) {
 
 		msg.Reply("http://s3-ec.buzzfed.com/static/enhanced/webdr02/2012/11/8/18/anigif_enhanced-buzz-31656-1352415875-9.gif")
 		msg.Reply("crack an egg, yeah")
-		return
 
 	} else if msg.ContainsAny([]string{"i'm stuck", "I'm stuck", "we're stuck"}) {
 
 		msg.Reply("http://media.giphy.com/media/RVlWx1msxnf7W/giphy.gif")
 		msg.Reply("I'm stuck too!")
-		return
 
 	} else if msg.ContainsAny([]string{"watching tv", "watch tv"}) {
 
 		msg.Reply("http://i0.kym-cdn.com/photos/images/newsfeed/000/495/040/9ab.gif")
 		msg.Reply("like that ?")
-		return
 
 	} else if msg.ContainsAny([]string{"spider", "pee on", "inappropriate"}) {
 
 		msg.Reply("https://i.chzbgr.com/maxW500/5626597120/hB2E11E61.gif")
-		return
 
 	} else if msg.ContainsAny([]string{"a meeting", "an interview"}) {
 
 		msg.Reply("like this one")
 		msg.Reply("https://i.chzbgr.com/maxW500/6696664320/hFC69678C.gif")
-		return
 
 	} else if msg.ContainsAny([]string{"it's odd", "it is odd", "that's odd", "that is odd", "it's awkward", "it is awkward", "that's awkward", "that is awkward"}) {
 
@@ -194,7 +179,6 @@ func (funny *Funny) ChatHandler(listen *slick.Listener, msg *slick.Message) {
 		}
 		msg.Reply(fmt.Sprintf("THAT's %s", term))
 		msg.Reply("https://i.chzbgr.com/maxW500/8296294144/h7AC1001C.gif")
-		return
 
 	} else if msg.Text == "ls" {
 
@@ -232,6 +216,4 @@ func (funny *Funny) ChatHandler(listen *slick.Listener, msg *slick.Message) {
 		msg.Reply("https://pbs.twimg.com/media/By0J3YHCcAA4UBo.jpg:large")
 
 	}
-
-	return
 }
