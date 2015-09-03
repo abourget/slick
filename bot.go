@@ -107,13 +107,14 @@ func (bot *Bot) Run() {
 		enabledPlugins = append(enabledPlugins, strings.Replace(pluginType.String(), ".", "_", -1))
 	}
 
-	initChatPlugins(bot)
 	initWebServer(bot, enabledPlugins)
 	initWebPlugins(bot)
 
 	if bot.WebServer != nil {
 		go bot.WebServer.RunServer()
 	}
+
+	initChatPlugins(bot)
 
 	bot.Slack = slack.New(bot.Config.ApiToken)
 	bot.Slack.SetDebug(bot.Config.Debug)
