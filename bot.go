@@ -2,6 +2,7 @@ package slick
 
 import (
 	"encoding/json"
+	"fmt"
 	"io/ioutil"
 	"log"
 	"net/http"
@@ -9,6 +10,7 @@ import (
 	"reflect"
 	"strconv"
 	"strings"
+	"sync"
 	"time"
 
 	"github.com/nlopes/slack"
@@ -21,11 +23,12 @@ type Bot struct {
 	Config     SlackConfig
 
 	// Slack connectivity
-	Slack    *slack.Client
-	rtm      *slack.RTM
-	Users    map[string]slack.User
-	Channels map[string]slack.Channel
-	Myself   slack.UserDetails
+	Slack             *slack.Client
+	rtm               *slack.RTM
+	Users             map[string]slack.User
+	Channels          map[string]Channel
+	channelUpdateLock sync.Mutex
+	Myself            slack.UserDetails
 
 	// Internal handling
 	listeners     []*Listener
@@ -50,7 +53,7 @@ func New(configFile string) *Bot {
 		delListenerCh: make(chan *Listener, 500),
 
 		Users:    make(map[string]slack.User),
-		Channels: make(map[string]slack.Channel),
+		Channels: make(map[string]Channel),
 	}
 
 	http.DefaultClient = &http.Client{
@@ -191,18 +194,6 @@ func (bot *Bot) Notify(room, color, format, msg string, notify bool) error {
 	return nil
 }
 
-func (bot *Bot) SendToChannel(channelName string, message string) *Reply {
-	channel := bot.GetChannelByName(channelName)
-
-	if channel == nil {
-		log.Printf("Couldn't send message, channel %q not found: %q\n", channelName, message)
-		return nil
-	}
-	log.Printf("Sending to channel %q: %q\n", channelName, message)
-
-	return bot.SendOutgoingMessage(message, channel.ID)
-}
-
 func (bot *Bot) setupHandlers() {
 	go bot.replyHandler()
 	go bot.messageHandler()
@@ -216,27 +207,18 @@ func (bot *Bot) cacheUsers(users []slack.User) {
 	}
 }
 
-func (bot *Bot) cacheChannels(channels []slack.Channel, groups []slack.Group) {
-	bot.Channels = make(map[string]slack.Channel)
+func (bot *Bot) cacheChannels(channels []slack.Channel, groups []slack.Group, ims []slack.IM) {
+	bot.Channels = make(map[string]Channel)
 	for _, channel := range channels {
-		bot.Channels[channel.ID] = channel
+		bot.updateChannel(ChannelFromSlackChannel(channel))
 	}
 
 	for _, group := range groups {
-		c := slack.Channel{}
-		c.ID = group.ID
-		c.Name = group.Name
-		c.IsChannel = false
-		c.Creator = group.Creator
-		c.IsArchived = group.IsArchived
-		c.IsGeneral = group.IsGeneral
-		c.IsGroup = true
-		c.Members = group.Members
-		c.Topic = group.Topic
-		c.Purpose = group.Purpose
-		c.IsMember = true
-		c.NumMembers = group.NumMembers
-		bot.Channels[group.ID] = c
+		bot.updateChannel(ChannelFromSlackGroup(group))
+	}
+
+	for _, im := range ims {
+		bot.updateChannel(ChannelFromSlackIM(im))
 	}
 }
 
@@ -293,10 +275,42 @@ func (bot *Bot) replyHandler() {
 	}
 }
 
+func (bot *Bot) SendToChannel(channelName string, message string) *Reply {
+	channel := bot.GetChannelByName(channelName)
+
+	if channel == nil {
+		log.Printf("Couldn't send message, channel %q not found: %q\n", channelName, message)
+		return nil
+	}
+	log.Printf("Sending to channel %q: %q\n", channelName, message)
+
+	return bot.SendOutgoingMessage(message, channel.ID)
+}
+
 // SendOutgoingMessage schedules the message for departure and returns
 // a Reply which can be listened on. See type `Reply`.
 func (bot *Bot) SendOutgoingMessage(text string, to string) *Reply {
+	fmt.Println("SENDING MESSAGE", text, to)
 	outMsg := bot.rtm.NewOutgoingMessage(text, to)
+	bot.outgoingMsgCh <- outMsg
+	return &Reply{outMsg, bot}
+}
+
+func (bot *Bot) SendPrivateMessage(username, message string) *Reply {
+	user := bot.GetUser(username)
+	if user == nil {
+		log.Printf("ERROR sending message, user %q not found, dropping message: %q\n", username, message)
+		return nil
+	}
+
+	imChannel := bot.OpenIMChannelWith(user)
+	if imChannel == nil {
+		log.Printf("ERROR initiating private conversation with user %q (%s), dropping message: %q\n", user.ID, user.Name, message)
+		return nil
+	}
+
+	fmt.Println("SENDING PRIVATE MESSAGE", message, imChannel.ID)
+	outMsg := bot.rtm.NewOutgoingMessage(message, imChannel.ID)
 	bot.outgoingMsgCh <- outMsg
 	return &Reply{outMsg, bot}
 }
@@ -359,7 +373,7 @@ func (bot *Bot) handleRTMEvent(event *slack.RTMEvent) {
 		log.Printf("Bot connected, connection_count=%d\n", ev.ConnectionCount)
 		bot.Myself = *ev.Info.User
 		bot.cacheUsers(ev.Info.Users)
-		bot.cacheChannels(ev.Info.Channels, ev.Info.Groups)
+		bot.cacheChannels(ev.Info.Channels, ev.Info.Groups, ev.Info.IMs)
 
 		for _, channelName := range bot.Config.JoinChannels {
 			channel := bot.GetChannelByName(channelName)
@@ -428,67 +442,101 @@ func (bot *Bot) handleRTMEvent(event *slack.RTMEvent) {
 		bot.Users[ev.User.ID] = ev.User
 
 	/**
-	 * Handle channel changes
+	 * Handle slack Channel changes
 	 */
 	case *slack.ChannelRenameEvent:
 		channel := bot.Channels[ev.Channel.ID]
 		channel.Name = ev.Channel.Name
+		bot.updateChannel(channel)
 
 	case *slack.ChannelJoinedEvent:
-		bot.Channels[ev.Channel.ID] = ev.Channel
+		bot.updateChannel(ChannelFromSlackChannel(ev.Channel))
 
 	case *slack.ChannelCreatedEvent:
-		c := slack.Channel{}
+		c := Channel{}
 		c.ID = ev.Channel.ID
 		c.Name = ev.Channel.Name
 		c.Creator = ev.Channel.Creator
-		bot.Channels[ev.Channel.ID] = c
-		// NICE: poll the API to get a full Channel object ? many
+		c.IsChannel = true
+		bot.updateChannel(c)
+
+		// NICE TODO: poll the API to get a full Channel object ? many
 		// things are missing here
 
 	case *slack.ChannelDeletedEvent:
-		delete(bot.Channels, ev.Channel)
+		bot.deleteChannel(ev.Channel)
 
 	case *slack.ChannelArchiveEvent:
 		channel := bot.Channels[ev.Channel]
 		channel.IsArchived = true
+		bot.updateChannel(channel)
 
 	case *slack.ChannelUnarchiveEvent:
 		channel := bot.Channels[ev.Channel]
 		channel.IsArchived = false
+		bot.updateChannel(channel)
 
 	/**
-	 * Handle group changes
+	 * Handle slack Group changes
 	 */
 	case *slack.GroupRenameEvent:
 		group := bot.Channels[ev.Group.ID]
 		group.Name = ev.Group.Name
+		bot.updateChannel(group)
 
 	case *slack.GroupJoinedEvent:
-		bot.Channels[ev.Channel.ID] = ev.Channel
+		bot.updateChannel(ChannelFromSlackChannel(ev.Channel))
 
 	case *slack.GroupCreatedEvent:
-		c := slack.Channel{}
+		c := Channel{}
 		c.ID = ev.Channel.ID
 		c.Name = ev.Channel.Name
 		c.Creator = ev.Channel.Creator
-		bot.Channels[ev.Channel.ID] = c
+		c.IsGroup = true
+		bot.updateChannel(c)
 
 		// NICE: poll the API to get a full Group object ? many
 		// things are missing here
 
 	case *slack.GroupCloseEvent:
-		// TODO: when a group is "closed"... does that mean removed ?
-		// TODO: how do we even manage groups ?!?!
-		delete(bot.Channels, ev.Channel)
+		bot.deleteChannel(ev.Channel)
 
 	case *slack.GroupArchiveEvent:
 		group := bot.Channels[ev.Channel]
 		group.IsArchived = true
+		bot.updateChannel(group)
 
 	case *slack.GroupUnarchiveEvent:
 		group := bot.Channels[ev.Channel]
 		group.IsArchived = false
+		bot.updateChannel(group)
+
+	/**
+	 * Handle slack IM changes
+	 */
+	case *slack.IMCreatedEvent:
+		c := Channel{}
+		c.ID = ev.Channel.ID
+		c.User = ev.User
+		c.IsIM = true
+		bot.updateChannel(c)
+
+	case *slack.IMOpenEvent:
+		c := Channel{}
+		c.ID = ev.Channel
+		c.User = ev.User
+		c.IsIM = true
+		bot.updateChannel(c)
+
+	case *slack.IMCloseEvent:
+		bot.deleteChannel(ev.Channel)
+
+	/**
+	 * Errors
+	 */
+	case *slack.AckErrorEvent:
+		jsonCnt, _ := json.MarshalIndent(ev, "", "  ")
+		fmt.Printf("Error: %s\n", jsonCnt)
 
 	default:
 		log.Printf("Unexpected: %#v\n", ev)
@@ -530,7 +578,7 @@ func (bot *Bot) GetUser(find string) *slack.User {
 }
 
 // GetChannelByName returns a *slack.Channel by Name
-func (bot *Bot) GetChannelByName(name string) *slack.Channel {
+func (bot *Bot) GetChannelByName(name string) *Channel {
 	name = strings.TrimLeft(name, "#")
 	for _, channel := range bot.Channels {
 		if channel.Name == name {
@@ -538,4 +586,50 @@ func (bot *Bot) GetChannelByName(name string) *slack.Channel {
 		}
 	}
 	return nil
+}
+
+func (bot *Bot) GetIMChannelWith(user *slack.User) *Channel {
+	for _, channel := range bot.Channels {
+		if !channel.IsIM {
+			continue
+		}
+		if channel.User == user.ID {
+			return &channel
+		}
+	}
+	return nil
+}
+
+func (bot *Bot) OpenIMChannelWith(user *slack.User) *Channel {
+	dmChannel := bot.GetIMChannelWith(user)
+	if dmChannel != nil {
+		return dmChannel
+	}
+
+	log.Printf("Opening a new IM conversation with %q (%s)\n", user.ID, user.Name)
+	_, _, chanID, err := bot.Slack.OpenIMChannel(user.ID)
+	if err != nil {
+		return nil
+	}
+
+	c := Channel{
+		ID:   chanID,
+		IsIM: true,
+		User: user.ID,
+	}
+	bot.updateChannel(c)
+
+	return &c
+}
+
+func (bot *Bot) updateChannel(channel Channel) {
+	bot.channelUpdateLock.Lock()
+	bot.Channels[channel.ID] = channel
+	bot.channelUpdateLock.Unlock()
+}
+
+func (bot *Bot) deleteChannel(id string) {
+	bot.channelUpdateLock.Lock()
+	delete(bot.Channels, id)
+	bot.channelUpdateLock.Unlock()
 }

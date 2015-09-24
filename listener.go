@@ -3,6 +3,7 @@ package slick
 import (
 	"fmt"
 	"log"
+	"regexp"
 	"time"
 
 	"github.com/nlopes/slack"
@@ -28,10 +29,11 @@ type Listener struct {
 	FromUser *slack.User
 	// FromChannel filters messages that are sent to a different room than
 	// `Room`. This can be mixed and matched with `FromUser`
-	FromChannel *slack.Channel
+	FromChannel *Channel
 
 	// PrivateOnly filters out public messages.
 	PrivateOnly bool
+
 	// PublicOnly filters out private messages.  Mutually exclusive
 	// with `PrivateOnly`.
 	PublicOnly bool
@@ -44,6 +46,11 @@ type Listener struct {
 	// as substrings in the message body.  Mutually exclusive with
 	// `Contains`.
 	ContainsAny []string
+
+	// Matches checks that the given text matches the given Regexp
+	// with a `FindStringSubmatch` call. It will set the `Message.Match`
+	// attribute.
+	Matches *regexp.Regexp
 
 	// ListenForEdits will trigger a message when a user edits a
 	// message as well as creates a new one.
@@ -75,6 +82,10 @@ type Listener struct {
 	// `ListenDuration` or `ListenUntil` delays.  It is *not* called
 	// if you explicitly call `Close()` on the conversation, or if
 	// you did not set `ListenDuration` nor `ListenUntil`.
+	//
+	// Also, if you override TimeoutFunc, you need to call Close() yourself
+	// otherwise, the conversation is not removed from the listeners
+
 	TimeoutFunc func(*Listener)
 
 	// Bot is a reference to the bot instance.  It will always be populated before being
@@ -207,6 +218,14 @@ func (listen *Listener) filterMessage(msg *Message) bool {
 
 	if len(listen.ContainsAny) > 0 && !msg.ContainsAny(listen.ContainsAny) {
 		return false
+	}
+
+	if listen.Matches != nil {
+		match := listen.Matches.FindStringSubmatch(msg.Text)
+		msg.Match = match
+		if match == nil {
+			return false
+		}
 	}
 
 	// If there is no msg.FromUser, the message is filtered out.

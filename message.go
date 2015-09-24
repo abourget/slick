@@ -21,11 +21,16 @@ type Message struct {
 	IsEdit      bool
 	FromMe      bool
 	FromUser    *slack.User
-	FromChannel *slack.Channel
+	FromChannel *Channel
+
+	// Match contains the result of
+	// Listener.Matches.FindStringSubmatch(msg.Text), when `Matches`
+	// is set on the `Listener`.
+	Match []string
 }
 
 func (msg *Message) IsPrivate() bool {
-	return msg.Channel == ""
+	return strings.HasPrefix(msg.Channel, "D")
 }
 
 func (msg *Message) ContainsAnyCased(strs []string) bool {
@@ -78,12 +83,42 @@ func (msg *Message) HasPrefix(prefix string) bool {
 	return strings.HasPrefix(msg.Text, prefix)
 }
 
-func (msg *Message) AddReaction(emoticon string) {
+func (msg *Message) AddReaction(emoticon string) *Message {
 	msg.bot.Slack.AddReaction(emoticon, slack.NewRefToMessage(msg.Channel, msg.Timestamp))
+	return msg
 }
 
-func (msg *Message) RemoveReaction(emoticon string) {
+func (msg *Message) RemoveReaction(emoticon string) *Message {
 	msg.bot.Slack.RemoveReaction(emoticon, slack.NewRefToMessage(msg.Channel, msg.Timestamp))
+	return msg
+}
+
+func (msg *Message) ListenReaction(reactListen *ReactionListener) {
+	listen := reactListen.newListener()
+	listen.EventHandlerFunc = func(_ *Listener, event interface{}) {
+		re := ParseReactionEvent(event)
+		if re == nil {
+			return
+		}
+
+		if msg.Timestamp != re.Item.Timestamp {
+			return
+		}
+
+		if re.User == msg.bot.Myself.ID {
+			return
+		}
+
+		if !reactListen.filterReaction(re) {
+			return
+		}
+
+		re.OriginalMessage = msg
+		re.Listener = reactListen
+
+		reactListen.HandlerFunc(reactListen, re)
+	}
+	msg.bot.Listen(listen)
 }
 
 func (msg *Message) Reply(text string, v ...interface{}) *Reply {

@@ -14,15 +14,42 @@ type Reply struct {
 	bot *Bot
 }
 
-func (r *Reply) OnReaction(f func(addOrRemove string, emoji string)) {
-	// TOOD: listen for reactions for a certain time
-}
-
 func (r *Reply) AddReaction(emoji string) *Reply {
 	r.OnAck(func(ev *slack.AckMessage) {
 		go r.bot.Slack.AddReaction(emoji, slack.NewRefToMessage(r.Channel, ev.Timestamp))
 	})
 	return r
+}
+
+func (r *Reply) ListenReaction(reactListen *ReactionListener) {
+	r.OnAck(func(ackEv *slack.AckMessage) {
+		listen := reactListen.newListener()
+		listen.EventHandlerFunc = func(_ *Listener, event interface{}) {
+			re := ParseReactionEvent(event)
+			if re == nil {
+				return
+			}
+
+			if ackEv.Timestamp != re.Item.Timestamp {
+				return
+			}
+
+			if re.User == r.bot.Myself.ID {
+				return
+			}
+
+			if !reactListen.filterReaction(re) {
+				return
+			}
+
+			re.OriginalReply = r
+			re.OriginalAckMessage = ackEv
+			re.Listener = reactListen
+
+			reactListen.HandlerFunc(reactListen, re)
+		}
+		r.bot.Listen(listen)
+	})
 }
 
 func (r *Reply) OnAck(f func(ack *slack.AckMessage)) {

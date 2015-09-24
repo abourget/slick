@@ -1,6 +1,7 @@
 package slick
 
 import (
+	"regexp"
 	"testing"
 	"time"
 
@@ -18,7 +19,7 @@ func TestListenerCheckParams(t *testing.T) {
 	}
 }
 
-func TestDefeaultFilter(t *testing.T) {
+func TestDefaultFilter(t *testing.T) {
 	c := &Listener{}
 	u := &slack.User{ID: "a_user"}
 	m := &Message{Msg: &slack.Msg{Text: "hello mama"}, FromUser: u}
@@ -47,6 +48,14 @@ func TestDefeaultFilter(t *testing.T) {
 		}, true},
 
 		El{&Listener{
+			Matches: regexp.MustCompile(`hello`),
+		}, true},
+
+		El{&Listener{
+			Matches: regexp.MustCompile(`other-message`),
+		}, false},
+
+		El{&Listener{
 			FromUser: &slack.User{ID: "another_user"},
 		}, false},
 	}
@@ -55,5 +64,26 @@ func TestDefeaultFilter(t *testing.T) {
 		if el.c.filterMessage(m) != el.r {
 			t.Error("filterMessage Failed, index ", i)
 		}
+	}
+}
+
+func TestMatchesMessage(t *testing.T) {
+	c := &Listener{Matches: regexp.MustCompile(`(this) (is) (good)`)}
+	m := &Message{Msg: &slack.Msg{Text: "yeah this is good and all"}}
+
+	if c.filterMessage(m) != true {
+		t.Error("filterMessage Failed")
+	}
+
+	if len(m.Match) != 4 {
+		t.Error("didn't find 4 matches")
+	}
+
+	if m.Match[0] != "this is good" {
+		t.Error("didn't find 'this is good'")
+	}
+
+	if m.Match[1] != "this" {
+		t.Error("didn't find 'this'")
 	}
 }
