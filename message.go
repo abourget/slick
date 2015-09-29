@@ -164,7 +164,7 @@ func (msg *Message) applyMentionsMe(bot *Bot) {
 }
 
 func (msg *Message) applyFromMe(bot *Bot) {
-	if msg.User == bot.Myself.ID {
+	if msg.User != "" && msg.User == bot.Myself.ID {
 		msg.FromMe = true
 	}
 }
