@@ -200,6 +200,11 @@ func (listen *Listener) filterMessage(msg *Message) bool {
 		return false
 	}
 
+	// Never pick up on other bot's messages
+	if msg.Msg.SubType == "bot_message" {
+		return false
+	}
+
 	if listen.MentionsMeOnly && !msg.MentionsMe {
 		return false
 	}
