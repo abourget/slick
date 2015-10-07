@@ -15,11 +15,8 @@ type SlackConfig struct {
 	TeamID         string   `json:"team_id"`
 	ApiToken       string   `json:"api_token"`
 	WebBaseURL     string   `json:"web_base_url"`
+	DBPath         string   `json:"db_path"`
 	Debug          bool
-}
-
-type LevelDBConfig struct {
-	Path string
 }
 
 type ChatPluginConfig struct {

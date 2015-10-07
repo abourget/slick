@@ -1,15 +1,6 @@
 package standup
 
-import (
-	"encoding/json"
-	"log"
-	"time"
-
-	"github.com/abourget/slick"
-	"github.com/abourget/slick/util"
-	"github.com/nlopes/slack"
-	levelutil "github.com/syndtr/goleveldb/leveldb/util"
-)
+import "github.com/abourget/slick"
 
 type Standup struct {
 	bot            *slick.Bot
@@ -39,128 +30,10 @@ func (standup *Standup) ChatHandler(listen *slick.Listener, msg *slick.Message) 
 	if res != nil {
 		for _, section := range extractSectionAndText(msg.Text, res) {
 			standup.TriggerReminders(msg, section.name)
-			err := standup.StoreLine(msg, section.name, section.text)
-			if err != nil {
-				log.Println(err)
-			}
-		}
-	} else if msg.MentionsMe && msg.Contains("standup report") {
-		daysAgo := util.GetDaysFromQuery(msg.Text)
-		smap, err := standup.getRange(getStandupDate(-daysAgo), getStandupDate(TODAY))
-		if err != nil {
-			log.Println(err)
-			msg.Reply(standup.bot.WithMood("Sorry, could not retrieve your report...",
-				"I am the eggman and the walrus ate your report - Fzaow!"))
-		} else {
-			if msg.Contains(" my ") {
-				msg.Reply("/quote "+smap.filterByEmail(msg.FromUser.Profile.Email).String())
-			} else {
-				msg.Reply("/quote "+smap.String())
-			}
+			// err := standup.StoreLine(msg, section.name, section.text)
+			// if err != nil {
+			// 	log.Println(err)
+			// }
 		}
 	}
-}
-
-func (standup *Standup) getRange(from, to standupDate) (standupMap, error) {
-	db := standup.bot.DB
-	// Range is [Start, Limit) - ie, limit is not inclusive, so we bump date one next.
-	srange := levelutil.Range{
-		Start: standupKey{date: from}.key(),
-		Limit: standupKey{date: to.next()}.key(),
-	}
-	iter := db.NewIterator(&srange, nil)
-
-	// keep a map of users so we don't ask plotbot to grab users from the chatapp
-	// that we have already loaded.
-	seenUsers := make(map[string]standupUser)
-
-	smap := make(standupMap)
-
-	for iter.Next() {
-		// Remember that the contents of the returned slice should not be modified, and
-		// only valid until the next call to Next.
-		key := standupKeyFromBytes(iter.Key())
-		email := key.email
-		standupDate := key.date
-
-		var user standupUser
-
-		if val, ok := seenUsers[email]; ok {
-
-			// grab an existing user from the lookup
-			user = val
-		} else {
-
-			// initialize a new user from the messaging platform
-			puser := standup.bot.GetUser(email)
-			if puser == nil {
-				puser = &slack.User{}
-			}
-			user = standupUser{puser, standupData{}}
-
-			// store a copy of user (with blank data) inside map for later lookup
-			seenUsers[email] = user
-		}
-		data := iter.Value()
-		err := json.Unmarshal(data, &user.data)
-		if err != nil {
-			return smap, err
-		}
-
-		smap[standupDate] = append(smap[standupDate], user)
-	}
-
-	iter.Release()
-	return smap, iter.Error()
-}
-
-func (standup *Standup) get(u standupUser, sd standupDate) (stand standupData, err error) {
-	key := standupKey{sd, u.Profile.Email}.key()
-
-	db := standup.bot.DB
-	data, err := db.Get(key, nil)
-	if err != nil {
-		return
-	}
-
-	err = json.Unmarshal(data, &stand)
-	return
-}
-
-func (standup *Standup) put(u standupUser, sd standupDate) (err error) {
-	db := standup.bot.DB
-
-	jdata, err := json.Marshal(u.data)
-	if err != nil {
-		return
-	}
-
-	key := standupKey{sd, u.Profile.Email}.key()
-	err = db.Put(key, jdata, nil)
-	return
-}
-
-func (standup *Standup) StoreLine(msg *slick.Message, section string, line string) error {
-
-	standupDate := getStandupDate(TODAY)
-	user := standupUser{msg.FromUser, standupData{}}
-	data, err := standup.get(user, standupDate)
-	if err != nil {
-		log.Printf("Standup data for %s does not exist - using fresh\n", user.Name)
-	}
-
-	// update the userdata with data from the database
-	user.data = data
-	if section == "yesterday" {
-		user.data.Yesterday = line
-	} else if section == "today" {
-		user.data.Today = line
-	} else if section == "blocking" {
-		user.data.Blocking = line
-	}
-
-	user.data.LastUpdate = time.Now().UTC()
-	err = standup.put(user, standupDate)
-
-	return err
 }

@@ -13,10 +13,12 @@ import (
 	"sync"
 	"time"
 
+	"github.com/boltdb/bolt"
 	"github.com/nlopes/slack"
-	"github.com/syndtr/goleveldb/leveldb"
 )
 
+// Bot is the main slick bot instance. It is passed throughout, and
+// has references to most useful objects.
 type Bot struct {
 	// Global bot configuration
 	configFile string
@@ -37,8 +39,7 @@ type Bot struct {
 	outgoingMsgCh chan *slack.OutgoingMessage
 
 	// Storage
-	LevelDBConfig LevelDBConfig
-	DB            *leveldb.DB
+	DB *bolt.DB
 
 	// Other features
 	WebServer WebServer
@@ -74,9 +75,9 @@ func (bot *Bot) Run() {
 		log.Fatal("Couldn't write PID file:", err)
 	}
 
-	db, err := leveldb.OpenFile(bot.LevelDBConfig.Path, nil)
+	db, err := bolt.Open(bot.Config.DBPath, 0600, nil)
 	if err != nil {
-		log.Fatal("Could not initialize Leveldb key/value store")
+		log.Fatalf("Could not initialize BoltDB key/value store: %s\n", err)
 	}
 	defer func() {
 		log.Fatal("Database is closing")
@@ -85,13 +86,13 @@ func (bot *Bot) Run() {
 	bot.DB = db
 
 	// Init all plugins
-	enabledPlugins := make([]string, 0)
+	var enabledPlugins []string
 	for _, plugin := range registeredPlugins {
 		pluginType := reflect.TypeOf(plugin)
 		if pluginType.Kind() == reflect.Ptr {
 			pluginType = pluginType.Elem()
 		}
-		typeList := make([]string, 0)
+		var typeList []string
 		if _, ok := plugin.(PluginInitializer); ok {
 			typeList = append(typeList, "Plugin")
 		}
@@ -227,24 +228,14 @@ func (bot *Bot) loadBaseConfig() {
 		log.Fatal("ERROR Checking Permissions: ", err)
 	}
 
-	var config1 struct {
+	var config struct {
 		Slack SlackConfig
 	}
-	err := bot.LoadConfig(&config1)
+	err := bot.LoadConfig(&config)
 	if err != nil {
 		log.Fatalln("Error loading Slack config section:", err)
 	} else {
-		bot.Config = config1.Slack
-	}
-
-	var config2 struct {
-		LevelDB LevelDBConfig
-	}
-	err = bot.LoadConfig(&config2)
-	if err != nil {
-		log.Fatalln("Error loading LevelDB config section:", err)
-	} else {
-		bot.LevelDBConfig = config2.LevelDB
+		bot.Config = config.Slack
 	}
 }
 
