@@ -174,6 +174,33 @@ func (bot *Bot) Listen(listen *Listener) error {
 	return nil
 }
 
+func (bot *Bot) ListenReaction(timestamp string, reactListen *ReactionListener) {
+	listen := reactListen.newListener()
+	listen.EventHandlerFunc = func(_ *Listener, event interface{}) {
+		re := ParseReactionEvent(event)
+		if re == nil {
+			return
+		}
+
+		if timestamp != re.Item.Timestamp {
+			return
+		}
+
+		if re.User == bot.Myself.ID {
+			return
+		}
+
+		if !reactListen.filterReaction(re) {
+			return
+		}
+
+		re.Listener = reactListen
+
+		reactListen.HandlerFunc(reactListen, re)
+	}
+	bot.Listen(listen)
+}
+
 func (bot *Bot) addListener(listen *Listener) {
 	listen.setupChannels()
 	if listen.isManaged() {

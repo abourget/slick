@@ -94,31 +94,7 @@ func (msg *Message) RemoveReaction(emoticon string) *Message {
 }
 
 func (msg *Message) ListenReaction(reactListen *ReactionListener) {
-	listen := reactListen.newListener()
-	listen.EventHandlerFunc = func(_ *Listener, event interface{}) {
-		re := ParseReactionEvent(event)
-		if re == nil {
-			return
-		}
-
-		if msg.Timestamp != re.Item.Timestamp {
-			return
-		}
-
-		if re.User == msg.bot.Myself.ID {
-			return
-		}
-
-		if !reactListen.filterReaction(re) {
-			return
-		}
-
-		re.OriginalMessage = msg
-		re.Listener = reactListen
-
-		reactListen.HandlerFunc(reactListen, re)
-	}
-	msg.bot.Listen(listen)
+	msg.bot.ListenReaction(msg.Timestamp, reactListen)
 }
 
 func (msg *Message) Reply(text string, v ...interface{}) *Reply {
