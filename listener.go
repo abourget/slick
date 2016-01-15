@@ -50,6 +50,11 @@ type Listener struct {
 	// Matches checks that the given text matches the given Regexp
 	// with a `FindStringSubmatch` call. It will set the `Message.Match`
 	// attribute.
+	//
+	// NOTE: if you spin off a goroutine in the MessageHandlerFunc,
+	// make sure to keep a copy of the `Message.Match` object because it
+	// will be overwritten by the next Listener the moment your
+	// MessageHandlerFunc unblocks.
 	Matches *regexp.Regexp
 
 	// ListenForEdits will trigger a message when a user edits a
