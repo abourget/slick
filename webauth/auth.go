@@ -12,6 +12,7 @@ import (
 )
 
 func init() {
+	oauth2.RegisterBrokenAuthHeaderProvider("https://slack.com/")
 	slick.RegisterPlugin(&OAuthPlugin{})
 	gob.Register(&slack.User{})
 }
