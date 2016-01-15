@@ -49,7 +49,7 @@ func ChannelFromSlackGroup(group slack.Group) Channel {
 		Creator:    group.Creator,
 		Members:    group.Members,
 		NumMembers: group.NumMembers,
-		IsMember:   group.IsMember,
+		//IsMember:   group.IsMember,  wh00ps, not there anymore.
 		IsArchived: group.IsArchived,
 		Topic:      group.Topic,
 		Purpose:    group.Purpose,
