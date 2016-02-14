@@ -15,6 +15,7 @@ import (
 
 	"github.com/boltdb/bolt"
 	"github.com/nlopes/slack"
+	"github.com/tuxychandru/pubsub"
 )
 
 // Bot is the main slick bot instance. It is passed throughout, and
@@ -41,6 +42,9 @@ type Bot struct {
 	// Storage
 	DB *bolt.DB
 
+	// Inter-plugins communications
+	PubSub *pubsub.PubSub
+
 	// Other features
 	WebServer WebServer
 	Mood      Mood
@@ -55,6 +59,8 @@ func New(configFile string) *Bot {
 
 		Users:    make(map[string]slack.User),
 		Channels: make(map[string]Channel),
+
+		PubSub: pubsub.New(50),
 	}
 
 	http.DefaultClient = &http.Client{
