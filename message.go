@@ -108,7 +108,7 @@ func (msg *Message) Reply(text string, v ...interface{}) *Reply {
 
 func (msg *Message) ReplyPrivately(text string, v ...interface{}) *Reply {
 	text = Format(text, v...)
-	return msg.bot.SendOutgoingMessage(text, msg.User)
+	return msg.bot.SendPrivateMessage(msg.User, text)
 }
 
 // ReplyMention replies with a @mention named prefixed, when replying
