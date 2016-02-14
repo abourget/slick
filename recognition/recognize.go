@@ -64,6 +64,8 @@ func (p *Plugin) handleRecognize(listen *slick.Listener, msg *slick.Message) {
 		}
 		p.store.Put(recog)
 
+		p.bot.PubSub.Pub(recog, "recognition:recognized")
+
 		//fmt.Println("Timestamp for the message:", ts)
 	})
 }

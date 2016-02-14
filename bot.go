@@ -42,7 +42,8 @@ type Bot struct {
 	// Storage
 	DB *bolt.DB
 
-	// Inter-plugins communications
+	// Inter-plugins communications. Use topics like
+	// "pluginName:eventType[:someOtherThing]"
 	PubSub *pubsub.PubSub
 
 	// Other features
@@ -60,7 +61,7 @@ func New(configFile string) *Bot {
 		Users:    make(map[string]slack.User),
 		Channels: make(map[string]Channel),
 
-		PubSub: pubsub.New(50),
+		PubSub: pubsub.New(500),
 	}
 
 	http.DefaultClient = &http.Client{
