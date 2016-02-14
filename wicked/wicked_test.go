@@ -4,19 +4,18 @@ import (
 	"testing"
 
 	"github.com/abourget/slick"
-	"github.com/nlopes/slack"
 )
 
 func TestFindNextRoom(t *testing.T) {
-	c2 := slack.Channel{}
+	c2 := slick.Channel{}
 	c2.ID = "room2"
 	c2.Name = "room2"
-	c3 := slack.Channel{}
+	c3 := slick.Channel{}
 	c3.ID = "room3"
 	c3.Name = "room3"
 
 	w := &Wicked{
-		bot: &slick.Bot{Channels: map[string]slack.Channel{
+		bot: &slick.Bot{Channels: map[string]slick.Channel{
 			"room2": c2,
 			"room3": c3,
 		}},
@@ -50,11 +49,11 @@ func TestFindNextRoom(t *testing.T) {
 }
 
 func TestFindNextRoomNilFromRoom(t *testing.T) {
-	c1 := slack.Channel{}
+	c1 := slick.Channel{}
 	c1.ID = "room1"
 	c1.Name = "room1"
 	w := &Wicked{
-		bot: &slick.Bot{Channels: map[string]slack.Channel{
+		bot: &slick.Bot{Channels: map[string]slick.Channel{
 			"room1": c1,
 		}},
 		meetings:  map[string]*Meeting{},
@@ -73,7 +72,7 @@ func TestFindNextRoomNilFromRoom(t *testing.T) {
 
 func TestFindNextRoomAllTake(t *testing.T) {
 	w := &Wicked{
-		bot: &slick.Bot{Channels: map[string]slack.Channel{}},
+		bot: &slick.Bot{Channels: map[string]slick.Channel{}},
 		meetings: map[string]*Meeting{
 			"room1": &Meeting{},
 		},

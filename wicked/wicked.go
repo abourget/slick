@@ -18,7 +18,6 @@ import (
 	"time"
 
 	"github.com/abourget/slick"
-	"github.com/nlopes/slack"
 )
 
 type Wicked struct {
@@ -155,7 +154,7 @@ continueLogging:
 	meeting.Logs = append(meeting.Logs, newMessage)
 }
 
-func (wicked *Wicked) FindAvailableRoom(fromRoom string) *slack.Channel {
+func (wicked *Wicked) FindAvailableRoom(fromRoom string) *slick.Channel {
 	nextFree := ""
 	for _, confRoom := range wicked.confRooms {
 		_, occupied := wicked.meetings[confRoom]

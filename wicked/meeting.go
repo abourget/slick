@@ -44,7 +44,7 @@ type Meeting struct {
 	doneCh     chan bool
 }
 
-func NewMeeting(id string, user *slack.User, goal string, bot *slick.Bot, channel *slack.Channel, uuidNow time.Time) *Meeting {
+func NewMeeting(id string, user *slack.User, goal string, bot *slick.Bot, channel *slick.Channel, uuidNow time.Time) *Meeting {
 	meeting := &Meeting{}
 	meeting.ID = id
 	meeting.Channel = channel.Name

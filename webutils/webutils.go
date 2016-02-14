@@ -45,7 +45,7 @@ func (utils *Utils) handleGetChannels(w http.ResponseWriter, r *http.Request) {
 	w.Header().Set("Content-Type", "application/json")
 	enc := json.NewEncoder(w)
 	out := struct {
-		Channels map[string]slack.Channel `json:"channels"`
+		Channels map[string]slick.Channel `json:"channels"`
 	}{
 		Channels: utils.bot.Channels,
 	}
