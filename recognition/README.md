@@ -15,6 +15,7 @@ In the end, another process can take those numbers and recognitions,
 their sender/initiator, list of recipients, and decide to feed it to a
 concrete recognition (based on bonus or whatnot) system.
 
+This is a nice example of the use of reactions as buttons.
 
 Configuration
 -------------
