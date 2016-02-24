@@ -10,9 +10,11 @@ import (
 const slickDBDefaultBucket = "slick"
 
 // GetDBKey retrieves a `key` from persistent storage and JSON
-// unmarshales it into `v`.
+// unmarshales it into `v`.  We need to `Update` otherwise
+// CreateBucketIfNotExists cannot create a bucket and returns
+// an error immediately.
 func (bot *Bot) GetDBKey(key string, v interface{}) error {
-	return bot.DB.View(func(tx *bolt.Tx) error {
+	return bot.DB.Update(func(tx *bolt.Tx) error {
 		bucket, err := tx.CreateBucketIfNotExists([]byte(slickDBDefaultBucket))
 		if err != nil {
 			return err
