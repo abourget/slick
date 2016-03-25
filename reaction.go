@@ -53,6 +53,12 @@ func (listen *ReactionListener) filterReaction(re *ReactionEvent) bool {
 func (listen *ReactionListener) Close() {
 	listen.listener.Close()
 }
+
+func (listen *ReactionListener) ResetNewDuration(d time.Duration) {
+	listen.listener.ListenDuration = d
+	listen.listener.ResetDuration()
+}
+
 func (listen *ReactionListener) ResetDuration() {
 	listen.listener.ResetDuration()
 }
