@@ -181,7 +181,9 @@ func (bot *Bot) Listen(listen *Listener) error {
 	return nil
 }
 
-func (bot *Bot) ListenReaction(timestamp string, reactListen *ReactionListener) {
+// ListenReaction will dispatch the listener with matching incoming reactions.
+// `item` can be a timestamp or a file ID.
+func (bot *Bot) ListenReaction(item string, reactListen *ReactionListener) {
 	listen := reactListen.newListener()
 	listen.EventHandlerFunc = func(_ *Listener, event interface{}) {
 		re := ParseReactionEvent(event)
@@ -189,7 +191,7 @@ func (bot *Bot) ListenReaction(timestamp string, reactListen *ReactionListener) 
 			return
 		}
 
-		if timestamp != re.Item.Timestamp {
+		if item != re.Item.Timestamp && item != re.Item.File {
 			return
 		}
 
@@ -446,7 +448,7 @@ func (bot *Bot) handleRTMEvent(event *slack.RTMEvent) {
 		msg.applyMentionsMe(bot)
 		msg.applyFromMe(bot)
 
-		log.Printf("Incoming message subtype=%q:\n\t%q\n\tMessage: %s\n\tmsg.Msg: %#v\n\tSubMessage: %#v\n", msg.Msg.SubType, msg.Text, msg, msg.Msg, msg.SubMessage)
+		//log.Printf("Incoming message subtype=%q:\n\t%q\n\tMessage: %s\n\tmsg.Msg: %#v\n\tSubMessage: %#v\n", msg.Msg.SubType, msg.Text, msg, msg.Msg, msg.SubMessage)
 
 	case *slack.PresenceChangeEvent:
 		user := bot.Users[ev.User]
@@ -564,7 +566,8 @@ func (bot *Bot) handleRTMEvent(event *slack.RTMEvent) {
 		fmt.Printf("Error: %s\n", jsonCnt)
 
 	default:
-		log.Printf("Unexpected: %#v\n", ev)
+		log.Printf("Event: %T\n", ev)
+		//log.Printf("Unexpected: %#v\n", ev)
 	}
 
 	// Dispatch listeners
