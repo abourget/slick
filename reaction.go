@@ -68,8 +68,14 @@ type ReactionEvent struct {
 	Type      reaction
 	User      string
 	Emoji     string
-	Timestamp time.Time
-	Item      slack.ReactedItem
+	Timestamp string
+	Item      struct {
+		Type        string `json:"type"`
+		Channel     string `json:"channel,omitempty"`
+		File        string `json:"file,omitempty"`
+		FileComment string `json:"file_comment,omitempty"`
+		Timestamp   string `json:"ts,omitempty"`
+	}
 
 	// Original objects regarding the reaction, when called on a `Reply`.
 	OriginalReply      *Reply
@@ -93,7 +99,6 @@ const ReactionAdded = reaction(2)
 // ReactionRemoved is the flipside of `ReactionAdded`.
 const ReactionRemoved = reaction(1)
 
-
 func ParseReactionEvent(event interface{}) *ReactionEvent {
 	var re ReactionEvent
 	switch ev := event.(type) {
@@ -101,15 +106,24 @@ func ParseReactionEvent(event interface{}) *ReactionEvent {
 		re.Type = ReactionAdded
 		re.Emoji = ev.Reaction
 		re.User = ev.User
-		re.Item = ev.Item
-		re.Timestamp = ev.EventTimestamp.Time()
+		re.Item.Type = ev.Item.Type
+		re.Item.Channel = ev.Item.Channel
+		re.Item.File = ev.Item.File
+		re.Item.FileComment = ev.Item.FileComment
+		re.Item.Timestamp = ev.Item.Timestamp
+		re.Timestamp = ev.EventTimestamp
 
 	case *slack.ReactionRemovedEvent:
 		re.Type = ReactionRemoved
 		re.Emoji = ev.Reaction
 		re.User = ev.User
 		re.Item = ev.Item
-		re.Timestamp = ev.EventTimestamp.Time()
+		re.Item.Type = ev.Item.Type
+		re.Item.Channel = ev.Item.Channel
+		re.Item.File = ev.Item.File
+		re.Item.FileComment = ev.Item.FileComment
+		re.Item.Timestamp = ev.Item.Timestamp
+		re.Timestamp = ev.EventTimestamp
 
 	default:
 		return nil
