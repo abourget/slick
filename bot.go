@@ -442,6 +442,7 @@ func (bot *Bot) handleRTMEvent(event *slack.RTMEvent) {
 					Creator: ev.User,
 					LastSet: unixFromTimestamp(ev.Timestamp),
 				}
+				bot.Channels[ev.Channel] = channel
 			}
 		case "channel_purpose":
 			if channel, ok := bot.Channels[ev.Channel]; ok {
@@ -450,6 +451,7 @@ func (bot *Bot) handleRTMEvent(event *slack.RTMEvent) {
 					Creator: ev.User,
 					LastSet: unixFromTimestamp(ev.Timestamp),
 				}
+				bot.Channels[ev.Channel] = channel
 			}
 		}
 
