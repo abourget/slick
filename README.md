@@ -63,6 +63,7 @@ Example code to handle deployments:
 ```
 // listenDeploy was hooked into a plugin elsewhere..
 func listenDeploy() {
+	keywords := []string{"project1", "project2", "project3"}
 	bot.Listen(&slick.Listener{
 		Matches:        regexp.MustCompile("(can you|could you|please|plz|c'mon|icanhaz) deploy (" + strings.Join(keywords, "|") + ") (with|using)( revision| commit)? `?([a-z0-9]{4,42})`?"),
 		MentionsMeOnly: true,
