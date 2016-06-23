@@ -9,6 +9,7 @@ import (
 	_ "github.com/abourget/slick/deployer"
 	_ "github.com/abourget/slick/funny"
 	_ "github.com/abourget/slick/healthy"
+	_ "github.com/abourget/slick/faceoff"
 	_ "github.com/abourget/slick/hooker"
 	_ "github.com/abourget/slick/mooder"
 	_ "github.com/abourget/slick/plotberry"

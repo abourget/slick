@@ -3,79 +3,94 @@
 [![Build Status](https://drone.io/github.com/abourget/slick/status.png)](https://drone.io/github.com/abourget/slick/latest)
 
 
-## Configuration
+## Features
 
-* Install your Go environment, under Ubuntu, use this method:
+Supported features:
 
-    http://blog.labix.org/2013/06/15/in-flight-deb-packages-of-go
+* Plugin interface for chat messages and HTTP handlers.
+* The bot keeps an internal state of channels, users and users' states.
+* Easily add listeners with criterias like:
+  * Messages directed to the bot only
+  * Private or public messages
+  * Listens for a duration or until a given time.Time
+  * Selectively on a channel, or from a user
+  * Expire listeners and unregister them dynamically
+  * Supports listening for edits or not
+  * Regexp match messages, or Contains checks
+* Simple API to reply to users
+* Supports listening for any Slack events (ChannelCreated, ChannelJoined, EmojiChanged, FileShared, GroupArchived, etc..)
+* Listen easily for reactions, and take actions based on them (like buttons).
+* Simple API to private message users
+* Simple API to update a previously sent message incrementally
+* Simple API to delete bot messages after a given time duration.
+* Built-in KV store for data persistence (backed by BoltDB and json serialization)
+* The bot has a mood (_happy_ and _hyper_) which changes randomly.. you can base some decisions on it, to spice up conversations.
+* An PubSub system to ease inter-plugins (or chat-to-web) communications.
 
-* Set your `GOPATH`:
+## Stock plugins
 
-    On Ubuntu see [here](http://stackoverflow.com/questions/21001387/how-do-i-set-the-gopath-environment-variable-on-ubuntu-what-file-must-i-edit/21012349#21012349)
+1. Recognition: a plugin to recognize your peers (!recognize @user1 for doing an awesome job)
 
+2. Faceoff: a game to learn the names and faces of your colleagues. The code for this one is interesting to learn to build interactive features with `slick`.
 
-* Install Ubuntu dependencies needed by various steps in this document:
+3. Vote: a simple voting plugin to decide where to lunch
 
-    ```sudo apt-get install mercurial zip```
+4. Funny: a bunch of jokes and memes in reply to some strings in channels..
 
-* Pull the bot and its dependencies:
+5. Healthy: a very simple plugin that pokes URLs and reports on their health
 
-    ```go get github.com/abourget/slick/example-bot```
+6. Deployer: an example plugin to do deployments wth ansible (you'll probably want to roll out your own though).
 
-* Install rice:
-
-    ```go get github.com/GeertJohan/go.rice/rice```
-
-* Run "npm install":
-
-   ```
-   cd $GOPATH/src/github.com/abourget/slick/web
-   npm install
-   ```
-
-* Run "npm run build":
-
-   ```
-   cd $GOPATH/src/github.com/abourget/slick/web
-   npm run build
-   ```
 
 ## Local build and install
 
-* Copy the `slick.sample.conf` file to `$HOME/.slick` and tweak at will.
+Try it with:
 
-* Build with:
+```
+go get github.com/abourget/slick
+cd $GOPATH/src/github.com/abourget/slick/example-bot
+go install -v && $GOPATH/bin/example-bot
+```
 
-   ```
-   cd $GOPATH/src/github.com/abourget/slick/example-bot
-   go build && ./example-bot
-   ```
-
-* Note: It is also possible to build your bot using the stable dependencies found
-        within the Godeps directory. This can be done as follows:
-
-        Install godep:
-
-           go get github.com/tools/godep
-
-        Now build using the godep tool as follows:
-
-           cd $GOPATH/src/github.com/abourget/slick/example-bot
-           godep go build && ./example-bot
-
-
-* Inject static stuff (for the web app) in the binary with:
-
-   ```
-   cd $GOPATH/src/github.com/abourget/slick/web
-   rice append --exec=../example-bot/example-bot
-   ```
-
-* Enjoy! You can deploy the binary and it has all the assets in itself now.
+Copy the `slick.sample.conf` file to `$HOME/.slick` and tweak at will.
 
 
 ## Writing your own plugin
 
+
+Example code to handle deployments:
+
+```
+// listenDeploy was hooked into a plugin elsewhere..
+func listenDeploy() {
+	bot.Listen(&slick.Listener{
+		Matches:        regexp.MustCompile("(can you|could you|please|plz|c'mon|icanhaz) deploy (" + strings.Join(keywords, "|") + ") (with|using)( revision| commit)? `?([a-z0-9]{4,42})`?"),
+		MentionsMeOnly: true,
+		MessageHandlerFunc: func(listen *slick.Listener, msg *slick.Message) {
+
+			projectName := msg.Match[2]
+			revision := msg.Match[5]
+
+			go func() {
+				go msg.AddReaction("work_hard")
+				defer msg.RemoveReaction("work_hard")
+
+				// Do the deployment with projectName and revision...
+
+			}()
+		},
+	})
+}
+```
+
+
+
+
 Take inspiration by looking at the different plugins, like `Funny`,
 `Healthy`, `Storm`, `Deployer`, etc..  Don't forget to update your
 bot's plugins list, like `example-bot/main.go`
+
+
+## Configuration
+
+You might need `mercurial` installed to get some dependencies.
