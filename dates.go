@@ -1,6 +1,12 @@
 package slick
 
-import "time"
+import (
+	"strconv"
+	"strings"
+	"time"
+
+	"github.com/nlopes/slack"
+)
 
 func NextWeekdayTime(w time.Weekday, hour, min int) (time.Time, time.Duration) {
 	t := time.Now().UTC()
@@ -16,7 +22,12 @@ func NextWeekdayTime(w time.Weekday, hour, min int) (time.Time, time.Duration) {
 	return res, res.Sub(t)
 }
 
-func AfterNextWeekdayTime(w time.Weekday, hour, min int) (<-chan time.Time) {
+func AfterNextWeekdayTime(w time.Weekday, hour, min int) <-chan time.Time {
 	_, duration := NextWeekdayTime(w, hour, min)
 	return time.After(duration)
+}
+
+func unixFromTimestamp(ts string) slack.JSONTime {
+	i, _ := strconv.Atoi(strings.Split(ts, ".")[0])
+	return slack.JSONTime(i)
 }

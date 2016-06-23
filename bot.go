@@ -422,7 +422,7 @@ func (bot *Bot) handleRTMEvent(event *slack.RTMEvent) {
 	 * Message dispatch and handling
 	 */
 	case *slack.MessageEvent:
-		log.Printf("Message: %v\n", ev)
+		log.Printf("Message: %#v\n", ev)
 		msg = &Message{
 			Msg:        &ev.Msg,
 			SubMessage: ev.SubMessage,
@@ -430,10 +430,27 @@ func (bot *Bot) handleRTMEvent(event *slack.RTMEvent) {
 		}
 
 		userID := ev.User
-		if ev.Msg.SubType == "message_changed" {
+		switch ev.Msg.SubType {
+		case "message_changed":
 			userID = ev.SubMessage.User
 			msg.Msg.Text = ev.SubMessage.Text
 			msg.IsEdit = true
+		case "channel_topic":
+			if channel, ok := bot.Channels[ev.Channel]; ok {
+				channel.Topic = slack.Topic{
+					Value:   ev.Topic,
+					Creator: ev.User,
+					LastSet: unixFromTimestamp(ev.Timestamp),
+				}
+			}
+		case "channel_purpose":
+			if channel, ok := bot.Channels[ev.Channel]; ok {
+				channel.Purpose = slack.Purpose{
+					Value:   ev.Purpose,
+					Creator: ev.User,
+					LastSet: unixFromTimestamp(ev.Timestamp),
+				}
+			}
 		}
 
 		user, ok := bot.Users[userID]
