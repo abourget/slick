@@ -54,6 +54,7 @@ go install -v && $GOPATH/bin/example-bot
 
 Copy the `slick.sample.conf` file to `$HOME/.slick` and tweak at will.
 
+You might need `mercurial` installed to get some dependencies.
 
 ## Writing your own plugin
 
@@ -90,8 +91,3 @@ func listenDeploy() {
 Take inspiration by looking at the different plugins, like `Funny`,
 `Healthy`, `Storm`, `Deployer`, etc..  Don't forget to update your
 bot's plugins list, like `example-bot/main.go`
-
-
-## Configuration
-
-You might need `mercurial` installed to get some dependencies.
