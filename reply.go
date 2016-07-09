@@ -21,6 +21,19 @@ func (r *Reply) AddReaction(emoji string) *Reply {
 	return r
 }
 
+func (r *Reply) DeleteAfter(duration string) *Reply {
+	timeDur := parseAutodestructDuration("DeleteAfter", duration)
+
+	r.OnAck(func(ev *slack.AckMessage) {
+		go func() {
+			time.Sleep(timeDur)
+			r.bot.Slack.DeleteMessage(r.Channel, ev.Timestamp)
+		}()
+	})
+
+	return r
+}
+
 func (r *Reply) ListenReaction(reactListen *ReactionListener) {
 	r.OnAck(func(ackEv *slack.AckMessage) {
 		listen := reactListen.newListener()
@@ -52,6 +65,12 @@ func (r *Reply) ListenReaction(reactListen *ReactionListener) {
 	})
 }
 
+// OnAck allows you to catch the message_id of the message you
+// replied.  Call it immediately after sending a reply to be sure to
+// catch the confirmation message with the message_id.
+//
+// With the message_id, you can modify your reply, add reactions to it
+// or delete it.
 func (r *Reply) OnAck(f func(ack *slack.AckMessage)) {
 	r.bot.Listen(&Listener{
 		ListenDuration: 20 * time.Second,
@@ -68,6 +87,25 @@ func (r *Reply) OnAck(f func(ack *slack.AckMessage)) {
 			subListen.Close()
 		},
 	})
+}
+
+// Updateable returns an instance of UpdateableReply, which has a few
+// methods to update a message after the fact.  It is safe to use in
+// different goroutines no matter when.
+func (r *Reply) Updateable() *UpdateableReply {
+	updt := &UpdateableReply{
+		reply: r,
+	}
+
+	r.OnAck(func(ack *slack.AckMessage) {
+		updt.lock.Lock()
+		defer updt.lock.Unlock()
+
+		updt.msgTimestamp = ack.Timestamp
+		go updt.dispatch()
+	})
+
+	return updt
 }
 
 // Listen here on Reply is the same as Bot.Listen except that
@@ -88,19 +126,6 @@ func (r *Reply) Listen(listen *Listener) error {
 	})
 
 	return nil
-}
-
-func (r *Reply) DeleteAfter(duration string) *Reply {
-	timeDur := parseAutodestructDuration("DeleteAfter", duration)
-
-	r.OnAck(func(ev *slack.AckMessage) {
-		go func() {
-			time.Sleep(timeDur)
-			r.bot.Slack.DeleteMessage(r.Channel, ev.Timestamp)
-		}()
-	})
-
-	return r
 }
 
 func parseAutodestructDuration(funcName string, duration string) time.Duration {
