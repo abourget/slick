@@ -2,7 +2,7 @@
 
 [![Build Status](https://drone.io/github.com/abourget/slick/status.png)](https://drone.io/github.com/abourget/slick/latest)
 
-Slick is a Slack bot, similar to Hubot, to do ChatOps and other cool things.
+Slick is a Slack bot to do ChatOps and other cool things.
 
 
 ## Features
@@ -30,6 +30,7 @@ Supported features:
 * Supports listening for any Slack events (ChannelCreated, ChannelJoined, EmojiChanged, FileShared, GroupArchived, etc..)
 * A PubSub system to facilitate inter-plugins (or chat-to-web) communications.
 
+
 ## Stock plugins
 
 1. Recognition: a plugin to recognize your peers (!recognize @user1 for doing an awesome job)
@@ -38,7 +39,7 @@ Supported features:
 
 3. Vote: a simple voting plugin to decide where to lunch
 
-4. Funny: a bunch of jokes and memes in reply to some strings in channels..
+4. Funny: a bunch of jokes and memes in reply to some strings in channels.. (inspired by Hubot's jokes)
 
 5. Healthy: a very simple plugin that pokes URLs and reports on their health
 
