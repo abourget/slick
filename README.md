@@ -94,4 +94,4 @@ func listenDeploy() {
 
 Take inspiration by looking at the different plugins, like `Funny`,
 `Healthy`, `Storm`, `Deployer`, etc..  Don't forget to update your
-bot's plugins list, like `example-bot/main.go`
+bot's plugins list, like in `example-bot/main.go`
