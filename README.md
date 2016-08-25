@@ -45,6 +45,8 @@ Supported features:
 
 6. Deployer: an example plugin to do deployments wth ansible (you'll probably want to roll out your own though).
 
+7. Todo: todo list manager, one per channel
+
 
 ## Local build and install
 
