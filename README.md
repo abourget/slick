@@ -20,7 +20,7 @@ Supported features:
 * Easy plugin interface, listeners with criterias like:
   * Messages directed to the bot only
   * Private or public messages
-  * Listens for a duration or until a given time.Time
+  * Listens for a duration or until a given `time.Time`
   * Selectively on a channel, or from a user
   * Expire listeners and unregister them dynamically
   * Supports listening for edits or not
