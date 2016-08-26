@@ -24,7 +24,7 @@ func (s *boltStore) Get(channel string) (t Todo) {
 		return json.Unmarshal(b.Get([]byte(channel)), &t)
 	})
 	if err != nil {
-		log.Println("ERROR fetching Todo:", err)
+		return make(Todo, 0)
 	}
 	return
 }

@@ -28,16 +28,14 @@ func (p *Plugin) handleTodo(listen *slick.Listener, msg *slick.Message) {
 		return
 	}
 	act := parts[1]
-	allCommands := map[string]bool{
-		"all":            true,
-		"-a":             true,
-		"--all":          true,
-		":allthethings:": true,
-	}
 
 	switch act {
 	case "add":
-		p.createTask(msg)
+		if len(parts) < 2 {
+			msg.ReplyMention(fmt.Sprintf("Add a task with `!todo add [some text]`", act))
+			return
+		}
+		p.createTask(msg, strings.Join(parts[2:], " "))
 
 	case "close", "fix", "scratch", "done", "strike", "ship", ":boom:", "remove":
 		if len(parts) < 3 || !idFormat.MatchString(parts[2]) {
@@ -50,9 +48,16 @@ func (p *Plugin) handleTodo(listen *slick.Listener, msg *slick.Message) {
 			p.closeTask(msg, parts[2])
 		}
 
+	case "note", "append", "ref":
+		if len(parts) < 4 || !idFormat.MatchString(parts[2]) {
+			msg.ReplyMention(fmt.Sprintf("Please %s a task with `!todo %s ID [more notes]`", act, act))
+			return
+		}
+
+		p.appendToTask(msg, parts[2], strings.Join(parts[3:], " "))
+
 	case "list":
-		includeClosed := len(parts) > 2 && allCommands[parts[2]]
-		p.listTasks(msg, includeClosed)
+		p.listTasks(msg, true)
 
 	case "help":
 		p.replyHelp(msg, "")
@@ -78,19 +83,10 @@ func (p *Plugin) detailTask(msg *slick.Message, id string) {
 }
 
 func printTaskDetails(task *Task) string {
-	return "```" + `
-ID          ` + task.ID + `
-CreatedAt   ` + task.CreatedAt.Format("RFC3339") + `
-User        ` + task.User + `
-Text        ` + strings.Join(task.Text, " // ") + `
-Closed      ` + fmt.Sprintf("%v", task.Closed) + `
-ClosingNote ` + task.ClosingNote + `
-ClosedAt    ` + task.ClosedAt.Format("RFC3339") + "```"
+	return fmt.Sprintf("%s\n> Created %s", task.String(), task.CreatedAt.Format("2006-01-02 15:04:05"))
 }
 
-func (p *Plugin) createTask(msg *slick.Message) {
-	var text []string
-	text = append(text, strings.TrimPrefix(msg.Match[0], "!todo add "))
+func (p *Plugin) createTask(msg *slick.Message, content string) {
 	todo := p.store.Get(msg.Channel)
 
 	if len(todo) > 600 {
@@ -103,12 +99,27 @@ func (p *Plugin) createTask(msg *slick.Message) {
 		ID:        id,
 		CreatedAt: time.Now(),
 		User:      msg.FromUser.ID,
-		Text:      text,
+		Text:      []string{content},
 		Closed:    false,
 	}
 	todo = append(todo, task)
 	p.store.Put(msg.Channel, todo)
-	msg.Reply("`" + task.ID + "` added to the todo")
+	msg.ReplyMention("added: " + task.String())
+}
+
+func (p *Plugin) appendToTask(msg *slick.Message, id, text string) {
+	todo := p.store.Get(msg.Channel)
+	index, err := getTaskIndex(id, todo)
+	if err != nil {
+		msg.ReplyMention("Task not found...")
+		return
+	}
+
+	task := todo[index]
+	task.Text = append(task.Text, text)
+	p.store.Put(msg.Channel, todo)
+
+	msg.ReplyMention("updated " + task.String())
 }
 
 func (p *Plugin) listTasks(msg *slick.Message, includeClosed bool) {
@@ -118,12 +129,10 @@ func (p *Plugin) listTasks(msg *slick.Message, includeClosed bool) {
 		if task.Closed && !includeClosed {
 			continue
 		}
-		// TODO format if task is closed
-		text := "`" + task.ID + "` " + strings.Join(task.Text, " // ")
-		answer = append(answer, text)
+		answer = append(answer, task.String())
 	}
 	if len(answer) == 0 {
-		msg.Reply("Nothing to do... Coffee time?")
+		msg.ReplyMention("Nothing to do... Coffee time?")
 	} else {
 		msg.Reply(strings.Join(answer, "\n"))
 	}
@@ -144,7 +153,7 @@ func (p *Plugin) closeTask(msg *slick.Message, id string) {
 		task.ClosingNote = strings.Join(parts[3:], " ")
 	}
 	p.store.Put(msg.Channel, todo)
-	msg.Reply("`" + task.ID + "` ~" + strings.Join(task.Text, " // ") + "~ " + task.ClosingNote)
+	msg.Reply(task.String())
 }
 
 func (p *Plugin) deleteTask(msg *slick.Message, id string) {
@@ -169,14 +178,15 @@ func getTaskIndex(id string, todo Todo) (int, error) {
 }
 
 func (p *Plugin) replyHelp(msg *slick.Message, extra string) {
-	answer := extra + `
-	Here's how you can get things orgnz'ed™:
-		!todo add sometin to get done
-		!todo list
-		!todo strike ID
-		!todo remove ID
-		!todo help
-		!todo ID
+	answer := extra + `Here's how you can get things orgnz'ed™:
+	!todo add [some text]           - add task
+	!todo                           - list tasks
+	!todo list                      - list tasks including closed
+	!todo strike [id]               - mark as done
+	!todo remove [id]               - delete task
+	!todo append [id] [more stuff]  - append text to a task
+	!todo [id]                      - show details
+	!todo help                      - show this help
 	`
 	msg.Reply(answer)
 	return

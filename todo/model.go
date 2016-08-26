@@ -1,6 +1,11 @@
 package todo
 
-import "time"
+import (
+	"strings"
+	"time"
+)
+
+type Todo []*Task
 
 type Task struct {
 	ID          string
@@ -12,4 +17,18 @@ type Task struct {
 	ClosedAt    time.Time
 }
 
-type Todo []*Task
+func (t *Task) String() string {
+	out := "`" + t.ID + "` "
+	text := strings.Join(t.Text, " // ")
+
+	if t.Closed {
+		out += "~" + text + "~"
+	} else {
+		out += text
+	}
+
+	if t.ClosingNote != "" {
+		out += " _" + t.ClosingNote + "_"
+	}
+	return out
+}
