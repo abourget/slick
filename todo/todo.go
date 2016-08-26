@@ -37,12 +37,12 @@ func (p *Plugin) handleTodo(listen *slick.Listener, msg *slick.Message) {
 		}
 		p.createTask(msg, strings.Join(parts[2:], " "))
 
-	case "close", "fix", "scratch", "done", "strike", "ship", ":boom:", "remove":
+	case "close", "fix", "scratch", "done", "strike", "ship", ":boom:", "remove", "delete":
 		if len(parts) < 3 || !idFormat.MatchString(parts[2]) {
 			msg.ReplyMention(fmt.Sprintf("Please %s a task with `!todo %s ID`", act, act))
 			return
 		}
-		if act == "remove" {
+		if act == "remove" || act == "delete" {
 			p.deleteTask(msg, parts[2])
 		} else {
 			p.closeTask(msg, parts[2])
