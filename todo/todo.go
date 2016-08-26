@@ -56,7 +56,7 @@ func (p *Plugin) handleTodo(listen *slick.Listener, msg *slick.Message) {
 
 		p.appendToTask(msg, parts[2], strings.Join(parts[3:], " "))
 
-	case "list":
+	case "list", "all":
 		p.listTasks(msg, true)
 
 	case "help":
