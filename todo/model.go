@@ -10,11 +10,12 @@ type Todo []*Task
 type Task struct {
 	ID          string
 	CreatedAt   time.Time
-	User        string
+	CreatedBy   string
 	Text        []string
 	Closed      bool
 	ClosingNote string
 	ClosedAt    time.Time
+	ClosedBy    string
 }
 
 func (t *Task) String() string {
