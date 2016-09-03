@@ -3,7 +3,7 @@ package deployer
 import (
 	"fmt"
 
-	"code.google.com/p/go.net/websocket"
+	"golang.org/x/net/websocket"
 
 	"github.com/gorilla/mux"
 	"github.com/abourget/slick"
