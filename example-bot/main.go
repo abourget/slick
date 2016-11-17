@@ -14,6 +14,7 @@ import (
 	_ "github.com/abourget/slick/mooder"
 	_ "github.com/abourget/slick/plotberry"
 	_ "github.com/abourget/slick/standup"
+	_ "github.com/abourget/slick/todo"
 	_ "github.com/abourget/slick/totw"
 	_ "github.com/abourget/slick/web"
 	_ "github.com/abourget/slick/webauth"

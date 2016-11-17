@@ -24,7 +24,7 @@ func (p *Plugin) handleTodo(listen *slick.Listener, msg *slick.Message) {
 	match := msg.Match
 	parts := strings.Split(match[0], " ")
 	if len(parts) == 1 {
-		p.listTasks(msg, false)
+		p.listTasks(msg)
 		return
 	}
 	act := parts[1]
@@ -32,23 +32,20 @@ func (p *Plugin) handleTodo(listen *slick.Listener, msg *slick.Message) {
 	switch act {
 	case "add":
 		if len(parts) < 2 {
-			msg.ReplyMention(fmt.Sprintf("Add a task with `!todo add [some text]`", act))
+			msg.ReplyMention("Add a task with `!todo add [some text]`")
 			return
 		}
 		p.createTask(msg, strings.Join(parts[2:], " "))
 
-	case "close", "fix", "scratch", "done", "strike", "ship", ":boom:", "remove", "delete":
+	case "scratch":
 		if len(parts) < 3 || !idFormat.MatchString(parts[2]) {
 			msg.ReplyMention(fmt.Sprintf("Please %s a task with `!todo %s ID`", act, act))
 			return
 		}
-		if act == "remove" || act == "delete" {
-			p.deleteTask(msg, parts[2])
-		} else {
-			p.closeTask(msg, parts[2])
-		}
 
-	case "note", "append", "ref":
+		p.deleteTask(msg, parts[2], false)
+
+	case "append":
 		if len(parts) < 4 || !idFormat.MatchString(parts[2]) {
 			msg.ReplyMention(fmt.Sprintf("Please %s a task with `!todo %s ID [more notes]`", act, act))
 			return
@@ -56,20 +53,14 @@ func (p *Plugin) handleTodo(listen *slick.Listener, msg *slick.Message) {
 
 		p.appendToTask(msg, parts[2], strings.Join(parts[3:], " "))
 
-	case "all":
-		p.listTasks(msg, true)
-
-	case "list":
-		p.listTasks(msg, false)
-
 	case "help":
 		p.replyHelp(msg, "")
 
 	default:
 		if idFormat.MatchString(act) {
-			p.detailTask(msg, act)
-		} else {
 			p.replyHelp(msg, "Wooops, not sure what you wanted.\n")
+		} else {
+			p.listTasks(msg)
 		}
 	}
 }
@@ -124,14 +115,19 @@ func (p *Plugin) appendToTask(msg *slick.Message, id, text string) {
 	msg.ReplyMention("updated " + task.String())
 }
 
-func (p *Plugin) listTasks(msg *slick.Message, includeClosed bool) {
+func (p *Plugin) listTasks(msg *slick.Message) {
 	todo := p.store.Get(msg.Channel)
 	var answer []string
+	var toDelete []string
 	for _, task := range todo {
-		if task.Closed && !includeClosed {
-			continue
+		if task.Closed {
+			toDelete = append(toDelete, task.ID)
+		} else {
+			answer = append(answer, task.String())
 		}
-		answer = append(answer, task.String())
+	}
+	if len(toDelete) != 0 {
+		p.deleteTask(msg, strings.Join(toDelete, ","), true)
 	}
 	if len(answer) == 0 {
 		msg.ReplyMention("Nothing to do... Coffee time?")
@@ -140,38 +136,7 @@ func (p *Plugin) listTasks(msg *slick.Message, includeClosed bool) {
 	}
 }
 
-func (p *Plugin) closeTask(msg *slick.Message, ids string) {
-	todo := p.store.Get(msg.Channel)
-
-	parts := strings.Split(msg.Match[0], " ")
-	var closingNodes string
-	if len(parts) > 3 {
-		closingNodes = strings.Join(parts[3:], " ")
-	}
-
-	var out []string
-	for _, id := range strings.Split(ids, ",") {
-		index, err := getTaskIndex(id, todo)
-		if err != nil {
-			out = append(out, "Task `"+id+"` not found")
-			continue
-		}
-
-		task := todo[index]
-		task.Closed = true
-		task.ClosedAt = time.Now()
-		task.ClosedBy = msg.FromUser.ID
-		task.ClosingNote = closingNodes
-
-		out = append(out, task.String())
-	}
-
-	p.store.Put(msg.Channel, todo)
-
-	msg.Reply(strings.Join(out, "\n"))
-}
-
-func (p *Plugin) deleteTask(msg *slick.Message, ids string) {
+func (p *Plugin) deleteTask(msg *slick.Message, ids string, silent bool) {
 	todo := p.store.Get(msg.Channel)
 
 	var out []string
@@ -183,7 +148,10 @@ func (p *Plugin) deleteTask(msg *slick.Message, ids string) {
 		}
 
 		todo = append(todo[:index], todo[index+1:]...)
-		out = append(out, fmt.Sprintf("Deleted task `%s`", id))
+
+		if silent != true {
+			out = append(out, fmt.Sprintf("Deleted task `%s`", id))
+		}
 	}
 
 	p.store.Put(msg.Channel, todo)
@@ -204,9 +172,7 @@ func (p *Plugin) replyHelp(msg *slick.Message, extra string) {
 	answer := extra + `Here's how you can get things orgnz'ed™:` + "```" + `
 !todo add [some text]             - add task
 !todo                             - list tasks
-!todo all                         - list tasks including closed
-!todo strike [id] [opt. details]  - mark as done (opt. closing note)
-!todo remove [id]                 - delete task(s) (with [id,id,id])
+!todo scratch [id]                - deletes task(s)
 !todo append [id] [more stuff]    - append text to a task
 !todo [id]                        - show details
 !todo help                        - show this help
