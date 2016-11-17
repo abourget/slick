@@ -13,13 +13,22 @@ type Task struct {
 	CreatedBy   string
 	Text        []string
 	Closed      bool
+	ClosingNote string
 }
 
 func (t *Task) String() string {
 	out := "`" + t.ID + "` "
 	text := strings.Join(t.Text, " // ")
 
-	out += text
+	if t.Closed {
+		out += "~" + text + "~"
+	} else {
+		out += text
+	}
+
+	if t.ClosingNote != "" {
+		out += " _" + t.ClosingNote + "_"
+	}
 
 	return out
 }

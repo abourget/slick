@@ -139,6 +139,12 @@ func (p *Plugin) listTasks(msg *slick.Message) {
 func (p *Plugin) deleteTask(msg *slick.Message, ids string, silent bool) {
 	todo := p.store.Get(msg.Channel)
 
+	parts := strings.Split(msg.Match[0], " ")
+	var closingNotes string
+	if len(parts) > 3 {
+		closingNotes = strings.Join(parts[3:], " ")
+	}
+
 	var out []string
 	for _, id := range strings.Split(ids, ",") {
 		index, err := getTaskIndex(id, todo)
@@ -147,10 +153,13 @@ func (p *Plugin) deleteTask(msg *slick.Message, ids string, silent bool) {
 			continue
 		}
 
+		task := todo[index]
+		task.Closed = true
+		task.ClosingNote = closingNotes
 		todo = append(todo[:index], todo[index+1:]...)
 
 		if silent != true {
-			out = append(out, fmt.Sprintf("Deleted task `%s`", id))
+			out = append(out, task.String())
 		}
 	}
 
