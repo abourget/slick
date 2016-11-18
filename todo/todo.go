@@ -5,6 +5,7 @@ import (
 	"fmt"
 	"math/rand"
 	"regexp"
+	"sort"
 	"strings"
 	"time"
 
@@ -117,6 +118,8 @@ func (p *Plugin) appendToTask(msg *slick.Message, id, text string) {
 
 func (p *Plugin) listTasks(msg *slick.Message) {
 	todo := p.store.Get(msg.Channel)
+	sort.Sort(byID(todo))
+
 	var answer []string
 	var toDelete []string
 	for _, task := range todo {
