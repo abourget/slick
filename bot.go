@@ -669,6 +669,24 @@ func (bot *Bot) OpenIMChannelWith(user *slack.User) *Channel {
 	return &c
 }
 
+func (bot *Bot) SetChannelTopic(channel, topic string) (string, error) {
+	return bot.Slack.SetChannelTopic(channel, topic)
+}
+
+func (bot *Bot) GetChannelTopic(channelName string) (topic slack.Topic, err error) {
+	channels, err := bot.Slack.GetChannels(false)
+	if err != nil {
+		return
+	}
+	for _, c := range channels {
+		if c.Name == channelName {
+			return c.Topic, nil
+		}
+	}
+
+	return
+}
+
 func (bot *Bot) updateChannel(channel Channel) {
 	bot.channelUpdateLock.Lock()
 	bot.Channels[channel.ID] = channel
