@@ -51,6 +51,10 @@ func RegisterPlugin(plugin Plugin) {
 	registeredPlugins = append(registeredPlugins, plugin)
 }
 
+func RegisteredPlugins() []Plugin {
+	return registeredPlugins
+}
+
 func initChatPlugins(bot *Bot) {
 	for _, plugin := range registeredPlugins {
 		chatPlugin, ok := plugin.(PluginInitializer)
