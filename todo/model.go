@@ -7,6 +7,12 @@ import (
 
 type Todo []*Task
 
+type byID Todo
+
+func (a byID) Len() int           { return len(a) }
+func (a byID) Swap(i, j int)      { a[i], a[j] = a[j], a[i] }
+func (a byID) Less(i, j int) bool { return a[i].ID < a[j].ID }
+
 type Task struct {
 	ID          string
 	CreatedAt   time.Time
