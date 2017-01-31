@@ -22,9 +22,8 @@ type Channel struct {
 	IsIM      bool
 
 	// Only with `IsChannel`
-	IsGeneral  bool
-	Members    []string
-	NumMembers int
+	IsGeneral bool
+	Members   []string
 
 	// Only for `IsGroup` (?)
 	IsMember   bool
@@ -41,14 +40,13 @@ type Channel struct {
 
 func ChannelFromSlackGroup(group slack.Group) Channel {
 	return Channel{
-		ID:         group.ID,
-		Created:    group.Created.Time(),
-		IsOpen:     group.IsOpen,
-		LastRead:   group.LastRead,
-		Name:       group.Name,
-		Creator:    group.Creator,
-		Members:    group.Members,
-		NumMembers: group.NumMembers,
+		ID:       group.ID,
+		Created:  group.Created.Time(),
+		IsOpen:   group.IsOpen,
+		LastRead: group.LastRead,
+		Name:     group.Name,
+		Creator:  group.Creator,
+		Members:  group.Members,
 		//IsMember:   group.IsMember,  wh00ps, not there anymore.
 		IsArchived: group.IsArchived,
 		Topic:      group.Topic,
@@ -66,7 +64,6 @@ func ChannelFromSlackChannel(channel slack.Channel) Channel {
 		Name:       channel.Name,
 		Creator:    channel.Creator,
 		Members:    channel.Members,
-		NumMembers: channel.NumMembers,
 		IsMember:   channel.IsMember,
 		IsArchived: channel.IsArchived,
 		Topic:      channel.Topic,
