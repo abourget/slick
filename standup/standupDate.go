@@ -21,7 +21,7 @@ func getStandupDate(daysFromToday int) standupDate {
 }
 
 func unixToStandupDate(unix int64) standupDate {
-	d := time.Unix(unix, 0)
+	d := time.Unix(unix, 0).UTC()
 	return standupDate{
 		year:  d.Year(),
 		month: d.Month(),
