@@ -47,7 +47,10 @@ func getTestStandupMap() standupMap {
 	}
 
 	var unixDate int64 = 1431921600 // 2015-May-18
-	sds := []standupDate{unixToStandupDate(unixDate), unixToStandupDate(unixDate).next()}
+	sds := []standupDate{
+		unixToStandupDate(unixDate),
+		unixToStandupDate(unixDate).next(),
+	}
 
 	for i := 0; i < 2; i += 1 {
 		uA.data.Yesterday = strconv.Itoa(i)
