@@ -93,8 +93,8 @@ func (p *Plugin) createTask(msg *slick.Message, content string) {
 	task := &Task{
 		ID:        id,
 		CreatedAt: time.Now(),
-		CreatedBy: msg.FromUser.ID,
-		Text:      []string{content},
+		// CreatedBy: msg.FromUser.ID,
+		Text: []string{content},
 	}
 	todo = append(todo, task)
 	p.store.Put(msg.Channel, todo)
@@ -186,7 +186,6 @@ func (p *Plugin) replyHelp(msg *slick.Message, extra string) {
 !todo                             - list tasks
 !todo scratch [id]                - deletes task(s)
 !todo append [id] [more stuff]    - append text to a task
-!todo [id]                        - show details
 !todo help                        - show this help
 ` + "```"
 	msg.Reply(answer)
