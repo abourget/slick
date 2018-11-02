@@ -3,6 +3,8 @@ package slick
 import (
 	"fmt"
 	"sync"
+
+	"github.com/nlopes/slack"
 )
 
 // UpdateableReply is a Reply that the bot sent, and that it is able
@@ -26,7 +28,11 @@ func (u *UpdateableReply) dispatch() {
 	}
 
 	if u.newMessage != "" {
-		u.reply.bot.Slack.UpdateMessage(u.reply.OutgoingMessage.Channel, u.msgTimestamp, u.newFormattedMessage())
+		u.reply.bot.Slack.UpdateMessage(
+			u.reply.OutgoingMessage.Channel,
+			u.msgTimestamp,
+			slack.MsgOptionText(u.newFormattedMessage(), false),
+		)
 		u.newMessage = ""
 	}
 }
@@ -43,7 +49,7 @@ func (u *UpdateableReply) Update(format string, v ...interface{}) {
 	u.updateWithMode(updateWhole, format, v...)
 }
 
-func (u*UpdateableReply) newFormattedMessage() string {
+func (u *UpdateableReply) newFormattedMessage() string {
 	prevMessage := u.reply.OutgoingMessage.Text
 	switch u.updateMode {
 	case updateSuffix:
@@ -66,7 +72,6 @@ func (u *UpdateableReply) updateWithMode(mode updateMode, format string, v ...in
 
 	go u.dispatch()
 }
-
 
 type updateMode int
 

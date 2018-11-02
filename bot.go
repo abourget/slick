@@ -127,8 +127,10 @@ func (bot *Bot) Run() {
 
 	initChatPlugins(bot)
 
-	bot.Slack = slack.New(bot.Config.ApiToken)
-	bot.Slack.SetDebug(bot.Config.Debug)
+	bot.Slack = slack.New(
+		bot.Config.ApiToken,
+		slack.OptionDebug(bot.Config.Debug),
+	)
 
 	rtm := bot.Slack.NewRTM()
 	bot.rtm = rtm
